@@ -21,16 +21,16 @@ local function joinQueue()
 	end
 end
 
-AutoPlay = vape.Categories.Utility:CreateModule({
+AutoPlay = vain.Categories.Utility:CreateModule({
 	Name = 'AutoPlay',
 	Function = function(callback)
 		if callback then
-			AutoPlay:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+			AutoPlay:Clean(vainEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 				if deathTable.finalKill and deathTable.entityInstance == lplr.Character and isEveryoneDead() and store.matchState ~= 2 then
 					joinQueue()
 				end
 			end))
-			AutoPlay:Clean(vapeEvents.MatchEndEvent.Event:Connect(joinQueue))
+			AutoPlay:Clean(vainEvents.MatchEndEvent.Event:Connect(joinQueue))
 		end
 	end,
 	Tooltip = 'Automatically queues after the match ends.'

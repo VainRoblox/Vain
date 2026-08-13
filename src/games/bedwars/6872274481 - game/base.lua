@@ -4,7 +4,7 @@ end
 local cloneref = cloneref or function(obj)
 	return obj
 end
-local vapeEvents = setmetatable({}, {
+local vainEvents = setmetatable({}, {
 	__index = function(self, index)
 		self[index] = Instance.new('BindableEvent')
 		return self[index]
@@ -31,19 +31,19 @@ local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
-lplr:Kick('Bedwars is no longer supported by Vape V4, thank you for 5 years of support ❤️')
+lplr:Kick('Bedwars is no longer supported by Vain V4, thank you for 5 years of support ❤️')
 
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local uipallet = vape.Libraries.uipallet
-local tween = vape.Libraries.tween
-local color = vape.Libraries.color
-local whitelist = vape.Libraries.whitelist
-local prediction = vape.Libraries.prediction
-local getfontsize = vape.Libraries.getfontsize
-local getcustomasset = vape.Libraries.getcustomasset
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
+local uipallet = vain.Libraries.uipallet
+local tween = vain.Libraries.tween
+local color = vain.Libraries.color
+local whitelist = vain.Libraries.whitelist
+local prediction = vain.Libraries.prediction
+local getfontsize = vain.Libraries.getfontsize
+local getcustomasset = vain.Libraries.getcustomasset
 
 local store = {
 	attackReach = 0,
@@ -75,7 +75,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvape/assets/new/blur.png')
+	blur.Image = getcustomasset('newvain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -312,17 +312,17 @@ local function hotbarSwitch(slot)
 			type = 'InventorySelectHotbarSlot',
 			slot = slot
 		})
-		vapeEvents.InventoryChanged.Event:Wait()
+		vainEvents.InventoryChanged.Event:Wait()
 		return true
 	end
 	return false
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -330,11 +330,11 @@ local function isFriend(plr, recolor)
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(vain.Categories.Targets.ListEnabled, plr.Name) and true
 end
 
 local function notif(...) return
-	vape:CreateNotification(...)
+	vain:CreateNotification(...)
 end
 
 local function removeTags(str)
@@ -538,7 +538,7 @@ run(function()
 					entitylib.isAlive = true
 					entitylib.Events.LocalAdded:Fire(entity)
 					table.insert(entitylib.Connections, char.AttributeChanged:Connect(function(attr)
-						vapeEvents.AttributeChanged:Fire(attr)
+						vainEvents.AttributeChanged:Fire(attr)
 					end))
 				else
 					entity.Targetable = entitylib.targetCheck(entity)
@@ -640,7 +640,7 @@ run(function()
 		if not select(2, whitelist:get(ent.Player)) then return false end
 		return lplr:GetAttribute('Team') ~= ent.Player:GetAttribute('Team')
 	end
-	vape:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
+	vain:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
 end)
 entitylib.start()
 
@@ -775,7 +775,7 @@ run(function()
 	for i, v in remoteNames do
 		local remote = dumpRemote(debug.getconstants(v))
 		if remote == '' then
-			notif('Vape', 'Failed to grab remote ('..i..')', 10, 'alert')
+			notif('Vain', 'Failed to grab remote ('..i..')', 10, 'alert')
 		end
 		remotes[i] = remote
 	end
@@ -1000,11 +1000,11 @@ run(function()
 			store.inventory = newinv
 
 			if newinv ~= oldinv then
-				vapeEvents.InventoryChanged:Fire()
+				vainEvents.InventoryChanged:Fire()
 			end
 
 			if newinv.inventory.items ~= oldinv.inventory.items then
-				vapeEvents.InventoryAmountChanged:Fire()
+				vainEvents.InventoryAmountChanged:Fire()
 				store.tools.sword = getSword()
 				for _, v in {'stone', 'wood', 'wool'} do
 					store.tools[v] = getTool(v)
@@ -1031,16 +1031,16 @@ run(function()
 	updateStore(bedwars.Store:getState(), {})
 
 	for _, event in {'MatchEndEvent', 'EntityDeathEvent', 'BedwarsBedBreak', 'BalloonPopped', 'AngelProgress', 'GrapplingHookFunctions'} do
-		if not vape.Connections then return end
+		if not vain.Connections then return end
 		bedwars.Client:WaitFor(event):andThen(function(connection)
-			vape:Clean(connection:Connect(function(...)
-				vapeEvents[event]:Fire(...)
+			vain:Clean(connection:Connect(function(...)
+				vainEvents[event]:Fire(...)
 			end))
 		end)
 	end
 
-	vape:Clean(bedwars.ZapNetworking.EntityDamageEventZap.On(function(...)
-		vapeEvents.EntityDamageEvent:Fire({
+	vain:Clean(bedwars.ZapNetworking.EntityDamageEventZap.On(function(...)
+		vainEvents.EntityDamageEvent:Fire({
 			entityInstance = ...,
 			damage = select(2, ...),
 			damageType = select(3, ...),
@@ -1053,7 +1053,7 @@ run(function()
 	end))
 
 	for _, event in {'PlaceBlockEvent', 'BreakBlockEvent'} do
-		vape:Clean(bedwars.ZapNetworking[event..'Zap'].On(function(...)
+		vain:Clean(bedwars.ZapNetworking[event..'Zap'].On(function(...)
 			local data = {
 				blockRef = {
 					blockPosition = ...,
@@ -1067,7 +1067,7 @@ run(function()
 					cache[i] = nil
 				end
 			end
-			vapeEvents[event]:Fire(data)
+			vainEvents[event]:Fire(data)
 		end))
 	end
 
@@ -1104,26 +1104,26 @@ run(function()
 
 	task.spawn(function()
 		pcall(function()
-			repeat task.wait() until store.matchState ~= 0 or vape.Loaded == nil
-			if vape.Loaded == nil then return end
+			repeat task.wait() until store.matchState ~= 0 or vain.Loaded == nil
+			if vain.Loaded == nil then return end
 			mapname = workspace:WaitForChild('Map', 5):WaitForChild('Worlds', 5):GetChildren()[1].Name
 			mapname = string.gsub(string.split(mapname, '_')[2] or mapname, '-', '') or 'Blank'
 		end)
 	end)
 
-	vape:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
+	vain:Clean(vainEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
 		if bedTable.player and bedTable.player.UserId == lplr.UserId then
 			beds:Increment()
 		end
 	end))
 
-	vape:Clean(vapeEvents.MatchEndEvent.Event:Connect(function(winTable)
+	vain:Clean(vainEvents.MatchEndEvent.Event:Connect(function(winTable)
 		if (bedwars.Store:getState().Game.myTeam or {}).id == winTable.winningTeamId or lplr.Neutral then
 			wins:Increment()
 		end
 	end))
 
-	vape:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+	vain:Clean(vainEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 		local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
 		local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
 		if not killed or not killer then return end
@@ -1147,7 +1147,7 @@ run(function()
 				end
 			end
 			task.wait()
-		until vape.Loaded == nil
+		until vain.Loaded == nil
 	end)
 
 	pcall(function()
@@ -1165,7 +1165,7 @@ run(function()
 			task.spawn(function()
 				repeat
 					task.wait(0.1)
-				until vape.Loaded == nil or bedwars.AppController:isAppOpen('BedwarsItemShopApp')
+				until vain.Loaded == nil or bedwars.AppController:isAppOpen('BedwarsItemShopApp')
 
 				bedwars.Shop = require(replicatedStorage.TS.games.bedwars.shop['bedwars-shop']).BedwarsShop
 				bedwars.ShopItems = debug.getupvalue(debug.getupvalue(bedwars.Shop.getShopItem, 1), 2)
@@ -1174,11 +1174,11 @@ run(function()
 		end
 	end)
 
-	vape:Clean(function()
+	vain:Clean(function()
 		Client.Get = OldGet
 		bedwars.BlockController.isBlockBreakable = OldBreak
 		store.blockPlacer:disable()
-		for _, v in vapeEvents do
+		for _, v in vainEvents do
 			v:Destroy()
 		end
 		for _, v in cache do
@@ -1186,7 +1186,7 @@ run(function()
 			table.clear(v)
 		end
 		table.clear(store.blockPlacer)
-		table.clear(vapeEvents)
+		table.clear(vainEvents)
 		table.clear(bedwars)
 		table.clear(store)
 		table.clear(cache)
@@ -1198,5 +1198,5 @@ run(function()
 end)
 
 for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

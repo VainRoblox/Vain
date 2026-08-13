@@ -102,7 +102,7 @@ local killeffects = {
 	end
 }
 
-KillEffect = vape.Legit:CreateModule({
+KillEffect = vain.Legit:CreateModule({
 	Name = 'Kill Effect',
 	Function = function(callback)
 		if callback then

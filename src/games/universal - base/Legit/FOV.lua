@@ -2,7 +2,7 @@ local FOV
 local Value
 local oldfov
 
-FOV = vape.Legit:CreateModule({
+FOV = vain.Legit:CreateModule({
 	Name = 'FOV',
 	Function = function(callback)
 		if callback then

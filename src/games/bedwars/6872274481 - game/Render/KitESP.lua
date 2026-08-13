@@ -3,7 +3,7 @@ local Background
 local Color = {}
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local ESPKits = {
 	alchemist = {'alchemist_ingedients', 'wild_flower'},
@@ -57,7 +57,7 @@ local function addKit(tag, icon)
 	end
 end
 
-KitESP = vape.Categories.Render:CreateModule({
+KitESP = vain.Categories.Render:CreateModule({
 	Name = 'KitESP',
 	Function = function(callback)
 		if callback then

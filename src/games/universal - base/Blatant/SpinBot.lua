@@ -6,7 +6,7 @@ local ZToggle
 local Value
 local AngularVelocity
 
-SpinBot = vape.Categories.Blatant:CreateModule({
+SpinBot = vain.Categories.Blatant:CreateModule({
 	Name = 'SpinBot',
 	Function = function(callback)
 		if callback then

@@ -74,7 +74,7 @@ icon.Name = 'Icon'
 icon.Size = UDim2.fromOffset(18, 12)
 icon.Position = UDim2.fromOffset(10, 15)
 icon.BackgroundTransparency = 1
-icon.Image = getcustomasset('newvape/assets/new/targetstab.png')
+icon.Image = getcustomasset('newvain/assets/new/targetstab.png')
 icon.Parent = window
 local title = Instance.new('TextLabel')
 title.Name = 'Title'
@@ -136,20 +136,20 @@ end
 
 optionapi.Players = components.TargetsButton({
 	Position = UDim2.fromOffset(11, 45),
-	Icon = getcustomasset('newvape/assets/new/targetplayers1.png'),
+	Icon = getcustomasset('newvain/assets/new/targetplayers1.png'),
 	IconSize = UDim2.fromOffset(15, 16),
 	IconParent = tool,
-	ToolIcon = getcustomasset('newvape/assets/new/targetplayers2.png'),
+	ToolIcon = getcustomasset('newvain/assets/new/targetplayers2.png'),
 	ToolSize = UDim2.fromOffset(11, 12),
 	Tooltip = 'Players',
 	Function = optionsettings.Function
 }, window, tool)
 optionapi.NPCs = components.TargetsButton({
 	Position = UDim2.fromOffset(112, 45),
-	Icon = getcustomasset('newvape/assets/new/targetnpc1.png'),
+	Icon = getcustomasset('newvain/assets/new/targetnpc1.png'),
 	IconSize = UDim2.fromOffset(12, 16),
 	IconParent = tool,
-	ToolIcon = getcustomasset('newvape/assets/new/targetnpc2.png'),
+	ToolIcon = getcustomasset('newvain/assets/new/targetnpc2.png'),
 	ToolSize = UDim2.fromOffset(9, 12),
 	Tooltip = 'NPCs',
 	Function = optionsettings.Function

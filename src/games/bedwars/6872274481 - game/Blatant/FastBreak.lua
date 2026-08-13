@@ -1,7 +1,7 @@
 local FastBreak
 local Time
 
-FastBreak = vape.Categories.Blatant:CreateModule({
+FastBreak = vain.Categories.Blatant:CreateModule({
 	Name = 'FastBreak',
 	Function = function(callback)
 		if callback then

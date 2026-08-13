@@ -19,7 +19,7 @@ local function createHitbox(ent)
 	end
 end
 
-HitBoxes = vape.Categories.Blatant:CreateModule({
+HitBoxes = vain.Categories.Blatant:CreateModule({
 	Name = 'HitBoxes',
 	Function = function(callback)
 		if callback then

@@ -7,7 +7,7 @@ local Overlay = OverlapParams.new()
 Overlay.FilterType = Enum.RaycastFilterType.Include
 local modified = {}
 
-Reach = vape.Categories.Combat:CreateModule({
+Reach = vain.Categories.Combat:CreateModule({
 	Name = 'Reach',
 	Function = function(callback)
 		if callback then

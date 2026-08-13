@@ -2,7 +2,7 @@ local AutoFish
 local KeepList
 local old
 
-AutoFish = vape.Categories.Minigames:CreateModule({
+AutoFish = vain.Categories.Minigames:CreateModule({
 	Name = 'AutoFish',
 	Function = function(callback)
 		if callback then

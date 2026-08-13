@@ -3,7 +3,7 @@ local Kill
 local Visualizer
 local effects, util = {}, {}
 
-FPSBoost = vape.Legit:CreateModule({
+FPSBoost = vain.Legit:CreateModule({
 	Name = 'FPS Boost',
 	Function = function(callback)
 		if callback then

@@ -32,7 +32,7 @@ local function jump()
 	end
 end
 
-HighJump = vape.Categories.Blatant:CreateModule({
+HighJump = vain.Categories.Blatant:CreateModule({
 	Name = 'HighJump',
 	Function = function(callback)
 		if callback then

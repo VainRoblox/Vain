@@ -8,7 +8,7 @@ local StrafeIncrease
 local KillauraTarget
 local ClickAim
 
-AimAssist = vape.Categories.Combat:CreateModule({
+AimAssist = vain.Categories.Combat:CreateModule({
 	Name = 'AimAssist',
 	Function = function(callback)
 		if callback then

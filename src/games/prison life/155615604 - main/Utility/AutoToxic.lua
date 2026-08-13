@@ -27,11 +27,11 @@ local function sendMessage(name, obj, default)
 	end
 end
 
-AutoToxic = vape.Categories.Utility:CreateModule({
+AutoToxic = vain.Categories.Utility:CreateModule({
 	Name = 'AutoToxic',
 	Function = function(callback)
 		if callback then
-			AutoToxic:Clean(vapeEvents.CheaterKicked.Event:Connect(function(plr)
+			AutoToxic:Clean(vainEvents.CheaterKicked.Event:Connect(function(plr)
 				sendMessage('Kicked', plr, 'skill issue cheat | <obj>')
 			end))
 		end

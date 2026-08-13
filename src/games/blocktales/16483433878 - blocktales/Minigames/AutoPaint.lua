@@ -1,6 +1,6 @@
 local AutoPaint
 
-AutoPaint = vape.Categories.Minigames:CreateModule({
+AutoPaint = vain.Categories.Minigames:CreateModule({
 	Name = 'AutoPaint',
 	Function = function(callback)
 		if callback then

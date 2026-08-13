@@ -4,7 +4,7 @@ end
 local cloneref = cloneref or function(obj)
 	return obj
 end
-local vapeEvents = setmetatable({}, {
+local vainEvents = setmetatable({}, {
 	__index = function(self, index)
 		self[index] = Instance.new('BindableEvent')
 		return self[index]
@@ -21,17 +21,17 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local targetinfo = vain.Libraries.targetinfo
 local mapobj
 local lstats
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -39,7 +39,7 @@ local function isFriend(plr, recolor)
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 local function waitForChildOfType(obj, name, timeout, prop)
@@ -59,9 +59,9 @@ run(function()
 		repeat
 			lstats = lplr:FindFirstChild('TempPlayerStatsModule')
 			task.wait()
-		until lstats or vape.Loaded == nil
+		until lstats or vain.Loaded == nil
 
-		if vape.Loaded == nil then
+		if vain.Loaded == nil then
 			return
 		end
 	end
@@ -70,14 +70,14 @@ run(function()
 	local function updateMap()
 		if mapval.Value then
 			mapobj = mapval.Value
-			vapeEvents.MapAdded:Fire(mapobj)
+			vainEvents.MapAdded:Fire(mapobj)
 		elseif mapboj then
-			vapeEvents.MapRemoved:Fire(mapboj)
+			vainEvents.MapRemoved:Fire(mapboj)
 			mapobj = nil
 		end
 	end
 
-	vape:Clean(mapval:GetPropertyChangedSignal('Value'):Connect(updateMap))
+	vain:Clean(mapval:GetPropertyChangedSignal('Value'):Connect(updateMap))
 	if mapval.Value then
 		updateMap()
 	end
@@ -137,9 +137,9 @@ run(function()
 	end
 
 	entitylib.getEntityColor = function(ent)
-		if not (ent.Player and vape.Categories.Main.Options['Use team color'].Enabled) then return end
+		if not (ent.Player and vain.Categories.Main.Options['Use team color'].Enabled) then return end
 		if isFriend(ent.Player, true) then
-			return Color3.fromHSV(vape.Categories.Friends.Options['Friends color'].Hue, vape.Categories.Friends.Options['Friends color'].Sat, vape.Categories.Friends.Options['Friends color'].Value)
+			return Color3.fromHSV(vain.Categories.Friends.Options['Friends color'].Hue, vain.Categories.Friends.Options['Friends color'].Sat, vain.Categories.Friends.Options['Friends color'].Value)
 		end
 		return ent.IsBeast and Color3.new(1, 0.2, 0.2) or Color3.new(0.3, 1, 0.3)
 	end
@@ -148,5 +148,5 @@ run(function()
 end)
 
 for _, v in {'AimAssist', 'Reach', 'SilentAim', 'TriggerBot', 'AntiFall', 'Invisible', 'Jesus', 'Killaura', 'AntiRagdoll', 'Disabler', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

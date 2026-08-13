@@ -5,7 +5,7 @@ local Delay
 local Hide
 local oldchat
 
-ChatSpammer = vape.Categories.Utility:CreateModule({
+ChatSpammer = vain.Categories.Utility:CreateModule({
 	Name = 'ChatSpammer',
 	Function = function(callback)
 		if callback then

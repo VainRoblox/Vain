@@ -16,23 +16,23 @@ jobs:
     - name: Clone destination files
       uses: actions/checkout@v6
       with:
-        repository: 7GrandDadPGN/VapeCompiled
+        repository: VainRoblox/VainCompiled
         token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
-        path: "./VapeCompiled"
+        path: "./VainCompiled"
 
     - name: Clone bundler
       uses: actions/checkout@v6
       with:
-        repository: 7GrandDadPGN/VapeBundler
-        path: "./VapeBundler"
+        repository: VainRoblox/VainBundler
+        path: "./VainBundler"
 
     - name: Copy bundler configuration
       run: |-
-        mv ./.github/workflows/workflowConfig.json ./VapeBundler/config.json
+        mv ./.github/workflows/workflowConfig.json ./VainBundler/config.json
 
     - name: Install node packages
       run: |-
-        cd ./VapeBundler
+        cd ./VainBundler
         npm i
 
     - name: Set up Node.js
@@ -40,7 +40,7 @@ jobs:
 
     - name: Run Bundler
       run: |-
-        node ./VapeBundler/index.js prod
+        node ./VainBundler/index.js prod
 
     - name: Setup git commit
       run: |-
@@ -49,7 +49,7 @@ jobs:
 
     - name: Push commit
       run: |-
-        cd ./VapeCompiled
+        cd ./VainCompiled
         git add .
-        git commit -m "Updated Vape"
+        git commit -m "Updated Vain"
         git push origin

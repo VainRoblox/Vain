@@ -77,7 +77,7 @@ local function getShopNPC()
 	return shop, items, upgrades
 end
 
-AutoBuy = vape.Categories.Inventory:CreateModule({
+AutoBuy = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoBuy',
 	Function = function(callback)
 		if callback then

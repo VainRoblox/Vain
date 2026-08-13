@@ -5,9 +5,9 @@ local Color
 local Scale
 local Background
 WaypointFolder = Instance.new('Folder')
-WaypointFolder.Parent = vape.gui
+WaypointFolder.Parent = vain.gui
 
-Waypoints = vape.Categories.Render:CreateModule({
+Waypoints = vain.Categories.Render:CreateModule({
 	Name = 'Waypoints',
 	Function = function(callback)
 		if callback then

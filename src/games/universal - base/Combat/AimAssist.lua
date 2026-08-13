@@ -18,7 +18,7 @@ local function wrapAngle(num)
 	return num
 end
 
-AimAssist = vape.Categories.Combat:CreateModule({
+AimAssist = vain.Categories.Combat:CreateModule({
 	Name = 'AimAssist',
 	Function = function(callback)
 		if CircleObject then
@@ -33,7 +33,7 @@ AimAssist = vape.Categories.Combat:CreateModule({
 					CircleObject.Position = inputService:GetMouseLocation()
 				end
 
-				if rightClicked and not vape.gui.ScaledGui.ClickGui.Visible then
+				if rightClicked and not vain.gui.ScaledGui.ClickGui.Visible then
 					ent = entitylib.EntityMouse({
 						Range = FOV.Value,
 						Part = Part.Value,
@@ -111,7 +111,7 @@ AimAssist:CreateToggle({
 			CircleObject = Drawing.new('Circle')
 			CircleObject.Filled = CircleFilled.Enabled
 			CircleObject.Color = Color3.fromHSV(CircleColor.Hue, CircleColor.Sat, CircleColor.Value)
-			CircleObject.Position = vape.gui.AbsoluteSize / 2
+			CircleObject.Position = vain.gui.AbsoluteSize / 2
 			CircleObject.Radius = FOV.Value
 			CircleObject.NumSides = 100
 			CircleObject.Transparency = 1 - CircleTransparency.Value

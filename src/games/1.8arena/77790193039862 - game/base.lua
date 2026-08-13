@@ -15,9 +15,9 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local targetinfo = vain.Libraries.targetinfo
 local arena = {}
 
 local oldhit
@@ -40,7 +40,7 @@ local function calculateMoveVector()
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 run(function()
@@ -50,9 +50,9 @@ run(function()
 		repeat
 			env = getsenv(charscript)
 			task.wait()
-		until env and env.startHit or vape.Loaded == nil
+		until env and env.startHit or vain.Loaded == nil
 
-		if vape.Loaded == nil then return end
+		if vain.Loaded == nil then return end
 	end
 
 	arena = {
@@ -76,7 +76,7 @@ run(function()
 		end
 	end
 
-	vape:Clean(function()
+	vain:Clean(function()
 		table.clear(arena)
 	end)
 end)
@@ -202,5 +202,5 @@ run(function()
 end)
 
 for _, v in {'AimAssist', 'Reach', 'SilentAim', 'AntiFall', 'Desync', 'Invisible', 'Jesus', 'MouseTP', 'Phase', 'SpinBot', 'Swim', 'TargetStrafe', 'AnimationPlayer', 'AntiRagdoll', 'ChatSpammer', 'Disabler', 'StateSpoofer', 'Freecam', 'Gravity', 'Parkour', 'SafeWalk', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

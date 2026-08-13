@@ -1,6 +1,6 @@
 local AutoRespawn
 
-AutoRespawn = vape.Categories.Utility:CreateModule({
+AutoRespawn = vain.Categories.Utility:CreateModule({
 	Name = 'AutoRespawn',
 	Function = function(callback)
 		if callback then

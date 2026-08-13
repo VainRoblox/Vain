@@ -1,7 +1,7 @@
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err and vain then
+		vain:CreateNotification('Vain', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -14,13 +14,13 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -58,11 +58,11 @@ local gameCamera = workspace.CurrentCamera or workspace:FindFirstChildWhichIsA('
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
-local vape = shared.vape
-local tween = vape.Libraries.tween
-local targetinfo = vape.Libraries.targetinfo
-local getfontsize = vape.Libraries.getfontsize
-local getcustomasset = vape.Libraries.getcustomasset
+local vain = shared.vain
+local tween = vain.Libraries.tween
+local targetinfo = vain.Libraries.targetinfo
+local getfontsize = vain.Libraries.getfontsize
+local getcustomasset = vain.Libraries.getcustomasset
 
 local TargetStrafeVector, SpiderShift, WaypointFolder
 local Spider = {Enabled = false}
@@ -74,7 +74,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvape/assets/new/blur.png')
+	blur.Image = getcustomasset('newvain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -96,10 +96,10 @@ local function calculateMoveVector(vec)
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -107,7 +107,7 @@ local function isFriend(plr, recolor)
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(vain.Categories.Targets.ListEnabled, plr.Name) and true
 end
 
 local function canClick()
@@ -124,7 +124,7 @@ local function canClick()
 			return false
 		end
 	end
-	return (not vape.gui.ScaledGui.ClickGui.Visible) and (not inputService:GetFocusedTextBox())
+	return (not vain.gui.ScaledGui.ClickGui.Visible) and (not inputService:GetFocusedTextBox())
 end
 
 local function getTableSize(tab)
@@ -138,7 +138,7 @@ local function getTool()
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 local function removeTags(str)
@@ -158,12 +158,12 @@ end
 local visited, attempted, tpSwitch = {}, {}, false
 local cacheExpire, cache = tick()
 local function serverHop(pointer, filter)
-	visited = shared.vapeserverhoplist and shared.vapeserverhoplist:split('/') or {}
+	visited = shared.vainserverhoplist and shared.vainserverhoplist:split('/') or {}
 	if not table.find(visited, game.JobId) then
 		table.insert(visited, game.JobId)
 	end
 	if not pointer then
-		notif('Vape', 'Searching for an available server.', 2)
+		notif('Vain', 'Searching for an available server.', 2)
 	end
 
 	local suc, httpdata = pcall(function()
@@ -176,7 +176,7 @@ local function serverHop(pointer, filter)
 				cacheExpire, cache = tick() + 60, httpdata
 				table.insert(attempted, v.id)
 
-				notif('Vape', 'Found! Teleporting.', 5)
+				notif('Vain', 'Found! Teleporting.', 5)
 				teleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
 				return
 			end
@@ -185,17 +185,17 @@ local function serverHop(pointer, filter)
 		if data.nextPageCursor then
 			serverHop(data.nextPageCursor, filter)
 		else
-			notif('Vape', 'Failed to find an available server.', 5, 'warning')
+			notif('Vain', 'Failed to find an available server.', 5, 'warning')
 		end
 	else
-		notif('Vape', 'Failed to grab servers. ('..(data and data.errors[1].message or 'no data')..')', 5, 'warning')
+		notif('Vain', 'Failed to grab servers. ('..(data and data.errors[1].message or 'no data')..')', 5, 'warning')
 	end
 end
 
-vape:Clean(lplr.OnTeleport:Connect(function()
+vain:Clean(lplr.OnTeleport:Connect(function()
 	if not tpSwitch then
 		tpSwitch = true
-		queue_on_teleport("shared.vapeserverhoplist = '"..table.concat(visited, '/').."'\nshared.vapeserverhopprevious = '"..game.JobId.."'")
+		queue_on_teleport("shared.vainserverhoplist = '"..table.concat(visited, '/').."'\nshared.vainserverhopprevious = '"..game.JobId.."'")
 	end
 end))
 
@@ -230,9 +230,9 @@ local function motorMove(target, cf)
 	task.delay(0, part.Destroy, part)
 end
 
-local hash = loadstring(downloadFile('newvape/libraries/hash.lua'), 'hash')()
-local prediction = loadstring(downloadFile('newvape/libraries/prediction.lua'), 'prediction')()
-entitylib = loadstring(downloadFile('newvape/libraries/entity.lua'), 'entitylibrary')()
+local hash = loadstring(downloadFile('newvain/libraries/hash.lua'), 'hash')()
+local prediction = loadstring(downloadFile('newvain/libraries/prediction.lua'), 'prediction')()
+entitylib = loadstring(downloadFile('newvain/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},
 	customtags = {},
@@ -248,11 +248,11 @@ local whitelist = {
 	localprio = 0,
 	said = {}
 }
-vape.Libraries.entity = entitylib
-vape.Libraries.whitelist = whitelist
-vape.Libraries.prediction = prediction
-vape.Libraries.hash = hash
-vape.Libraries.auraanims = {
+vain.Libraries.entity = entitylib
+vain.Libraries.whitelist = whitelist
+vain.Libraries.prediction = prediction
+vain.Libraries.hash = hash
+vain.Libraries.auraanims = {
 	Normal = {
 		{CFrame = CFrame.new(-0.17, -0.14, -0.12) * CFrame.Angles(math.rad(-53), math.rad(50), math.rad(-64)), Time = 0.1},
 		{CFrame = CFrame.new(-0.55, -0.59, -0.1) * CFrame.Angles(math.rad(-161), math.rad(54), math.rad(-6)), Time = 0.08},
@@ -360,7 +360,7 @@ run(function()
 		if ent.NPC then return true end
 		if isFriend(ent.Player) then return false end
 		if not select(2, whitelist:get(ent.Player)) then return false end
-		if vape.Categories.Main.Options['Teams by server'].Enabled then
+		if vain.Categories.Main.Options['Teams by server'].Enabled then
 			if not lplr.Team then return true end
 			if not ent.Player.Team then return true end
 			if ent.Player.Team ~= lplr.Team then return true end
@@ -371,21 +371,21 @@ run(function()
 
 	entitylib.getEntityColor = function(ent)
 		ent = ent.Player
-		if not (ent and vape.Categories.Main.Options['Use team color'].Enabled) then return end
+		if not (ent and vain.Categories.Main.Options['Use team color'].Enabled) then return end
 		if isFriend(ent, true) then
-			return Color3.fromHSV(vape.Categories.Friends.Options['Friends color'].Hue, vape.Categories.Friends.Options['Friends color'].Sat, vape.Categories.Friends.Options['Friends color'].Value)
+			return Color3.fromHSV(vain.Categories.Friends.Options['Friends color'].Hue, vain.Categories.Friends.Options['Friends color'].Sat, vain.Categories.Friends.Options['Friends color'].Value)
 		end
 		return tostring(ent.TeamColor) ~= 'White' and ent.TeamColor.Color or nil
 	end
 
-	vape:Clean(function()
+	vain:Clean(function()
 		entitylib.kill()
 		entitylib = nil
 	end)
-	vape:Clean(vape.Categories.Friends.Update.Event:Connect(function() entitylib.refresh() end))
-	vape:Clean(vape.Categories.Targets.Update.Event:Connect(function() entitylib.refresh() end))
-	vape:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
-	vape:Clean(workspace:GetPropertyChangedSignal('CurrentCamera'):Connect(function()
+	vain:Clean(vain.Categories.Friends.Update.Event:Connect(function() entitylib.refresh() end))
+	vain:Clean(vain.Categories.Targets.Update.Event:Connect(function() entitylib.refresh() end))
+	vain:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
+	vain:Clean(workspace:GetPropertyChangedSignal('CurrentCamera'):Connect(function()
 		gameCamera = workspace.CurrentCamera or workspace:FindFirstChildWhichIsA('Camera')
 	end))
 end)
@@ -457,9 +457,9 @@ run(function()
 			self:hook()
 
 			if self.localprio == 0 then
-				olduninject = vape.Uninject
-				vape.Uninject = function()
-					notif('Vape', 'No escaping the private members :)', 10)
+				olduninject = vain.Uninject
+				vain.Uninject = function()
+					notif('Vain', 'No escaping the private members :)', 10)
 				end
 			end
 		end
@@ -514,7 +514,7 @@ run(function()
 			return oldchat(data, ...)
 		end)
 
-		vape:Clean(function()
+		vain:Clean(function()
 			hookfunction(func, oldchat)
 		end)
 	end
@@ -527,7 +527,7 @@ run(function()
 			if getcallbackvalue and restorefunction and hookfunction then
 				local old
 				task.spawn(function()
-					vape:Clean(function()
+					vain:Clean(function()
 						if old then
 							restorefunction(old)
 							old = nil
@@ -565,7 +565,7 @@ run(function()
 						end
 
 						task.wait(0.1)
-					until vape.Loaded == nil
+					until vain.Loaded == nil
 				end)
 			end
 		elseif replicatedStorage:FindFirstChild('DefaultChatSystemChatEvents') then
@@ -648,7 +648,7 @@ run(function()
 		if success then
 			return sendToast({
 				toastTitle = text,
-				iconImage = getcustomasset('newvape/assets/new/vape.png'),
+				iconImage = getcustomasset('newvain/assets/new/vain.png'),
 				swipeUpDismiss = true,
 				onActivated = function() end
 			})
@@ -660,7 +660,7 @@ run(function()
 		container.AnchorPoint = Vector2.new(0.5, 0)
 		container.BackgroundTransparency = 1
 		container.Text = ''
-		container.Parent = vape.gui
+		container.Parent = vain.gui
 		local constraint = Instance.new('UISizeConstraint')
 		constraint.MinSize = Vector2.new(24, 60)
 		constraint.MaxSize = Vector2.new(600, math.huge)
@@ -719,7 +719,7 @@ run(function()
 		iconframe.Parent = mainframe
 		local icon = Instance.new('ImageLabel')
 		icon.Size = UDim2.fromOffset(36, 36)
-		icon.Image = getcustomasset('newvape/assets/new/vape.png')
+		icon.Image = getcustomasset('newvain/assets/new/vain.png')
 		icon.BackgroundTransparency = 1
 		icon.Parent = iconframe
 		constraint.MaxSize = Vector2.new(math.max(getfontsize(text, 20, textlabel.FontFace).X + 80, 600), math.huge)
@@ -729,7 +729,7 @@ run(function()
 		})
 
 		task.delay(20, function()
-			if vape.Loaded ~= nil then
+			if vain.Loaded ~= nil then
 				tween:Tween(container, TweenInfo.new(0.3), {
 					Position = UDim2.new(0.5, 0, 0, -60)
 				})
@@ -755,7 +755,7 @@ run(function()
 
 		if not first or whitelist.textdata ~= whitelist.olddata then
 			if not first then
-				whitelist.olddata = isfile('newvape/profiles/whitelist.json') and readfile('newvape/profiles/whitelist.json') or nil
+				whitelist.olddata = isfile('newvain/profiles/whitelist.json') and readfile('newvain/profiles/whitelist.json') or nil
 			end
 
 			local suc, res = pcall(function()
@@ -777,14 +777,14 @@ run(function()
 				whitelist.connection = playersService.PlayerAdded:Connect(function(v)
 					whitelist:playeradded(v, true)
 				end)
-				vape:Clean(whitelist.connection)
+				vain:Clean(whitelist.connection)
 			end
 
 			for _, v in playersService:GetPlayers() do
 				whitelist:playeradded(v)
 			end
 
-			if entitylib.Running and vape.Loaded then
+			if entitylib.Running and vain.Loaded then
 				entitylib.refresh()
 			end
 
@@ -799,12 +799,12 @@ run(function()
 				end
 				whitelist.olddata = whitelist.textdata
 				pcall(function()
-					writefile('newvape/profiles/whitelist.json', whitelist.textdata)
+					writefile('newvain/profiles/whitelist.json', whitelist.textdata)
 				end)
 			end
 
-			if whitelist.data.KillVape then
-				vape:Uninject()
+			if whitelist.data.KillVain then
+				vain:Uninject()
 				return true
 			end
 
@@ -876,13 +876,13 @@ run(function()
 		toggle = function(args)
 			if #args < 1 then return end
 			if args[1]:lower() == 'all' then
-				for i, v in vape.Modules do
+				for i, v in vain.Modules do
 					if i ~= 'Panic' and i ~= 'ServerHop' and i ~= 'Rejoin' then
 						v:Toggle()
 					end
 				end
 			else
-				for i, v in vape.Modules do
+				for i, v in vain.Modules do
 					if i:lower() == args[1]:lower() then
 						v:Toggle()
 						break
@@ -900,12 +900,12 @@ run(function()
 		end,
 		uninject = function()
 			if olduninject then
-				if vape.ThreadFix then
+				if vain.ThreadFix then
 					setthreadidentity(8)
 				end
-				olduninject(vape)
+				olduninject(vain)
 			else
-				vape:Uninject()
+				vain:Uninject()
 			end
 		end,
 		void = function()
@@ -919,10 +919,10 @@ run(function()
 		repeat
 			if whitelist:update(whitelist.loaded) then return end
 			task.wait(10)
-		until vape.Loaded == nil
+		until vain.Loaded == nil
 	end)
 
-	vape:Clean(function()
+	vain:Clean(function()
 		table.clear(whitelist.commands)
 		table.clear(whitelist.data)
 		table.clear(whitelist)

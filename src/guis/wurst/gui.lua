@@ -52,7 +52,7 @@ local uipallet = {
 }
 
 local getcustomassets = {
-	['newvape/assets/wurst/triangle.png'] = 'rbxasset://wurst/triangle.png'
+	['newvain/assets/wurst/triangle.png'] = 'rbxasset://wurst/triangle.png'
 }
 
 local isfile = isfile or function(file)
@@ -70,9 +70,9 @@ end
 
 local function downloadFile(path, func)
 	if not isfile(path) then
-		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true) end)
+		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true) end)
 		if not suc or res == '404: Not Found' then error(res) end
-		if path:find('.lua') then res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res end
+		if path:find('.lua') then res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res end
 		writefile(path, res)
 	end
 	return (func or readfile)(path)
@@ -142,7 +142,7 @@ local function removeTags(str)
 end
 
 do
-	local res = isfile("newvape/profiles/color.txt") and loadJson("newvape/profiles/color.txt")
+	local res = isfile("newvain/profiles/color.txt") and loadJson("newvain/profiles/color.txt")
 	if res then
 		uipallet.Main = res.Main and Color3.fromRGB(unpack(res.Main)) or uipallet.Main
 		uipallet.Text = res.Text and Color3.fromRGB(unpack(res.Text)) or uipallet.Text
@@ -328,7 +328,7 @@ function mainapi:CreateCategory(categorysettings)
 		triangle.Size = UDim2.fromOffset(28, 16)
 		triangle.Position = UDim2.new(1, -38, 0, 16)
 		triangle.BackgroundTransparency = 1
-		triangle.Image = getcustomasset('newvape/assets/wurst/triangle.png')
+		triangle.Image = getcustomasset('newvain/assets/wurst/triangle.png')
 		triangle.AutoButtonColor = false
 		triangle.Parent = modulebutton
 		local modulechildren = Instance.new('ScrollingFrame')

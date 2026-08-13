@@ -3,7 +3,7 @@ local List
 local soundlist = {}
 local old
 
-SoundChanger = vape.Legit:CreateModule({
+SoundChanger = vain.Legit:CreateModule({
 	Name = 'SoundChanger',
 	Function = function(callback)
 		if callback then

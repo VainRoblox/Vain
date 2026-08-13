@@ -4,7 +4,7 @@ local HotbarHealthbar = require(lplr.PlayerScripts.TS.controllers.global.hotbar.
 local HotbarApp = getRoactRender(require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp.render)
 local old, new = {}, {}
 
-vape:Clean(function()
+vain:Clean(function()
 	for _, v in new do
 		table.clear(v)
 	end
@@ -35,7 +35,7 @@ local function modifyconstant(func, ind, val)
 	end
 end
 
-Interface = vape.Legit:CreateModule({
+Interface = vain.Legit:CreateModule({
 	Name = 'Interface',
 	Function = function(callback)
 		for i, v in (callback and new or old) do

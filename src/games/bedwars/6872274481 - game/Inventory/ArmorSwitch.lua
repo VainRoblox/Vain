@@ -3,7 +3,7 @@ local Mode
 local Targets
 local Range
 
-ArmorSwitch = vape.Categories.Inventory:CreateModule({
+ArmorSwitch = vain.Categories.Inventory:CreateModule({
 	Name = 'ArmorSwitch',
 	Function = function(callback)
 		if callback then
@@ -24,7 +24,7 @@ ArmorSwitch = vape.Categories.Inventory:CreateModule({
 								item = store.inventory.inventory.armor[i + 1] == 'empty' and state and getBestArmor(i) or nil,
 								armorSlot = i
 							})
-							vapeEvents.InventoryChanged.Event:Wait()
+							vainEvents.InventoryChanged.Event:Wait()
 						end
 					end
 					task.wait(0.1)
@@ -37,7 +37,7 @@ ArmorSwitch = vape.Categories.Inventory:CreateModule({
 						item = store.inventory.inventory.armor[i + 1] == 'empty' and getBestArmor(i) or nil,
 						armorSlot = i
 					})
-					vapeEvents.InventoryChanged.Event:Wait()
+					vainEvents.InventoryChanged.Event:Wait()
 				end
 			end
 		end

@@ -1,6 +1,6 @@
 local old, oldcheck
 
-vape.Categories.Blatant:CreateModule({
+vain.Categories.Blatant:CreateModule({
 	Name = 'NoSlowdown',
 	Function = function(callback)
 		if callback then

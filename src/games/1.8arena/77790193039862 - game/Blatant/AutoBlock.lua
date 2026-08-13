@@ -1,6 +1,6 @@
 local AutoBlock
 
-AutoBlock = vape.Categories.Blatant:CreateModule({
+AutoBlock = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoBlock',
 	Function = function(callback)
 		if callback then

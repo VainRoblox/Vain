@@ -1,6 +1,6 @@
 local connections = {}
 
-vape.Categories.World:CreateModule({
+vain.Categories.World:CreateModule({
 	Name = 'Anti-AFK',
 	Function = function(callback)
 		if callback then

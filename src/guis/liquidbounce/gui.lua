@@ -64,17 +64,17 @@ local uipallet = {
 }
 
 local getcustomassets = {
-	['newvape/assets/liquidbounce/blatant.png'] = 'rbxasset://liquidbounce/blatant.png',
-	['newvape/assets/liquidbounce/combat.png'] = 'rbxasset://liquidbounce/combat.png',
-	['newvape/assets/liquidbounce/expand.png'] = 'rbxasset://liquidbounce/expand.png',
-	['newvape/assets/liquidbounce/inventory.png'] = 'rbxasset://liquidbounce/inventory.png',
-	['newvape/assets/liquidbounce/logo.png'] = 'rbxasset://liquidbounce/logo.png',
-	['newvape/assets/liquidbounce/minigames.png'] = 'rbxasset://liquidbounce/minigames.png',
-	['newvape/assets/liquidbounce/render.png'] = 'rbxasset://liquidbounce/render.png',
-	['newvape/assets/liquidbounce/textgui.png'] = 'rbxasset://liquidbounce/textgui.png',
-	['newvape/assets/liquidbounce/utility.png'] = 'rbxasset://liquidbounce/utility.png',
-	['newvape/assets/liquidbounce/world.png'] = 'rbxasset://liquidbounce/world.png',
-	['newvape/assets/new/blur.png'] = 'rbxassetid://14898786664'
+	['newvain/assets/liquidbounce/blatant.png'] = 'rbxasset://liquidbounce/blatant.png',
+	['newvain/assets/liquidbounce/combat.png'] = 'rbxasset://liquidbounce/combat.png',
+	['newvain/assets/liquidbounce/expand.png'] = 'rbxasset://liquidbounce/expand.png',
+	['newvain/assets/liquidbounce/inventory.png'] = 'rbxasset://liquidbounce/inventory.png',
+	['newvain/assets/liquidbounce/logo.png'] = 'rbxasset://liquidbounce/logo.png',
+	['newvain/assets/liquidbounce/minigames.png'] = 'rbxasset://liquidbounce/minigames.png',
+	['newvain/assets/liquidbounce/render.png'] = 'rbxasset://liquidbounce/render.png',
+	['newvain/assets/liquidbounce/textgui.png'] = 'rbxasset://liquidbounce/textgui.png',
+	['newvain/assets/liquidbounce/utility.png'] = 'rbxasset://liquidbounce/utility.png',
+	['newvain/assets/liquidbounce/world.png'] = 'rbxasset://liquidbounce/world.png',
+	['newvain/assets/new/blur.png'] = 'rbxassetid://14898786664'
 }
 
 local isfile = isfile or function(file)
@@ -99,7 +99,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 42, 1, 42)
 	blur.Position = UDim2.fromOffset(-24, -15)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvape/assets/new/blur.png')
+	blur.Image = getcustomasset('newvain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(44, 38, 804, 595)
 	blur.Parent = parent
@@ -174,13 +174,13 @@ local function downloadFile(path, func)
 	if not isfile(path) then
 		createDownloader(path)
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -261,19 +261,19 @@ end
 
 local function writeFont()
 	if not assetfunction then return 'rbxasset://fonts/inter.json' end
-	--[[writefile('newvape/assets/liquidbounce/lbfont.json', httpService:JSONEncode({
+	--[[writefile('newvain/assets/liquidbounce/lbfont.json', httpService:JSONEncode({
 		name = 'Inter',
 		faces = {
-			{style = 'normal', assetId = getcustomasset('newvape/assets/liquidbounce/Inter-Light.ttf'), name = 'Light', weight = 300},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/liquidbounce/Inter-Regular.ttf'), name = 'Regular', weight = 400},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/liquidbounce/Inter-Medium.ttf'), name = 'Medium', weight = 500}
+			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Light.ttf'), name = 'Light', weight = 300},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Regular.ttf'), name = 'Regular', weight = 400},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Medium.ttf'), name = 'Medium', weight = 500}
 		}
 	}))]]
-	return getcustomasset('newvape/assets/liquidbounce/lbfont.json')
+	return getcustomasset('newvain/assets/liquidbounce/lbfont.json')
 end
 
 if inputService.TouchEnabled then
-	writefile('newvape/profiles/gui.txt', 'new')
+	writefile('newvain/profiles/gui.txt', 'new')
 	return
 end
 
@@ -283,7 +283,7 @@ do
 	uipallet.FontSemiBold = Font.new(lbfont, Enum.FontWeight.Medium)
 	uipallet.FontLight = Font.new(lbfont, Enum.FontWeight.Light)
 
-	local res = isfile('newvape/profiles/color.txt') and loadJson('newvape/profiles/color.txt')
+	local res = isfile('newvain/profiles/color.txt') and loadJson('newvain/profiles/color.txt')
 	if res then
 		uipallet.Main = res.Main and Color3.fromRGB(unpack(res.Main)) or uipallet.Main
 		uipallet.Text = res.Text and Color3.fromRGB(unpack(res.Text)) or uipallet.Text
@@ -525,7 +525,7 @@ function mainapi:CreateCategory(categorysettings)
 		expandicon.Position = UDim2.new(1, -20, 0.5, 0)
 		expandicon.AnchorPoint = Vector2.new(0.5, 0.5)
 		expandicon.BackgroundTransparency = 1
-		expandicon.Image = getcustomasset('newvape/assets/liquidbounce/expand.png')
+		expandicon.Image = getcustomasset('newvain/assets/liquidbounce/expand.png')
 		expandicon.ImageTransparency = 0.5
 		expandicon.Parent = modulebutton
 		local modulechildren = Instance.new('Frame')
@@ -810,37 +810,37 @@ end))
 
 mainapi:CreateCategory({
 	Name = 'Combat',
-	Icon = getcustomasset('newvape/assets/liquidbounce/combat.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/combat.png'),
 	Size = UDim2.fromOffset(16, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Blatant',
-	Icon = getcustomasset('newvape/assets/liquidbounce/blatant.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/blatant.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Render',
-	Icon = getcustomasset('newvape/assets/liquidbounce/render.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/render.png'),
 	Size = UDim2.fromOffset(15, 9)
 })
 mainapi:CreateCategory({
 	Name = 'Utility',
-	Icon = getcustomasset('newvape/assets/liquidbounce/utility.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/utility.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'World',
-	Icon = getcustomasset('newvape/assets/liquidbounce/world.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/world.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Inventory',
-	Icon = getcustomasset('newvape/assets/liquidbounce/inventory.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/inventory.png'),
 	Size = UDim2.fromOffset(14, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Minigames',
-	Icon = getcustomasset('newvape/assets/liquidbounce/minigames.png'),
+	Icon = getcustomasset('newvain/assets/liquidbounce/minigames.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 

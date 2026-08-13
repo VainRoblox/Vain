@@ -6,7 +6,7 @@ local AlwaysJump
 local rayCheck = RaycastParams.new()
 rayCheck.RespectCanCollide = true
 
-Speed = vape.Categories.Blatant:CreateModule({
+Speed = vain.Categories.Blatant:CreateModule({
 	Name = 'Speed',
 	Function = function(callback)
 		frictionTable.Speed = callback or nil

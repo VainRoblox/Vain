@@ -1,7 +1,7 @@
 local NoFall
 local rayCheck = RaycastParams.new()
 
-NoFall = vape.Categories.Blatant:CreateModule({
+NoFall = vain.Categories.Blatant:CreateModule({
 	Name = 'NoFall',
 	Function = function(callback)
 		if callback then

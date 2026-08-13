@@ -1,6 +1,6 @@
 local AutoGamble
 
-AutoGamble = vape.Categories.Minigames:CreateModule({
+AutoGamble = vain.Categories.Minigames:CreateModule({
 	Name = 'AutoGamble',
 	Function = function(callback)
 		if callback then

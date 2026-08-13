@@ -1,6 +1,6 @@
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert') end
+	if err and vain then vain:CreateNotification('Vain', 'Failed to load : '..err, 30, 'alert') end
 	return res
 end
 local isfile = isfile or function(file)
@@ -9,9 +9,9 @@ local isfile = isfile or function(file)
 end
 local function downloadFile(path, func)
 	if not isfile(path) then
-		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true) end)
+		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true) end)
 		if not suc or res == '404: Not Found' then error(res) end
-		if path:find('.lua') then res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res end
+		if path:find('.lua') then res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res end
 		writefile(path, res)
 	end
 	return (func or readfile)(path)
@@ -32,13 +32,13 @@ local contextService = cloneref(game:GetService('ContextActionService'))
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local whitelist = vape.Libraries.whitelist
-local prediction = vape.Libraries.prediction
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local vm = loadstring(downloadFile('newvape/libraries/vm.lua'), 'vm')()
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local whitelist = vain.Libraries.whitelist
+local prediction = vain.Libraries.prediction
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
+local vm = loadstring(downloadFile('newvain/libraries/vm.lua'), 'vm')()
 
 local jb = {}
 local InfNitro = {Enabled = false}
@@ -69,10 +69,10 @@ local function isArrested(name)
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -97,11 +97,11 @@ local function isIllegal(ent)
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(vain.Categories.Targets.ListEnabled, plr.Name) and true
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 run(function()
@@ -257,8 +257,8 @@ run(function()
 	}
 
 	if not jb.VehicleController.toggleLocalLocked or not jb.VehicleController.NitroShopVisible then
-		repeat task.wait() until (jb.VehicleController.toggleLocalLocked and jb.VehicleController.NitroShopVisible) or vape.Loaded == nil
-		if vape.Loaded == nil then return end
+		repeat task.wait() until (jb.VehicleController.toggleLocalLocked and jb.VehicleController.NitroShopVisible) or vain.Loaded == nil
+		if vain.Loaded == nil then return end
 	end
 	local remotetable = debug.getupvalue(jb.VehicleController.toggleLocalLocked, 2)
 	local fireserver, hook = remotetable.FireServer
@@ -302,7 +302,7 @@ run(function()
 
 		if InfNitro.Enabled and rem == 'UseNitro' then return end
 		if LazerGodmode.Enabled and rem == 'SelfDamage' then return end
-		if rem ~= 'LookAngle' and rem ~= 'AimPosition' and shared.VapeDeveloper then
+		if rem ~= 'LookAngle' and rem ~= 'AimPosition' and shared.VainDeveloper then
 			local called = getfenv(3)
 			called = called and called.script
 			if called and (not rem) then print(id, 'called with', called:GetFullName()) end
@@ -318,7 +318,7 @@ run(function()
 
 	function jb:FireServer(id, ...)
 		if not remotes[id] then
-			notif('Vape', 'Failed to find remote ('..id..')', 10, 'alert')
+			notif('Vain', 'Failed to find remote ('..id..')', 10, 'alert')
 			return
 		end
 
@@ -355,7 +355,7 @@ run(function()
 		end)
 	end
 
-	vape:Clean(function()
+	vain:Clean(function()
 		table.clear(remotes)
 		table.clear(jb)
 		hookfunction(fireserver, hook)
@@ -366,5 +366,5 @@ run(function()
 end)
 
 for _, v in {'Reach', 'TriggerBot', 'Disabler', 'AntiFall', 'HitBoxes', 'Killaura', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

@@ -106,7 +106,7 @@ local function localAdded(char)
 	end
 end
 
-Disguise = vape.Legit:CreateModule({
+Disguise = vain.Legit:CreateModule({
 	Name = 'Disguise',
 	Function = function(callback)
 		if callback then

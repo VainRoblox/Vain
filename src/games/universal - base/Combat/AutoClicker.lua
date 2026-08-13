@@ -2,7 +2,7 @@ local AutoClicker
 local Mode
 local CPS
 
-AutoClicker = vape.Categories.Combat:CreateModule({
+AutoClicker = vain.Categories.Combat:CreateModule({
 	Name = 'AutoClicker',
 	Function = function(callback)
 		if callback then
@@ -14,7 +14,7 @@ AutoClicker = vape.Categories.Combat:CreateModule({
 					end
 				else
 					if mouse1click and (isrbxactive or iswindowactive)() then
-						if not vape.gui.ScaledGui.ClickGui.Visible then
+						if not vain.gui.ScaledGui.ClickGui.Visible then
 							(Mode.Value == 'Click' and mouse1click or mouse2click)()
 						end
 					end

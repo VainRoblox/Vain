@@ -6,7 +6,7 @@ local Fade
 local DrawingToggle
 local drawingobjs = {}
 
-BulletTracers = vape.Legit:CreateModule({
+BulletTracers = vain.Legit:CreateModule({
 	Name = 'BulletTracers',
 	Function = function(callback)
 		if callback then 

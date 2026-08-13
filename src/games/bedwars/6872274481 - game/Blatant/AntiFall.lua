@@ -18,7 +18,7 @@ run(function()
 		return mag
 	end
 
-	AntiFall = vape.Categories.Blatant:CreateModule({
+	AntiFall = vain.Categories.Blatant:CreateModule({
 		Name = 'AntiFall',
 		Function = function(callback)
 			if callback then
@@ -47,7 +47,7 @@ run(function()
 									local lastTeleport = lplr:GetAttribute('LastTeleported')
 									local connection
 									connection = runService.PreSimulation:Connect(function()
-										if vape.Modules.Fly.Enabled or vape.Modules.InfiniteFly.Enabled or vape.Modules.LongJump.Enabled then
+										if vain.Modules.Fly.Enabled or vain.Modules.InfiniteFly.Enabled or vain.Modules.LongJump.Enabled then
 											connection:Disconnect()
 											AntiFallDirection = nil
 											return

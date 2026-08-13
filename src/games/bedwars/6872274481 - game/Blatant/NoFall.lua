@@ -6,7 +6,7 @@ task.spawn(function()
 	groundHit = bedwars.Client:Get(remotes.GroundHit).instance
 end)
 
-NoFall = vape.Categories.Blatant:CreateModule({
+NoFall = vain.Categories.Blatant:CreateModule({
 	Name = 'NoFall',
 	Function = function(callback)
 		if callback then

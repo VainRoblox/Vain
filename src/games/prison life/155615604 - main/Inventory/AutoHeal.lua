@@ -5,7 +5,7 @@ local healItems = {
 	Dinner = true
 }
 
-AutoHeal = vape.Categories.Inventory:CreateModule({
+AutoHeal = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoHeal',
 	Function = function(callback)
 		if callback then

@@ -9,7 +9,7 @@ local function clampVec(vec, max)
 	return vec
 end
 
-AnticheatBypass = vape.Categories.Blatant:CreateModule({
+AnticheatBypass = vain.Categories.Blatant:CreateModule({
 	Name = 'AnticheatBypass',
 	Function = function(callback)
 		if callback then

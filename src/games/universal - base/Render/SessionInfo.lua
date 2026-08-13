@@ -11,9 +11,9 @@ local infoholder
 local infolabel
 local infostroke
 
-SessionInfo = vape:CreateOverlay({
+SessionInfo = vain:CreateOverlay({
 	Name = 'Session Info',
-	Icon = getcustomasset('newvape/assets/new/textguiicon.png'),
+	Icon = getcustomasset('newvain/assets/new/textguiicon.png'),
 	Size = UDim2.fromOffset(16, 12),
 	Position = UDim2.fromOffset(12, 14),
 	Function = function(callback)
@@ -22,26 +22,26 @@ SessionInfo = vape:CreateOverlay({
 			SessionInfo:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()
 				if not teleportedServers then
 					teleportedServers = true
-					queue_on_teleport("shared.vapesessioninfo = '"..httpService:JSONEncode(vape.Libraries.sessioninfo.Objects).."'")
+					queue_on_teleport("shared.vainsessioninfo = '"..httpService:JSONEncode(vain.Libraries.sessioninfo.Objects).."'")
 				end
 			end))
 
-			if shared.vapesessioninfo then
-				for i, v in httpService:JSONDecode(shared.vapesessioninfo) do
-					if vape.Libraries.sessioninfo.Objects[i] and v.Saved then
-						vape.Libraries.sessioninfo.Objects[i].Value = v.Value
+			if shared.vainsessioninfo then
+				for i, v in httpService:JSONDecode(shared.vainsessioninfo) do
+					if vain.Libraries.sessioninfo.Objects[i] and v.Saved then
+						vain.Libraries.sessioninfo.Objects[i].Value = v.Value
 					end
 				end
 			end
 
 			repeat
-				if vape.Libraries.sessioninfo then
+				if vain.Libraries.sessioninfo then
 					local stuff = {''}
 					if Title.Enabled then
 						stuff[1] = TitleOffset.Enabled and '<b>Session Info</b>\n<font size="4"> </font>' or '<b>Session Info</b>'
 					end
 
-					for i, v in vape.Libraries.sessioninfo.Objects do
+					for i, v in vain.Libraries.sessioninfo.Objects do
 						stuff[v.Index] = not table.find(Hide.ListEnabled, i) and i..': '..v.Function(v.Value) or false
 					end
 
@@ -83,8 +83,8 @@ FontOption = SessionInfo:CreateFont({
 Hide = SessionInfo:CreateTextList({
 	Name = 'Blacklist',
 	Tooltip = 'Name of entry to hide.',
-	Icon = getcustomasset('newvape/assets/new/blockedicon.png'),
-	Tab = getcustomasset('newvape/assets/new/blockedtab.png'),
+	Icon = getcustomasset('newvain/assets/new/blockedicon.png'),
+	Tab = getcustomasset('newvain/assets/new/blockedtab.png'),
 	TabSize = UDim2.fromOffset(21, 16),
 	Color = Color3.fromRGB(250, 50, 56)
 })
@@ -148,11 +148,11 @@ infoholder = Instance.new('Frame')
 infoholder.BackgroundColor3 = Color3.new()
 infoholder.BackgroundTransparency = 0.5
 infoholder.Parent = SessionInfo.Children
-vape:Clean(SessionInfo.Children:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
-	if vape.ThreadFix then
+vain:Clean(SessionInfo.Children:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
-	local newside = SessionInfo.Children.AbsolutePosition.X > (vape.gui.AbsoluteSize.X / 2)
+	local newside = SessionInfo.Children.AbsolutePosition.X > (vain.gui.AbsoluteSize.X / 2)
 	infoholder.Position = UDim2.fromScale(newside and 1 or 0, 0)
 	infoholder.AnchorPoint = Vector2.new(newside and 1 or 0, 0)
 end))
@@ -177,7 +177,7 @@ infostroke.Enabled = false
 infostroke.Color = Color3.fromHSV(0.44, 1, 1)
 infostroke.Parent = infoholder
 addBlur(infoholder)
-vape.Libraries.sessioninfo = {
+vain.Libraries.sessioninfo = {
 	Objects = {},
 	AddItem = function(self, name, startvalue, func, saved)
 		func, saved = func or function(val) return val end, saved == nil or saved
@@ -192,6 +192,6 @@ vape.Libraries.sessioninfo = {
 		}
 	end
 }
-vape.Libraries.sessioninfo:AddItem('Time Played', os.clock(), function(value)
+vain.Libraries.sessioninfo:AddItem('Time Played', os.clock(), function(value)
 	return os.date('!%X', math.floor(os.clock() - value))
 end)

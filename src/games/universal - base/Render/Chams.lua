@@ -9,13 +9,13 @@ local Teammates
 local Walls
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function Added(ent)
 	if not Targets.Players.Enabled and ent.Player then return end
 	if not Targets.NPCs.Enabled and ent.NPC then return end
 	if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-	if vape.ThreadFix then
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
 
@@ -54,7 +54,7 @@ end
 
 local function Removed(ent)
 	if Reference[ent] then
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		if type(Reference[ent]) == 'table' then
@@ -69,7 +69,7 @@ local function Removed(ent)
 	end
 end
 
-Chams = vape.Categories.Render:CreateModule({
+Chams = vain.Categories.Render:CreateModule({
 	Name = 'Chams',
 	Function = function(callback)
 		if callback then
@@ -80,7 +80,7 @@ Chams = vape.Categories.Render:CreateModule({
 				end
 				Added(ent)
 			end))
-			Chams:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+			Chams:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 				for i, v in Reference do
 					local color = entitylib.getEntityColor(i) or Color3.fromHSV(FillColor.Hue, FillColor.Sat, FillColor.Value)
 					if type(v) == 'table' then

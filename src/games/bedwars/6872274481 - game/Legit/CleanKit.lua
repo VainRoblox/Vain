@@ -1,4 +1,4 @@
-vape.Legit:CreateModule({
+vain.Legit:CreateModule({
 	Name = 'Clean Kit',
 	Function = function(callback)
 		if callback then

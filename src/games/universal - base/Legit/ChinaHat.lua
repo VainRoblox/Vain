@@ -3,11 +3,11 @@ local Material
 local Color
 local hat
 
-ChinaHat = vape.Legit:CreateModule({
+ChinaHat = vain.Legit:CreateModule({
 	Name = 'China Hat',
 	Function = function(callback)
 		if callback then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 

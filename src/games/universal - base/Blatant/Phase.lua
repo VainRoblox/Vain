@@ -84,7 +84,7 @@ local Functions = {
 }
 Functions.Motor = Functions.CFrame
 
-Phase = vape.Categories.Blatant:CreateModule({
+Phase = vain.Categories.Blatant:CreateModule({
 	Name = 'Phase',
 	Function = function(callback)
 		if callback then

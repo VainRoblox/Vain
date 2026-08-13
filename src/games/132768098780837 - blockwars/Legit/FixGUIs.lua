@@ -1,6 +1,6 @@
 local FixGUIs
 
-FixGUIs = vape.Legit:CreateModule({
+FixGUIs = vain.Legit:CreateModule({
 	Name = 'FixGUIs',
 	Function = function(callback)
 		if callback then
@@ -20,7 +20,7 @@ FixGUIs = vape.Legit:CreateModule({
 			local mouse = Instance.new('ImageLabel')
 			mouse.Size = UDim2.fromOffset(20, 20)
 			mouse.Visible = false
-			mouse.Parent = vape.gui
+			mouse.Parent = vain.gui
 			FixGUIs:Clean(mouse)
 
 			for _, gui in guis do

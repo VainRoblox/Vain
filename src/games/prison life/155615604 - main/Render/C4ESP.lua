@@ -5,7 +5,7 @@ local FillTransparency
 local OutlineTransparency
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function Added(obj)
 	local cham = Instance.new('Highlight')
@@ -22,7 +22,7 @@ end
 
 local function Removed(obj)
 	if Reference[obj] then
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 
@@ -31,7 +31,7 @@ local function Removed(obj)
 	end
 end
 
-C4ESP = vape.Categories.Render:CreateModule({
+C4ESP = vain.Categories.Render:CreateModule({
 	Name = 'C4ESP',
 	Function = function(callback)
 		if callback then

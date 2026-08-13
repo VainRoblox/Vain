@@ -4,7 +4,7 @@ local Volume
 local PitchShift
 local old, sounds = nil, {}
 
-HitSound = vape.Legit:CreateModule({
+HitSound = vain.Legit:CreateModule({
 	Name = 'HitSound',
 	Function = function(callback)
 		if callback then

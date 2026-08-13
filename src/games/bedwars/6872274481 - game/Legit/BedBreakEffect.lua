@@ -3,11 +3,11 @@ local Mode
 local List
 local NameToId = {}
 
-BedBreakEffect = vape.Legit:CreateModule({
+BedBreakEffect = vain.Legit:CreateModule({
 	Name = 'Bed Break Effect',
 	Function = function(callback)
 		if callback then
-            BedBreakEffect:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(data)
+            BedBreakEffect:Clean(vainEvents.BedwarsBedBreak.Event:Connect(function(data)
                 firesignal(bedwars.Client:Get('BedBreakEffectTriggered').instance.OnClientEvent, {
                     player = data.player,
                     position = data.bedBlockPosition * 3,

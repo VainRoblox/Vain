@@ -4,7 +4,7 @@ local TargetPart
 local Expand
 local modified = {}
 
-HitBoxes = vape.Categories.Blatant:CreateModule({
+HitBoxes = vain.Categories.Blatant:CreateModule({
 	Name = 'HitBoxes',
 	Function = function(callback)
 		if callback then

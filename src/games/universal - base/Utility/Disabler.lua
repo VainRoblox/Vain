@@ -10,7 +10,7 @@ local function characterAdded(char)
 	end
 end
 
-Disabler = vape.Categories.Utility:CreateModule({
+Disabler = vain.Categories.Utility:CreateModule({
 	Name = 'Disabler',
 	Function = function(callback)
 		if callback then

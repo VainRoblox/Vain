@@ -1,6 +1,6 @@
 local old
 
-vape.Categories.Blatant:CreateModule({
+vain.Categories.Blatant:CreateModule({
 	Name = 'NoSlowdown',
 	Function = function(callback)
 		local func = debug.getproto(bd.MovementController.KnitStart, 7)

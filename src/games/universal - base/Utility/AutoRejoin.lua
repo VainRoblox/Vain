@@ -1,7 +1,7 @@
 local AutoRejoin
 local Sort
 
-AutoRejoin = vape.Categories.Utility:CreateModule({
+AutoRejoin = vain.Categories.Utility:CreateModule({
 	Name = 'AutoRejoin',
 	Function = function(callback)
 		if callback then

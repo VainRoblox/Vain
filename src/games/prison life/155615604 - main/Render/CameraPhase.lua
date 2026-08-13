@@ -1,7 +1,7 @@
 local CameraPhase
 local old
 
-CameraPhase = vape.Categories.Render:CreateModule({
+CameraPhase = vain.Categories.Render:CreateModule({
 	Name = 'CameraPhase',
 	Function = function(callback)
 		if callback then

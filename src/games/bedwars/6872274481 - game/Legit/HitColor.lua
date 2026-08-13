@@ -2,7 +2,7 @@ local HitColor
 local Color
 local done = {}
 
-HitColor = vape.Legit:CreateModule({
+HitColor = vain.Legit:CreateModule({
 	Name = 'Hit Color',
 	Function = function(callback)
 		if callback then 

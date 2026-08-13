@@ -1,7 +1,7 @@
 local MissCooldown
 local index = game.PlaceId ~= 16483433878 and 20 or 53
 
-MissCooldown = vape.Categories.Combat:CreateModule({
+MissCooldown = vain.Categories.Combat:CreateModule({
 	Name = 'MissCooldown',
 	Function = function(callback)
 		if callback then

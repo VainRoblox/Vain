@@ -5,7 +5,7 @@ local CooldownBar
 local toggles = {}
 local cdholder, cdframe, cdlabel
 
-AutoArrest = vape.Categories.Blatant:CreateModule({
+AutoArrest = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoArrest',
 	Function = function(callback)
 		if callback then
@@ -37,7 +37,7 @@ AutoArrest = vape.Categories.Blatant:CreateModule({
 
 							if replicatedStorage.Remotes.ArrestPlayer:InvokeServer(ent.Player, 1) then
 								arrestCooldown = os.clock() + 7
-								vapeEvents.Arrested:Fire()
+								vainEvents.Arrested:Fire()
 								notif('AutoArrest', 'Arrested '..(ent.Player.Name), 7)
 							end
 
@@ -91,7 +91,7 @@ CooldownBar = AutoArrest:CreateToggle({
 			cdholder.BackgroundColor3 = Color3.new(1, 1, 1)
 			cdholder.Size = UDim2.new(0.1, 0, 0, 5)
 			cdholder.Position = UDim2.fromScale(0.5, 0.55)
-			cdholder.Parent = vape.gui
+			cdholder.Parent = vain.gui
 			cdframe = Instance.new('Frame')
 			cdframe.BorderSizePixel = 0
 			cdframe.BackgroundTransparency = 0.3

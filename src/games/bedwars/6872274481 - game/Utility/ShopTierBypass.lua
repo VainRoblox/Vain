@@ -1,7 +1,7 @@
 local ShopTierBypass
 local tiered, nexttier = {}, {}
 
-ShopTierBypass = vape.Categories.Utility:CreateModule({
+ShopTierBypass = vain.Categories.Utility:CreateModule({
 	Name = 'ShopTierBypass',
 	Function = function(callback)
 		if callback then

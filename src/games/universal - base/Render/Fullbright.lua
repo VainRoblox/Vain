@@ -16,7 +16,7 @@ local function ChangeLighting(prop)
 	flag = false
 end
 
-Fullbright = vape.Categories.Render:CreateModule({
+Fullbright = vain.Categories.Render:CreateModule({
 	Name = 'Fullbright',
 	Function = function(callback)
 		if callback then

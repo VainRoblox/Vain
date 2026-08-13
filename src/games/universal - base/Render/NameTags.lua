@@ -14,7 +14,7 @@ local DistanceCheck
 local DistanceLimit
 local Strings, Sizes, Reference = {}, {}, {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 local methodused
 
 local Added = {
@@ -22,7 +22,7 @@ local Added = {
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
 		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 
@@ -91,7 +91,7 @@ local Removed = {
 	Normal = function(ent)
 		local v = Reference[ent]
 		if v then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			Reference[ent] = nil
@@ -103,7 +103,7 @@ local Removed = {
 	Drawing = function(ent)
 		local v = Reference[ent]
 		if v then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			Reference[ent] = nil
@@ -123,7 +123,7 @@ local Updated = {
 	Normal = function(ent)
 		local nametag = Reference[ent]
 		if nametag then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			Sizes[ent] = nil
@@ -146,7 +146,7 @@ local Updated = {
 	Drawing = function(ent)
 		local nametag = Reference[ent]
 		if nametag then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			Sizes[ent] = nil
@@ -245,7 +245,7 @@ local Loop = {
 	end
 }
 
-NameTags = vape.Categories.Render:CreateModule({
+NameTags = vain.Categories.Render:CreateModule({
 	Name = 'NameTags',
 	Function = function(callback)
 		if callback then
@@ -274,7 +274,7 @@ NameTags = vape.Categories.Render:CreateModule({
 				end
 			end
 			if ColorFunc[methodused] then
-				NameTags:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+				NameTags:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 					ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
 				end))
 			end

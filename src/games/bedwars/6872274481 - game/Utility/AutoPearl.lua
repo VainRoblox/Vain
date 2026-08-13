@@ -22,7 +22,7 @@ local function firePearl(pos, spot, item)
 	end
 end
 
-AutoPearl = vape.Categories.Utility:CreateModule({
+AutoPearl = vain.Categories.Utility:CreateModule({
 	Name = 'AutoPearl',
 	Function = function(callback)
 		if callback then

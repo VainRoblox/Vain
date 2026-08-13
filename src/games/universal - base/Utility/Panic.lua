@@ -1,8 +1,8 @@
-vape.Categories.Utility:CreateModule({
+vain.Categories.Utility:CreateModule({
 	Name = 'Panic',
 	Function = function(callback)
 		if callback then
-			for _, v in vape.Modules do
+			for _, v in vain.Modules do
 				if v.Enabled then
 					v:Toggle()
 				end

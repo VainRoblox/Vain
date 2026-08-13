@@ -164,7 +164,7 @@ local function load(read)
 	end
 end
 
-Schematica = vape.Categories.World:CreateModule({
+Schematica = vain.Categories.World:CreateModule({
 	Name = 'Schematica',
 	Function = function(callback)
 		if callback then

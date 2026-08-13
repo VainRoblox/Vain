@@ -7,7 +7,7 @@ local rayCheck = RaycastParams.new()
 rayCheck.RespectCanCollide = true
 local part
 
-AntiFall = vape.Categories.Blatant:CreateModule({
+AntiFall = vain.Categories.Blatant:CreateModule({
 	Name = 'AntiFall',
 	Function = function(callback)
 		if callback then

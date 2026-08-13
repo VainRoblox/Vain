@@ -1,7 +1,7 @@
 local Timer
 local Value
 
-Timer = vape.Categories.Blatant:CreateModule({
+Timer = vain.Categories.Blatant:CreateModule({
 	Name = 'Timer',
 	Function = function(callback)
 		if callback then

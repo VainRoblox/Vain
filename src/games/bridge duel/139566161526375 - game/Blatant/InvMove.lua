@@ -1,6 +1,6 @@
 local old
 
-vape.Categories.Blatant:CreateModule({
+vain.Categories.Blatant:CreateModule({
 	Name = 'InvMove',
 	Function = function(callback)
 		if callback then

@@ -19,7 +19,7 @@ local function animationTrickery()
 	end
 end
 
-Invisible = vape.Categories.Blatant:CreateModule({
+Invisible = vain.Categories.Blatant:CreateModule({
 	Name = 'Invisible',
 	Function = function(callback)
 		if callback then

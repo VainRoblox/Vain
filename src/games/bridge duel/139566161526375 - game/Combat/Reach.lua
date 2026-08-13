@@ -1,6 +1,6 @@
 --[[local old
 
-vape.Categories.Combat:CreateModule({
+vain.Categories.Combat:CreateModule({
 	Name = 'Reach',
 	Function = function(callback)
 		if callback then

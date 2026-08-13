@@ -4,7 +4,7 @@ local Color
 local FillTransparency
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function Add(v)
 	if not table.find(List.ListEnabled, v.Name) then return end
@@ -22,7 +22,7 @@ local function Add(v)
 	end
 end
 
-Search = vape.Categories.Render:CreateModule({
+Search = vain.Categories.Render:CreateModule({
 	Name = 'Search',
 	Function = function(callback)
 		if callback then

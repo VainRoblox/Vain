@@ -4,7 +4,7 @@ end
 local cloneref = cloneref or function(obj)
 	return obj
 end
-local vapeEvents = setmetatable({}, {
+local vainEvents = setmetatable({}, {
 	__index = function(self, index)
 		self[index] = Instance.new('BindableEvent')
 		return self[index]
@@ -26,12 +26,12 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local whitelist = vape.Libraries.whitelist
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local getfontsize = vape.Libraries.getfontsize
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local whitelist = vain.Libraries.whitelist
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
+local getfontsize = vain.Libraries.getfontsize
 
 local pl = {}
 local Spring = {}
@@ -66,14 +66,14 @@ local function canClick()
 			return false
 		end
 	end
-	return (not vape.gui.ScaledGui.ClickGui.Visible) and (not inputService:GetFocusedTextBox())
+	return (not vain.gui.ScaledGui.ClickGui.Visible) and (not inputService:GetFocusedTextBox())
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -81,11 +81,11 @@ local function isFriend(plr, recolor)
 end
 
 local function isTarget(plr)
-	return (table.find(vape.Categories.Targets.ListEnabled, plr.Name) or tempTargets[plr.Name]) and true
+	return (table.find(vain.Categories.Targets.ListEnabled, plr.Name) or tempTargets[plr.Name]) and true
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 local function removeTags(str)
@@ -219,7 +219,7 @@ run(function()
 
 		if flags[flagtype] > limit then
 			CheatFlags.Flagged[plr.UserId] = true
-			vapeEvents.CheatFlagged:Fire(plr, flagtype)
+			vainEvents.CheatFlagged:Fire(plr, flagtype)
 		end
 	end
 
@@ -262,7 +262,7 @@ run(function()
 		if entity.NPC then return true end
 		if isFriend(entity.Player) then return false end
 		if not select(2, whitelist:get(entity.Player)) then return false end
-		if vape.Categories.Main.Options['Teams by server'].Enabled then
+		if vain.Categories.Main.Options['Teams by server'].Enabled then
 			return lplr.Team ~= entity.Player.Team and entity.Player.Team ~= teams.Neutral
 		end
 		return true
@@ -388,9 +388,9 @@ run(function()
 	end
 
 	entitylib.getEntityColor = function(ent)
-		if not (ent.Player and vape.Categories.Main.Options['Use team color'].Enabled) then return end
+		if not (ent.Player and vain.Categories.Main.Options['Use team color'].Enabled) then return end
 		if isFriend(ent.Player, true) then
-			return Color3.fromHSV(vape.Categories.Friends.Options['Friends color'].Hue, vape.Categories.Friends.Options['Friends color'].Sat, vape.Categories.Friends.Options['Friends color'].Value)
+			return Color3.fromHSV(vain.Categories.Friends.Options['Friends color'].Hue, vain.Categories.Friends.Options['Friends color'].Sat, vain.Categories.Friends.Options['Friends color'].Value)
 		end
 
 		local color = tostring(ent.Player.TeamColor) ~= 'White' and ent.Player.TeamColor.Color or nil
@@ -419,7 +419,7 @@ run(function()
 
 	local gui = lplr.PlayerGui:WaitForChild('Home', 10)
 	gui = gui and gui.hud.ActionArea
-	if vape.Loaded == nil then
+	if vain.Loaded == nil then
 		return
 	end
 
@@ -453,9 +453,9 @@ run(function()
 		repeat
 			getShootFunction()
 			task.wait()
-		until pl.Bullet and pl.SwitchTable or vape.Loaded == nil
+		until pl.Bullet and pl.SwitchTable or vain.Loaded == nil
 
-		if vape.Loaded == nil then
+		if vain.Loaded == nil then
 			table.clear(pl)
 		end
 	end
@@ -475,7 +475,7 @@ run(function()
 		return text
 	end, false)
 
-	vape:Clean(replicatedStorage.Killfeed.ChildAdded:Connect(function(obj)
+	vain:Clean(replicatedStorage.Killfeed.ChildAdded:Connect(function(obj)
 		local names = {}
 
 		-- killer
@@ -488,7 +488,7 @@ run(function()
 		endchar = obj.Name:find(' ', start)
 		table.insert(names, obj.Name:sub(start, endchar - 1))
 
-		vapeEvents.PlayerKill:Fire(unpack(names))
+		vainEvents.PlayerKill:Fire(unpack(names))
 		if names[1] == lplr.Name then
 			kills:Increment()
 		elseif names[2] == lplr.Name then
@@ -496,23 +496,23 @@ run(function()
 		end
 	end))
 
-	vape:Clean(vapeEvents.Arrested.Event:Connect(function()
+	vain:Clean(vainEvents.Arrested.Event:Connect(function()
 		arrests:Increment()
 	end))
 
-	vape:Clean(replicatedStorage.Remotes.MessageReceived.OnClientEvent:Connect(function(msg)
+	vain:Clean(replicatedStorage.Remotes.MessageReceived.OnClientEvent:Connect(function(msg)
 		if msg:find('kicked') then
 			cheaterkicked:Increment()
 
 			task.defer(function()
-				vapeEvents.CheaterKicked:Fire(msg:sub(1, msg:find(' ')))
+				vainEvents.CheaterKicked:Fire(msg:sub(1, msg:find(' ')))
 			end)
 		end
 	end))
 
-	vape:Clean(entitylib.Events.EntityUpdated:Connect(function(ent)
+	vain:Clean(entitylib.Events.EntityUpdated:Connect(function(ent)
 		if ent.Player and ent.Player.Team == teams.Inmates then
-			vape.Categories.Friends.ColorUpdate:Fire()
+			vain.Categories.Friends.ColorUpdate:Fire()
 		end
 	end))
 
@@ -553,16 +553,16 @@ run(function()
 
 	OriginScanner:UpdateIgnore()
 	for _, v in {'EntityAdded', 'LocalAdded'} do
-		vape:Clean(entitylib.Events[v]:Connect(function()
+		vain:Clean(entitylib.Events[v]:Connect(function()
 			OriginScanner:UpdateIgnore()
 		end))
 	end
 
-	vape:Clean(runService.RenderStepped:Connect(function()
+	vain:Clean(runService.RenderStepped:Connect(function()
 		table.clear(OriginScanner.Cache)
 	end))
 
-	vape:Clean(function()
+	vain:Clean(function()
 		table.clear(pl)
 	end)
 end)
@@ -687,5 +687,5 @@ do
 end
 
 for _, v in {'Reach', 'Jesus', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

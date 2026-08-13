@@ -1,6 +1,6 @@
 local FenceGodmode
 
-FenceGodmode = vape.Categories.Blatant:CreateModule({
+FenceGodmode = vain.Categories.Blatant:CreateModule({
 	Name = 'FenceGodmode',
 	Function = function(callback)
 		for _, fence in workspace.Prison_Fences:QueryDescendants('BasePart:has(> TouchTransmitter)') do

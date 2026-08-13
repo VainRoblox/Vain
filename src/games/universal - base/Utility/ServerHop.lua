@@ -1,7 +1,7 @@
 local ServerHop
 local Sort
 
-ServerHop = vape.Categories.Utility:CreateModule({
+ServerHop = vain.Categories.Utility:CreateModule({
 	Name = 'ServerHop',
 	Function = function(callback)
 		if callback then
@@ -19,9 +19,9 @@ Sort = ServerHop:CreateDropdown({
 ServerHop:CreateButton({
 	Name = 'Rejoin Previous Server',
 	Function = function()
-		notif('ServerHop', shared.vapeserverhopprevious and 'Rejoining previous server...' or 'Cannot find previous server', 5)
-		if shared.vapeserverhopprevious then
-			teleportService:TeleportToPlaceInstance(game.PlaceId, shared.vapeserverhopprevious)
+		notif('ServerHop', shared.vainserverhopprevious and 'Rejoining previous server...' or 'Cannot find previous server', 5)
+		if shared.vainserverhopprevious then
+			teleportService:TeleportToPlaceInstance(game.PlaceId, shared.vainserverhopprevious)
 		end
 	end
 })

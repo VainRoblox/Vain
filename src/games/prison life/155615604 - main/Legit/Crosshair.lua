@@ -2,7 +2,7 @@ local Crosshair
 local Image
 local old
 
-Crosshair = vape.Legit:CreateModule({
+Crosshair = vain.Legit:CreateModule({
 	Name = 'Crosshair',
 	Function = function(callback)
 		if callback then

@@ -1,7 +1,7 @@
 local Value
 local AutoDisable
 
-LongJump = vape.Categories.Blatant:CreateModule({
+LongJump = vain.Categories.Blatant:CreateModule({
 	Name = 'LongJump',
 	Function = function(callback)
 		if callback then

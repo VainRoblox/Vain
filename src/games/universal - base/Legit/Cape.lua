@@ -17,7 +17,7 @@ local function createMotor(char)
 	motor.Parent = part
 end
 
-Cape = vape.Legit:CreateModule({
+Cape = vain.Legit:CreateModule({
 	Name = 'Cape',
 	Function = function(callback)
 		if callback then

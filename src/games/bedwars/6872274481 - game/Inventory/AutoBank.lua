@@ -71,7 +71,7 @@ local function handleState()
 	end
 end
 
-AutoBank = vape.Categories.Inventory:CreateModule({
+AutoBank = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoBank',
 	Function = function(callback)
 		if callback then
@@ -81,7 +81,7 @@ AutoBank = vape.Categories.Inventory:CreateModule({
 			UI.Position = UDim2.fromOffset(0, -240)
 			UI.BackgroundTransparency = 1
 			UI.Visible = UIToggle.Enabled
-			UI.Parent = vape.gui
+			UI.Parent = vain.gui
 			AutoBank:Clean(UI)
 			local Sort = Instance.new('UIListLayout')
 			Sort.FillDirection = Enum.FillDirection.Horizontal

@@ -1,6 +1,6 @@
 local AutoLeave
 
-AutoLeave = vape.Categories.Utility:CreateModule({
+AutoLeave = vain.Categories.Utility:CreateModule({
 	Name = 'AutoLeave',
 	Function = function(callback)
 		if callback then

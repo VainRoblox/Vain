@@ -26,7 +26,7 @@ run(function()
 	local Limit
 	local LegitAura
 	local Particles, Boxes = {}, {}
-	local anims, AnimDelay, AnimTween, armC0 = vape.Libraries.auraanims, tick()
+	local anims, AnimDelay, AnimTween, armC0 = vain.Libraries.auraanims, tick()
 	local AttackRemote = {FireServer = function() end}
 	task.spawn(function()
 		AttackRemote = bedwars.Client:Get(remotes.AttackEntity).instance
@@ -56,7 +56,7 @@ run(function()
 		return sword, meta
 	end
 
-	Killaura = vape.Categories.Blatant:CreateModule({
+	Killaura = vain.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
@@ -163,7 +163,7 @@ run(function()
 											bedwars.ScytheController:playLocalAnimation()
 										end
 
-										if vape.ThreadFix then
+										if vain.ThreadFix then
 											setthreadidentity(8)
 										end
 									end
@@ -310,7 +310,7 @@ run(function()
 					box.Size = Vector3.new(3, 5, 3)
 					box.CFrame = CFrame.new(0, -0.5, 0)
 					box.ZIndex = 0
-					box.Parent = vape.gui
+					box.Parent = vain.gui
 					Boxes[i] = box
 				end
 			else

@@ -18,7 +18,7 @@ local AnimationTween
 local AnimTween
 local Attacking
 local Particles, Boxes = {}, {}
-local anims, armC0 = vape.Libraries.auraanims
+local anims, armC0 = vain.Libraries.auraanims
 
 local function getAttackData()
 	if Mouse.Enabled then
@@ -28,7 +28,7 @@ local function getAttackData()
 	return (not Limit.Enabled) and store.tools.sword or store.hand
 end
 
-Killaura = vape.Categories.Blatant:CreateModule({
+Killaura = vain.Categories.Blatant:CreateModule({
 	Name = 'Killaura',
 	Function = function(callback)
 		if callback then
@@ -115,7 +115,7 @@ Killaura = vape.Categories.Blatant:CreateModule({
 				end
 
 				Attacking = #attacked > 0
-				if Attacking and vape.ThreadFix then
+				if Attacking and vain.ThreadFix then
 					setthreadidentity(8)
 				end
 
@@ -187,7 +187,7 @@ Killaura:CreateToggle({
 				box.Size = Vector3.new(3, 5, 3)
 				box.CFrame = CFrame.new(0, -0.5, 0)
 				box.ZIndex = 0
-				box.Parent = vape.gui
+				box.Parent = vain.gui
 				Boxes[i] = box
 			end
 		else

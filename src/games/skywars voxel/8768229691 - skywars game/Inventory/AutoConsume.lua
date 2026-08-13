@@ -8,11 +8,11 @@ local function consumeCheck()
 	end
 end
 
-AutoConsume = vape.Categories.Inventory:CreateModule({
+AutoConsume = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoConsume',
 	Function = function(callback)
 		if callback then
-			AutoConsume:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(consumeCheck))
+			AutoConsume:Clean(vainEvents.InventoryAmountChanged.Event:Connect(consumeCheck))
 			AutoConsume:Clean(lplr:GetAttributeChangedSignal('Shield'):Connect(consumeCheck))
 			consumeCheck()
 		end

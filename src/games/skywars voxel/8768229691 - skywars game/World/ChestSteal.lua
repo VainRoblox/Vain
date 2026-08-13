@@ -3,7 +3,7 @@ local Range
 local Open
 local Delay = {}
 
-ChestSteal = vape.Categories.World:CreateModule({
+ChestSteal = vain.Categories.World:CreateModule({
 	Name = 'ChestSteal',
 	Function = function(callback)
 		if callback then

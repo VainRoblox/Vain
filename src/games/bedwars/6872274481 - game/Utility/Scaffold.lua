@@ -67,7 +67,7 @@ local function getScaffoldBlock()
 	return nil, 0
 end
 
-Scaffold = vape.Categories.Utility:CreateModule({
+Scaffold = vain.Categories.Utility:CreateModule({
 	Name = 'Scaffold',
 	Function = function(callback)
 		if label then
@@ -162,7 +162,7 @@ Count = Scaffold:CreateToggle({
 			label.RichText = true
 			label.Font = Enum.Font.Arial
 			label.Visible = Scaffold.Enabled
-			label.Parent = vape.gui
+			label.Parent = vain.gui
 		else
 			label:Destroy()
 			label = nil

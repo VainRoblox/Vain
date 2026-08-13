@@ -1,7 +1,7 @@
 local Memory
 local label
 
-Memory = vape.Legit:CreateModule({
+Memory = vain.Legit:CreateModule({
 	Name = 'Memory',
 	Function = function(callback)
 		if callback then

@@ -3,7 +3,7 @@ local rayCheck = RaycastParams.new()
 rayCheck.RespectCanCollide = true
 local Active
 
-Spider = vape.Categories.Blatant:CreateModule({
+Spider = vain.Categories.Blatant:CreateModule({
 	Name = 'Spider',
 	Function = function(callback)
 		if callback then

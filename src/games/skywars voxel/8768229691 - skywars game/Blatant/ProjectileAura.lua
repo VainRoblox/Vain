@@ -17,7 +17,7 @@ local function getProjectiles()
 	return items
 end
 
-ProjectileAura = vape.Categories.Blatant:CreateModule({
+ProjectileAura = vain.Categories.Blatant:CreateModule({
 	Name = 'ProjectileAura',
 	Function = function(callback)
 		if callback then

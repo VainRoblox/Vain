@@ -2,7 +2,7 @@ local SpeedSpin
 local Value
 local old
 
-SpeedSpin = vape.Categories.Blatant:CreateModule({
+SpeedSpin = vain.Categories.Blatant:CreateModule({
 	Name = 'SpeedSpin',
 	Function = function(callback)
 		if callback then

@@ -36,7 +36,7 @@ local function getPyramid(size, grid)
 	return positions
 end
 
-BedProtector = vape.Categories.World:CreateModule({
+BedProtector = vain.Categories.World:CreateModule({
 	Name = 'BedProtector',
 	Function = function(callback)
 		if callback then

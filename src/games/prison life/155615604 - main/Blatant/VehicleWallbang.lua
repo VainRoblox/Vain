@@ -11,7 +11,7 @@ local function Modify(part)
 	end
 end
 
-VehicleWallbang = vape.Categories.Blatant:CreateModule({
+VehicleWallbang = vain.Categories.Blatant:CreateModule({
 	Name = 'VehicleWallbang',
 	Function = function(callback)
 		if callback then

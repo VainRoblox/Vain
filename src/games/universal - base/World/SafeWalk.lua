@@ -2,7 +2,7 @@ local rayCheck = RaycastParams.new()
 rayCheck.RespectCanCollide = true
 local module, old
 
-vape.Categories.World:CreateModule({
+vain.Categories.World:CreateModule({
 	Name = 'SafeWalk',
 	Function = function(callback)
 		if callback then

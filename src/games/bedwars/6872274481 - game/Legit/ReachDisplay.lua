@@ -1,7 +1,7 @@
 local ReachDisplay
 local label
 
-ReachDisplay = vape.Legit:CreateModule({
+ReachDisplay = vain.Legit:CreateModule({
 	Name = 'Reach Display',
 	Function = function(callback)
 		if callback then

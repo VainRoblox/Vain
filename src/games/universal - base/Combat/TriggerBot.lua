@@ -19,7 +19,7 @@ local function getTriggerBotTarget()
 	end
 end
 
-TriggerBot = vape.Categories.Combat:CreateModule({
+TriggerBot = vain.Categories.Combat:CreateModule({
 	Name = 'TriggerBot',
 	Function = function(callback)
 		if callback then

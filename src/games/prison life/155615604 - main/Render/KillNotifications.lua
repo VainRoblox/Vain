@@ -1,10 +1,10 @@
 local KillNotifications
 
-KillNotifications = vape.Categories.Render:CreateModule({
+KillNotifications = vain.Categories.Render:CreateModule({
 	Name = 'KillNotifications',
 	Function = function(callback)
 		if callback then
-			KillNotifications:Clean(vapeEvents.PlayerKill.Event:Connect(function(killer, victim)
+			KillNotifications:Clean(vainEvents.PlayerKill.Event:Connect(function(killer, victim)
 				if victim == lplr.Name and killer ~= lplr.Name then
 					notif('KillNotifications', killer..' killed you!', 5)
 				end

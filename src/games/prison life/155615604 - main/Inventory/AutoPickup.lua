@@ -9,7 +9,7 @@ local function AddPickup(obj)
 	end
 end
 
-AutoPickup = vape.Categories.Inventory:CreateModule({
+AutoPickup = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoPickup',
 	Function = function(callback)
 		if callback then

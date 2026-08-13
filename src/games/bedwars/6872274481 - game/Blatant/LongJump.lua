@@ -67,7 +67,7 @@ local LongJumpMethods = {
 		end)
 	end,
 	cat = function(_, _, dir)
-		LongJump:Clean(vapeEvents.CatPounce.Event:Connect(function()
+		LongJump:Clean(vainEvents.CatPounce.Event:Connect(function()
 			JumpSpeed = 4 * Value.Value
 			JumpTick = tick() + 2.5
 			Direction = Vector3.new(dir.X, 0, dir.Z).Unit
@@ -132,13 +132,13 @@ LongJumpMethods.void_axe = LongJumpMethods.jade_hammer
 LongJumpMethods.siege_tnt = LongJumpMethods.tnt
 LongJumpMethods.pirate_gunpowder_barrel = LongJumpMethods.tnt
 
-LongJump = vape.Categories.Blatant:CreateModule({
+LongJump = vain.Categories.Blatant:CreateModule({
 	Name = 'LongJump',
 	Function = function(callback)
 		frictionTable.LongJump = callback or nil
 		updateVelocity()
 		if callback then
-			LongJump:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+			LongJump:Clean(vainEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 				if damageTable.entityInstance == lplr.Character and damageTable.fromEntity == lplr.Character and (not damageTable.knockbackMultiplier or not damageTable.knockbackMultiplier.disabled) then
 					local knockbackBoost = bedwars.KnockbackUtil.calculateKnockbackVelocity(Vector3.one, 1, {
 						vertical = 0,
@@ -155,7 +155,7 @@ LongJump = vape.Categories.Blatant:CreateModule({
 					end
 				end
 			end))
-			LongJump:Clean(vapeEvents.GrapplingHookFunctions.Event:Connect(function(dataTable)
+			LongJump:Clean(vainEvents.GrapplingHookFunctions.Event:Connect(function(dataTable)
 				if dataTable.hookFunction == 'PLAYER_IN_TRANSIT' then
 					local vec = entitylib.character.RootPart.CFrame.LookVector
 					JumpSpeed = 2.5 * Value.Value

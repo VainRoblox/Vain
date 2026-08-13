@@ -9,7 +9,7 @@ run(function()
 	Platform.Transparency = 1
 	Platform.Parent = nil
 
-	Fly = vape.Categories.Blatant:CreateModule({
+	Fly = vain.Categories.Blatant:CreateModule({
 		Name = 'Fly',
 		Function = function(callback)
 			if Platform then

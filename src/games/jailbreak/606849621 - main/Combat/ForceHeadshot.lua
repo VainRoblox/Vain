@@ -1,6 +1,6 @@
 local ForceHeadshot
 
-ForceHeadshot = vape.Categories.Combat:CreateModule({
+ForceHeadshot = vain.Categories.Combat:CreateModule({
 	Name = 'ForceHeadshot',
 	Function = function(callback)
 		if callback then

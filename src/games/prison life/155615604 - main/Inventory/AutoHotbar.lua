@@ -22,7 +22,7 @@ local function EntityAdded()
 	DoSorting()
 end
 
-AutoHotbar = vape.Categories.Inventory:CreateModule({
+AutoHotbar = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoHotbar',
 	Function = function(callback)
 		if callback then

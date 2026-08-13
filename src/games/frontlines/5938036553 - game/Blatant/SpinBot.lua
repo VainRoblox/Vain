@@ -9,7 +9,7 @@ for i = 1, 40 do
 	table.insert(aimtable, Vector3.zero)
 end
 
-SpinBot = vape.Categories.Blatant:CreateModule({
+SpinBot = vain.Categories.Blatant:CreateModule({
 	Name = 'SpinBot',
 	Function = function(callback)
 		if callback then

@@ -29,7 +29,7 @@ local function getWeapon()
 	end
 end
 
-AutoReload = vape.Categories.Utility:CreateModule({
+AutoReload = vain.Categories.Utility:CreateModule({
 	Name = 'AutoReload',
 	Function = function(callback)
 		if callback then

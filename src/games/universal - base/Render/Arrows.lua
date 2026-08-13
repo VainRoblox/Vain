@@ -6,13 +6,13 @@ local Distance
 local DistanceLimit
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function Added(ent)
 	if not Targets.Players.Enabled and ent.Player then return end
 	if not Targets.NPCs.Enabled and ent.NPC then return end
 	if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) and (not ent.Friend) then return end
-	if vape.ThreadFix then
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
 
@@ -23,7 +23,7 @@ local function Added(ent)
 	arrow.BackgroundTransparency = 1
 	arrow.BorderSizePixel = 0
 	arrow.Visible = false
-	arrow.Image = getcustomasset('newvape/assets/new/arrowmodule.png')
+	arrow.Image = getcustomasset('newvain/assets/new/arrowmodule.png')
 	arrow.ImageColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 	arrow.Parent = Folder
 	Reference[ent] = arrow
@@ -32,7 +32,7 @@ end
 local function Removed(ent)
 	local v = Reference[ent]
 	if v then
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 
@@ -67,7 +67,7 @@ local function Loop()
 	end
 end
 
-Arrows = vape.Categories.Render:CreateModule({
+Arrows = vain.Categories.Render:CreateModule({
 	Name = 'Arrows',
 	Function = function(callback)
 		if callback then
@@ -80,7 +80,7 @@ Arrows = vape.Categories.Render:CreateModule({
 				if Reference[ent] then Removed(ent) end
 				Added(ent)
 			end))
-			Arrows:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+			Arrows:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 				ColorFunc(Color.Hue, Color.Sat, Color.Value)
 			end))
 			Arrows:Clean(runService.RenderStepped:Connect(Loop))

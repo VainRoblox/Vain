@@ -3,7 +3,7 @@ local Range
 local Network
 local Lower
 
-PickupRange = vape.Categories.Utility:CreateModule({
+PickupRange = vain.Categories.Utility:CreateModule({
 	Name = 'PickupRange',
 	Function = function(callback)
 		if callback then

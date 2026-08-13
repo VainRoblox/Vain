@@ -10,7 +10,7 @@ end)
 tab = suc and tab or {}
 local oldvalues, oldfont = {}
 
-DamageIndicator = vape.Legit:CreateModule({
+DamageIndicator = vain.Legit:CreateModule({
 	Name = 'Damage Indicator',
 	Function = function(callback)
 		if callback then

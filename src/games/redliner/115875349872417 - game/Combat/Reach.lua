@@ -1,6 +1,6 @@
 local Reach
 
-Reach = vape.Categories.Combat:CreateModule({
+Reach = vain.Categories.Combat:CreateModule({
 	Name = 'Reach',
 	Function = function(callback)
 		if callback then

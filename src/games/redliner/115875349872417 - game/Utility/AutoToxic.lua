@@ -28,11 +28,11 @@ local function sendMessage(name, obj, default)
 	end
 end
 
-AutoToxic = vape.Categories.Utility:CreateModule({
+AutoToxic = vain.Categories.Utility:CreateModule({
 	Name = 'AutoToxic',
 	Function = function(callback)
 		if callback then
-			AutoToxic:Clean(vapeEvents.MatchEnded.Event:Connect(function(won)
+			AutoToxic:Clean(vainEvents.MatchEnded.Event:Connect(function(won)
 				if GG.Enabled then
 					if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 						if textChatService:CanUserChatAsync(lplr.UserId) then

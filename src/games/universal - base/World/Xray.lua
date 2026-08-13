@@ -9,7 +9,7 @@ local function modifyPart(v)
 	end
 end
 
-Xray = vape.Categories.World:CreateModule({
+Xray = vain.Categories.World:CreateModule({
 	Name = 'Xray',
 	Function = function(callback)
 		if callback then

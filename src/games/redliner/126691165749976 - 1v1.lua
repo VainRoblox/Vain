@@ -1,8 +1,8 @@
-local vape = shared.vape
+local vain = shared.vain
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err and vain then
+		vain:CreateNotification('Vain', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -15,29 +15,29 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
 	return (func or readfile)(path)
 end
 
-vape.Place = 115875349872417
-if isfile('newvape/games/'..vape.Place..'.lua') then
-	loadstring(readfile('newvape/games/'..vape.Place..'.lua'), 'redliner')(...)
+vain.Place = 115875349872417
+if isfile('newvain/games/'..vain.Place..'.lua') then
+	loadstring(readfile('newvain/games/'..vain.Place..'.lua'), 'redliner')(...)
 else
-	if not shared.VapeDeveloper then
+	if not shared.VainDeveloper then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/games/'..vain.Place..'.lua', true)
 		end)
 		if suc and res ~= '404: Not Found' then
-			loadstring(downloadFile('newvape/games/'..vape.Place..'.lua'), 'redliner')(...)
+			loadstring(downloadFile('newvain/games/'..vain.Place..'.lua'), 'redliner')(...)
 		end
 	end
 end

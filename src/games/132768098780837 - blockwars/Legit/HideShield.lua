@@ -8,7 +8,7 @@ local function localAdded(char)
 	end
 end
 
-HideShield = vape.Legit:CreateModule({
+HideShield = vain.Legit:CreateModule({
 	Name = 'HideShield',
 	Function = function(callback)
 		if callback then

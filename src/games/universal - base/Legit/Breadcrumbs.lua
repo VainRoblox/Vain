@@ -6,7 +6,7 @@ local FadeIn
 local FadeOut
 local trail, point, point2
 
-Breadcrumbs = vape.Legit:CreateModule({
+Breadcrumbs = vain.Legit:CreateModule({
 	Name = 'Breadcrumbs',
 	Function = function(callback)
 		if callback then

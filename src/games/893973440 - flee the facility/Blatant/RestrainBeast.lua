@@ -1,6 +1,6 @@
 local RestrainBeast
 
-RestrainBeast = vape.Categories.Blatant:CreateModule({
+RestrainBeast = vain.Categories.Blatant:CreateModule({
 	Name = 'RestrainBeast',
 	Function = function(callback)
 		if callback then

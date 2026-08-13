@@ -1,6 +1,6 @@
 local Value
 
-Reach = vape.Categories.Combat:CreateModule({
+Reach = vain.Categories.Combat:CreateModule({
 	Name = 'Reach',
 	Function = function(callback)
 		bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = callback and Value.Value + 2 or 14.4

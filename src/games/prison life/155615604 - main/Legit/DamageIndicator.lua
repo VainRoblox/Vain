@@ -79,7 +79,7 @@ local function createIndicator(damage, pos)
 	end)
 end
 
-DamageIndicator = vape.Legit:CreateModule({
+DamageIndicator = vain.Legit:CreateModule({
 	Name = 'DamageIndicator',
 	Function = function(callback)
 		if callback then

@@ -1,6 +1,6 @@
 local AntiRagdoll
 
-AntiRagdoll = vape.Categories.Utility:CreateModule({
+AntiRagdoll = vain.Categories.Utility:CreateModule({
 	Name = 'AntiRagdoll',
 	Function = function(callback)
 		if entitylib.isAlive then

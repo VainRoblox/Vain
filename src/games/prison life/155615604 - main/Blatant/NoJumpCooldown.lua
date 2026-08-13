@@ -19,7 +19,7 @@ local function EntityAdded(ent)
 	end
 end
 
-NoJumpCooldown = vape.Categories.Blatant:CreateModule({
+NoJumpCooldown = vain.Categories.Blatant:CreateModule({
 	Name = 'NoJumpCooldown',
 	Function = function(callback)
 		if callback then

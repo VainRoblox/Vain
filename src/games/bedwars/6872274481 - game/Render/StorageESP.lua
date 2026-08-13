@@ -4,7 +4,7 @@ local Background
 local Color = {}
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function nearStorageItem(item)
 	for _, v in List.ListEnabled do
@@ -88,7 +88,7 @@ local function Added(v)
 	task.spawn(refreshAdornee, billboard)
 end
 
-StorageESP = vape.Categories.Render:CreateModule({
+StorageESP = vain.Categories.Render:CreateModule({
 	Name = 'StorageESP',
 	Function = function(callback)
 		if callback then

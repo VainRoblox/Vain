@@ -2,7 +2,7 @@ local AutoTaze
 local HandCheck
 local cooldown = 0
 
-AutoTaze = vape.Categories.Blatant:CreateModule({
+AutoTaze = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoTaze',
 	Function = function(callback)
 		if callback then

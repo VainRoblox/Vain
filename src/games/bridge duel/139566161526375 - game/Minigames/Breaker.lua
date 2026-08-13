@@ -25,7 +25,7 @@ local function getPickaxe()
 	end
 end
 
-Breaker = vape.Categories.Minigames:CreateModule({
+Breaker = vain.Categories.Minigames:CreateModule({
 	Name = 'Breaker',
 	Function = function(callback)
 		if callback then

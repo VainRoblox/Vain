@@ -1,6 +1,6 @@
 local Rejoin
 
-Rejoin = vape.Categories.Utility:CreateModule({
+Rejoin = vain.Categories.Utility:CreateModule({
 	Name = 'Rejoin',
 	Function = function(callback)
 		if callback then

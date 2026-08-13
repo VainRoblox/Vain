@@ -14,7 +14,7 @@ local function getLowGround()
 	return mag
 end
 
-AntiFall = vape.Categories.Blatant:CreateModule({
+AntiFall = vain.Categories.Blatant:CreateModule({
 	Name = 'AntiFall',
 	Function = function(callback)
 		if callback then

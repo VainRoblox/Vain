@@ -81,7 +81,7 @@ for _, v in replicatedStorage:QueryDescendants('Animation') do
 	whitelist[v.AnimationId] = true
 end
 
-AntiInvisible = vape.Categories.Blatant:CreateModule({
+AntiInvisible = vain.Categories.Blatant:CreateModule({
 	Name = 'AntiInvisible',
 	Function = function(callback)
 		if callback then

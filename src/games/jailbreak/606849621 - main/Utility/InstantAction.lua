@@ -1,4 +1,4 @@
-vape.Categories.Utility:CreateModule({
+vain.Categories.Utility:CreateModule({
 	Name = 'InstantAction',
 	Function = function(callback)
 		debug.setconstant(jb.CircleAction.Press, 3, callback and 'Timeda' or 'Timed')

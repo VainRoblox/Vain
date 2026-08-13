@@ -58,7 +58,7 @@ local function removeObject(v)
 	end
 end
 
-Atmosphere = vape.Legit:CreateModule({
+Atmosphere = vain.Legit:CreateModule({
 	Name = 'Atmosphere',
 	Function = function(callback)
 		if callback then

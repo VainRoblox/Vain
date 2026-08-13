@@ -10,7 +10,7 @@ local function Added(ent)
 	if not Targets.Players.Enabled and ent.Player then return end
 	if not Targets.NPCs.Enabled and ent.NPC then return end
 	if (not ent.Targetable) and (not ent.Friend) then return end
-	if vape.ThreadFix then
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
 
@@ -33,7 +33,7 @@ end
 local function Removed(ent)
 	local v = Reference[ent]
 	if v then
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		Reference[ent] = nil
@@ -41,9 +41,9 @@ local function Removed(ent)
 	end
 end
 
-Radar = vape:CreateOverlay({
+Radar = vain:CreateOverlay({
 	Name = 'Radar',
-	Icon = getcustomasset('newvape/assets/new/radaricon.png'),
+	Icon = getcustomasset('newvain/assets/new/radaricon.png'),
 	Size = UDim2.fromOffset(14, 14),
 	Position = UDim2.fromOffset(12, 13),
 	Function = function(callback)
@@ -61,7 +61,7 @@ Radar = vape:CreateOverlay({
 				end
 				Added(ent)
 			end))
-			Radar:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+			Radar:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 				for ent, dot in Reference do
 					dot.BackgroundColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(PlayerColor.Hue, PlayerColor.Sat, PlayerColor.Value)
 				end

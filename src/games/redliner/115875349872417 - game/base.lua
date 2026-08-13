@@ -1,7 +1,7 @@
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err and vain then
+		vain:CreateNotification('Vain', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -14,13 +14,13 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -33,7 +33,7 @@ local cloneref = cloneref or function(obj)
 	return obj
 end
 
-local vapeEvents = setmetatable({}, {
+local vainEvents = setmetatable({}, {
 	__index = function(self, index)
 		self[index] = Instance.new('BindableEvent')
 		return self[index]
@@ -51,12 +51,12 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local whitelist = vape.Libraries.whitelist
-local drawingactor = loadstring(downloadFile('newvape/libraries/drawing.lua'), 'drawing')(...)
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
+local whitelist = vain.Libraries.whitelist
+local drawingactor = loadstring(downloadFile('newvain/libraries/drawing.lua'), 'drawing')(...)
 local redline = {Teams = {}}
 local starttime = os.clock()
 local TargetStrafeVector
@@ -132,10 +132,10 @@ local function getIndicators()
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -143,15 +143,15 @@ local function isFriend(plr, recolor)
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(vain.Categories.Targets.ListEnabled, plr.Name) and true
 end
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 local function warningRoutine(hash)
-	local path = 'newvape/profiles/agreementhash.txt'
+	local path = 'newvain/profiles/agreementhash.txt'
 	if (isfile(path) and readfile(path) or '') ~= hash then
 		local box = Instance.new('TextLabel')
 		box.Size = UDim2.fromScale(1, 1)
@@ -161,7 +161,7 @@ local function warningRoutine(hash)
 		box.TextColor3 = Color3.new(1, 1, 1)
 		box.TextScaled = true
 		box.Font = Enum.Font.Arial
-		box.Parent = vape.gui
+		box.Parent = vain.gui
 		local button = Instance.new('TextButton')
 		button.AnchorPoint = Vector2.new(0.5, 0.5)
 		button.Size = UDim2.fromScale(0.2, 0.05)
@@ -184,16 +184,16 @@ end
 
 if not select(1, ...) then
 	if run_on_actor then
-		local oldreload = shared.vapereload
-		vape.Load = function()
+		local oldreload = shared.vainreload
+		vain.Load = function()
 			task.delay(0.1, function()
-				vape:Uninject()
+				vain:Uninject()
 			end)
 		end
 
 		task.spawn(function()
-			repeat task.wait() until not shared.vape
-			local executionString = "loadfile('newvape/main.lua')("..drawingactor..")"
+			repeat task.wait() until not shared.vain
+			local executionString = "loadfile('newvain/main.lua')("..drawingactor..")"
 			for i, v in shared do
 				if type(v) == 'string' then
 					executionString = string.format("shared.%s = '%s'", i, v)..'\n'..executionString
@@ -202,7 +202,7 @@ if not select(1, ...) then
 				end
 			end
 			if oldreload then
-				executionString = 'shared.vapereload = true\n'..executionString
+				executionString = 'shared.vainreload = true\n'..executionString
 			end
 
 			if getactorthreads and run_on_thread then
@@ -227,8 +227,8 @@ if not select(1, ...) then
 			lplr:Kick('Failed to find actor, Executor: '..identifyexecutor())
 		end)
 	else
-		vape.Load = function()
-			notif('Vape', 'Missing actor functions.', 10, 'alert')
+		vain.Load = function()
+			notif('Vain', 'Missing actor functions.', 10, 'alert')
 		end
 	end
 
@@ -300,7 +300,7 @@ run(function()
 			if entity.NPC then return true end
 			if isFriend(entity.Player) then return false end
 			if not select(2, whitelist:get(entity.Player)) then return false end
-			if vape.Categories.Main.Options['Teams by server'].Enabled then
+			if vain.Categories.Main.Options['Teams by server'].Enabled then
 				if not redline.Teams[tostring(lplr.UserId)] then return true end
 				return redline.Teams[tostring(entity.Player.UserId)] ~= redline.Teams[tostring(lplr.UserId)]
 			end
@@ -334,7 +334,7 @@ run(function()
 				redline.Teams[plr.Name] = plr:GetAttribute('team_id')
 				task.spawn(updatePlayer, plr)
 
-				vape:Clean(plr:GetAttributeChangedSignal('team_id'):Connect(function()
+				vain:Clean(plr:GetAttributeChangedSignal('team_id'):Connect(function()
 					redline.Teams[plr.Name] = plr:GetAttribute('team_id')
 					task.spawn(updatePlayer, plr)
 				end))
@@ -343,14 +343,14 @@ run(function()
 
 		local function processMatch(match)
 			if match and match.Name == 'Match' then
-				vape:Clean(match.DescendantAdded:Connect(processPlayer))
+				vain:Clean(match.DescendantAdded:Connect(processPlayer))
 				for _, v in match:GetDescendants() do
 					processPlayer(v)
 				end
 			end
 		end
 
-		vape:Clean(replicatedStorage.ReadOnly.ChildAdded:Connect(processMatch))
+		vain:Clean(replicatedStorage.ReadOnly.ChildAdded:Connect(processMatch))
 		task.spawn(processMatch, replicatedStorage.ReadOnly:FindFirstChild('Match'))
 	end
 end)
@@ -380,7 +380,7 @@ run(function()
 			if getscripthash(v) ~= latestHash then
 				warningRoutine(getscripthash(v))
 
-				if vape.Loaded == nil then
+				if vain.Loaded == nil then
 					return
 				end
 			end
@@ -389,10 +389,10 @@ run(function()
 			if not rawget(root, 'loaded') then
 				repeat
 					task.wait()
-				until rawget(root, 'loaded') or vape.Loaded == nil
+				until rawget(root, 'loaded') or vain.Loaded == nil
 			end
 
-			if vape.Loaded == nil then
+			if vain.Loaded == nil then
 				return
 			end
 		end
@@ -573,7 +573,7 @@ run(function()
 	end
 
 	if redline.ActionEventPacket then
-		vape:Clean(redline.ActionEventPacket.OnClientEvent:Connect(function(data)
+		vain:Clean(redline.ActionEventPacket.OnClientEvent:Connect(function(data)
 			if type(data) == 'table' then
 				task.spawn(function()
 					local attacker = data.agent and (playersService:GetPlayerFromCharacter(data.agent) or playersService:FindFirstChild(data.agent.Name))
@@ -581,26 +581,26 @@ run(function()
 
 					if data.action == 'killed' then
 						if attacker == lplr then
-							vapeEvents.PlayerKill:Fire()
+							vainEvents.PlayerKill:Fire()
 							kills:Increment()
 						elseif victim == lplr then
 							deaths:Increment()
 						end
 					elseif data.action == 'hit' and attacker == lplr then
-						vapeEvents.Hit:Fire()
+						vainEvents.Hit:Fire()
 					end
 				end)
 			end
 		end))
 	end
 
-	vape:Clean(vapeEvents.MatchEnded.Event:Connect(function(won)
+	vain:Clean(vainEvents.MatchEnded.Event:Connect(function(won)
 		if won then
 			wins:Increment()
 		end
 	end))
 
-	vape:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+	vain:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
 		if obj.Name == 'MatchResultsScreen' then
 			local results = obj
 			obj = obj:FindFirstChild('Subtext', true)
@@ -608,7 +608,7 @@ run(function()
 
 			if obj then
 				obj:GetPropertyChangedSignal('Text'):Wait()
-				vapeEvents.MatchEnded:Fire(obj.Text:find('WON') and true or false, results)
+				vainEvents.MatchEnded:Fire(obj.Text:find('WON') and true or false, results)
 			end
 		end
 	end))
@@ -677,5 +677,5 @@ do
 end
 
 for _, v in {'Reach', 'TriggerBot', 'AntiFall', 'Desync', 'HitBoxes', 'Invisible', 'Jesus', 'MouseTP', 'Spider', 'SpinBot', 'Swim', 'TargetStrafe', 'AntiRagdoll', 'Disabler', 'StateSpoofer', 'Parkour', 'SafeWalk', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

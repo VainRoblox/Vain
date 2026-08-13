@@ -15,7 +15,7 @@ local function Added(ent)
 	if not Targets.Players.Enabled and ent.Player then return end
 	if not Targets.NPCs.Enabled and ent.NPC then return end
 	if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-	if vape.ThreadFix then
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
 
@@ -29,7 +29,7 @@ end
 local function Removed(ent)
 	local v = Reference[ent]
 	if v then
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		Reference[ent] = nil
@@ -49,7 +49,7 @@ local function ColorFunc(hue, sat, val)
 end
 
 local function Loop()
-	local screenSize = vape.gui.AbsoluteSize
+	local screenSize = vain.gui.AbsoluteSize
 	local startVector = StartPosition.Value == 'Mouse' and inputService:GetMouseLocation() or Vector2.new(screenSize.X / 2, (StartPosition.Value == 'Middle' and screenSize.Y / 2 or screenSize.Y))
 
 	for ent, EntityTracer in Reference do
@@ -80,7 +80,7 @@ local function Loop()
 	end
 end
 
-Tracers = vape.Categories.Render:CreateModule({
+Tracers = vain.Categories.Render:CreateModule({
 	Name = 'Tracers',
 	Function = function(callback)
 		if callback then
@@ -97,7 +97,7 @@ Tracers = vape.Categories.Render:CreateModule({
 				end
 				Added(ent)
 			end))
-			Tracers:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+			Tracers:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 				ColorFunc(Color.Hue, Color.Sat, Color.Value)
 			end))
 			Tracers:Clean(runService.RenderStepped:Connect(Loop))

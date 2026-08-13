@@ -11,13 +11,13 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local targetinfo = vain.Libraries.targetinfo
 local bt = {}
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 run(function()
@@ -30,11 +30,11 @@ run(function()
 		Variables = require(replicatedFirst.Variables)
 	}
 
-	vape:Clean(function()
+	vain:Clean(function()
 		table.clear(bt)
 	end)
 end)
 
 for _, v in {'AimAssist', 'Reach', 'SilentAim', 'TriggerBot', 'AntiFall', 'HitBoxes', 'Invisible', 'Jesus', 'Killaura', 'TargetStrafe', 'AntiRagdoll', 'Disabler', 'MurderMystery', 'Freecam', 'ChatSpammer', 'SpinBot'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

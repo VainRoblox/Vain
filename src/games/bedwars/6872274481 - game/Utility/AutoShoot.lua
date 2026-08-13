@@ -8,7 +8,7 @@ local function getCrossbows()
 	return crossbows
 end
 
-vape.Categories.Utility:CreateModule({
+vain.Categories.Utility:CreateModule({
 	Name = 'AutoShoot',
 	Function = function(callback)
 		if callback then

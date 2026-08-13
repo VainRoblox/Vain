@@ -1,6 +1,6 @@
 local Parkour
 
-Parkour = vape.Categories.World:CreateModule({
+Parkour = vain.Categories.World:CreateModule({
 	Name = 'Parkour',
 	Function = function(callback)
 		if callback then 

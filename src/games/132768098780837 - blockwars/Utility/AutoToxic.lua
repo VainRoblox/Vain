@@ -28,7 +28,7 @@ local function sendMessage(name, obj, default)
 	end
 end
 
-AutoToxic = vape.Categories.Utility:CreateModule({
+AutoToxic = vain.Categories.Utility:CreateModule({
 	Name = 'AutoToxic',
 	Function = function(callback)
 		if callback then

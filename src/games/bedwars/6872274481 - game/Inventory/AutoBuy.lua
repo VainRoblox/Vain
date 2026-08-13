@@ -150,7 +150,7 @@ local function buyTool(tool, tools, currencytable)
 	return bought
 end
 
-AutoBuy = vape.Categories.Inventory:CreateModule({
+AutoBuy = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoBuy',
 	Function = function(callback)
 		if callback then
@@ -158,7 +158,7 @@ AutoBuy = vape.Categories.Inventory:CreateModule({
 			if BedwarsCheck.Enabled and not store.queueType:find('bedwars') then return end
 
 			local lastupgrades
-			AutoBuy:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(function()
+			AutoBuy:Clean(vainEvents.InventoryAmountChanged.Event:Connect(function()
 				if (npctick - tick()) > 1 then npctick = tick() end
 			end))
 

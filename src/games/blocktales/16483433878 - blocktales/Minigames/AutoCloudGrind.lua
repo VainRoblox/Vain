@@ -1,6 +1,6 @@
 local AutoCloudGrind
 
-AutoCloudGrind = vape.Categories.Minigames:CreateModule({
+AutoCloudGrind = vain.Categories.Minigames:CreateModule({
 	Name = 'AutoCloudGrind',
 	Function = function(callback)
 		if callback then

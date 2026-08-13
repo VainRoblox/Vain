@@ -31,7 +31,7 @@ local function addEntity(ent)
 	addHammer(ent.Character:FindFirstChild('Hammer'))
 end
 
-PhaseHammer = vape.Categories.Blatant:CreateModule({
+PhaseHammer = vain.Categories.Blatant:CreateModule({
 	Name = 'PhaseHammer',
 	Function = function(callback)
 		if callback then

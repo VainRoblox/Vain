@@ -2,7 +2,7 @@ local ThirdPerson
 local Distance
 local hook = false
 
-ThirdPerson = vape.Categories.Render:CreateModule({
+ThirdPerson = vain.Categories.Render:CreateModule({
 	Name = 'ThirdPerson',
 	Function = function(callback)
 		if callback then

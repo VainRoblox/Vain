@@ -1,7 +1,7 @@
 local Speed
 local Value
 
-Speed = vape.Categories.Blatant:CreateModule({
+Speed = vain.Categories.Blatant:CreateModule({
 	Name = 'Speed',
 	Function = function(callback)
 		if callback then

@@ -6,7 +6,7 @@ run(function()
 	local VerticalValue
 	local up, down = 0, 0
 
-	Fly = vape.Categories.Blatant:CreateModule({
+	Fly = vain.Categories.Blatant:CreateModule({
 		Name = 'Fly',
 		Function = function(callback)
 			if callback then

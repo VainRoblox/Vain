@@ -6,7 +6,7 @@ local NoBob
 local Rots = {}
 local old, oldc1
 
-Viewmodel = vape.Legit:CreateModule({
+Viewmodel = vain.Legit:CreateModule({
 	Name = 'Viewmodel',
 	Function = function(callback)
 		local viewmodel = gameCamera:FindFirstChild('Viewmodel')

@@ -4,11 +4,11 @@ local Volume
 local PitchShift
 local old, sounds = nil, {}
 
-KillSound = vape.Legit:CreateModule({
+KillSound = vain.Legit:CreateModule({
 	Name = 'KillSound',
 	Function = function(callback)
 		if callback then
-			KillSound:Clean(vapeEvents.PlayerKill.Event:Connect(function()
+			KillSound:Clean(vainEvents.PlayerKill.Event:Connect(function()
 				if #sounds > 0 then
 					local obj = Instance.new('Sound')
 					obj.SoundId = sounds[math.random(1, #sounds)]

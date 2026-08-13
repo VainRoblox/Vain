@@ -30,7 +30,7 @@ local function playAnimation(char)
 	end
 end
 
-AnimationPlayer = vape.Categories.Utility:CreateModule({
+AnimationPlayer = vain.Categories.Utility:CreateModule({
 	Name = 'AnimationPlayer',
 	Function = function(callback)
 		if callback then

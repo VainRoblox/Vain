@@ -1,6 +1,6 @@
 local PickupTP
 
-PickupTP = vape.Categories.Blatant:CreateModule({
+PickupTP = vain.Categories.Blatant:CreateModule({
 	Name = 'PickupTP',
 	Function = function(callback)
 		if callback then

@@ -2,7 +2,7 @@ local Freecam
 local Value
 local randomkey, module, old = httpService:GenerateGUID(false)
 
-Freecam = vape.Categories.World:CreateModule({
+Freecam = vain.Categories.World:CreateModule({
 	Name = 'Freecam',
 	Function = function(callback)
 		if callback then

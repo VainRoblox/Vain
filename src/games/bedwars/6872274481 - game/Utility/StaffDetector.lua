@@ -19,8 +19,8 @@ local function getRole(plr, id)
 end
 
 local function staffFunction(plr, checktype)
-	if not vape.Loaded then
-		repeat task.wait() until vape.Loaded
+	if not vain.Loaded then
+		repeat task.wait() until vain.Loaded
 	end
 
 	notif('StaffDetector', 'Staff Detected ('..checktype..'): '..plr.Name..' ('..plr.UserId..')', 60, 'alert')
@@ -32,7 +32,7 @@ local function staffFunction(plr, checktype)
 
 	if Mode.Value == 'Uninject' then
 		task.spawn(function()
-			vape:Uninject()
+			vain:Uninject()
 		end)
 		game:GetService('StarterGui'):SetCore('SendNotification', {
 			Title = 'StaffDetector',
@@ -42,14 +42,14 @@ local function staffFunction(plr, checktype)
 	elseif Mode.Value == 'Requeue' then
 		bedwars.QueueController:joinQueue(store.queueType)
 	elseif Mode.Value == 'Profile' then
-		vape.Save = function() end
-		if vape.Profile ~= Profile.Value then
-			vape:Load(true, Profile.Value)
+		vain.Save = function() end
+		if vain.Profile ~= Profile.Value then
+			vain:Load(true, Profile.Value)
 		end
 	elseif Mode.Value == 'AutoConfig' then
 		local safe = {'AutoClicker', 'Reach', 'Sprint', 'HitFix', 'StaffDetector'}
-		vape.Save = function() end
-		for i, v in vape.Modules do
+		vain.Save = function() end
+		for i, v in vain.Modules do
 			if not (table.find(safe, i) or v.Category == 'Render') then
 				if v.Enabled then
 					v:Toggle()
@@ -113,14 +113,14 @@ local function playerAdded(plr)
 			plr:GetAttributeChangedSignal('ClanTag'):Wait()
 		end
 
-		if table.find(blacklistedclans, plr:GetAttribute('ClanTag')) and vape.Loaded and Clans.Enabled then
+		if table.find(blacklistedclans, plr:GetAttribute('ClanTag')) and vain.Loaded and Clans.Enabled then
 			connection:Disconnect()
 			staffFunction(plr, 'blacklisted_clan_'..plr:GetAttribute('ClanTag'):lower())
 		end
 	end
 end
 
-StaffDetector = vape.Categories.Utility:CreateModule({
+StaffDetector = vain.Categories.Utility:CreateModule({
 	Name = 'StaffDetector',
 	Function = function(callback)
 		if callback then
@@ -162,8 +162,8 @@ Users = StaffDetector:CreateTextList({
 })
 
 task.spawn(function()
-	repeat task.wait(1) until vape.Loaded or vape.Loaded == nil
-	if vape.Loaded and not StaffDetector.Enabled then
+	repeat task.wait(1) until vain.Loaded or vain.Loaded == nil
+	if vain.Loaded and not StaffDetector.Enabled then
 		StaffDetector:Toggle()
 	end
 end)

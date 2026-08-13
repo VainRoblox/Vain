@@ -120,9 +120,9 @@ local themecolors = {
 }
 
 local getcustomassets = {
-	['newvape/assets/rise/slice.png'] = 'rbxasset://risesix/slice.png',
-	['newvape/assets/rise/blur.png'] = 'rbxasset://risesix/blur.png',
-	['newvape/assets/new/blur.png'] = 'rbxassetid://14898786664',
+	['newvain/assets/rise/slice.png'] = 'rbxasset://risesix/slice.png',
+	['newvain/assets/rise/blur.png'] = 'rbxasset://risesix/blur.png',
+	['newvain/assets/new/blur.png'] = 'rbxassetid://14898786664',
 }
 
 local isfile = isfile or function(file)
@@ -147,7 +147,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 42, 1, 42)
 	blur.Position = UDim2.fromOffset(-24, -15)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvape/assets/new/blur.png')
+	blur.Image = getcustomasset('newvain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(44, 38, 804, 595)
 	blur.Parent = parent
@@ -244,13 +244,13 @@ local function downloadFile(path, func)
 	if not isfile(path) then
 		createDownloader(path)
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -329,21 +329,21 @@ end
 
 local function writeFont()
 	if not assetfunction then return 'rbxasset://fonts/productsans.json' end
-	writefile('newvape/assets/rise/risefont.json', httpService:JSONEncode({
+	writefile('newvain/assets/rise/risefont.json', httpService:JSONEncode({
 		name = 'ProductSans',
 		faces = {
-			{style = 'normal', assetId = getcustomasset('newvape/assets/rise/SF-Pro-Rounded-Light.otf'), name = 'Light', weight = 300},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/rise/SF-Pro-Rounded-Regular.otf'), name = 'Regular', weight = 400},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/rise/SF-Pro-Rounded-Medium.otf'), name = 'Medium', weight = 500},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/rise/Icon-1.ttf'), name = 'Icon1', weight = 600},
-			{style = 'normal', assetId = getcustomasset('newvape/assets/rise/Icon-3.ttf'), name = 'Icon3', weight = 800}
+			{style = 'normal', assetId = getcustomasset('newvain/assets/rise/SF-Pro-Rounded-Light.otf'), name = 'Light', weight = 300},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/rise/SF-Pro-Rounded-Regular.otf'), name = 'Regular', weight = 400},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/rise/SF-Pro-Rounded-Medium.otf'), name = 'Medium', weight = 500},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/rise/Icon-1.ttf'), name = 'Icon1', weight = 600},
+			{style = 'normal', assetId = getcustomasset('newvain/assets/rise/Icon-3.ttf'), name = 'Icon3', weight = 800}
 		}
 	}))
-	return getcustomasset('newvape/assets/rise/risefont.json')
+	return getcustomasset('newvain/assets/rise/risefont.json')
 end
 
 if inputService.TouchEnabled then
-	writefile('newvape/profiles/gui.txt', 'new')
+	writefile('newvain/profiles/gui.txt', 'new')
 	return
 end
 
@@ -355,7 +355,7 @@ do
 	uipallet.FontIcon1 = Font.new(risefont, Enum.FontWeight.SemiBold)
 	uipallet.FontIcon3 = Font.new(risefont, Enum.FontWeight.ExtraBold)
 
-	local res = isfile('newvape/profiles/color.txt') and loadJson('newvape/profiles/color.txt')
+	local res = isfile('newvain/profiles/color.txt') and loadJson('newvain/profiles/color.txt')
 	if res then
 		uipallet.Main = res.Main and Color3.fromRGB(unpack(res.Main)) or uipallet.Main
 		uipallet.Text = res.Text and Color3.fromRGB(unpack(res.Text)) or uipallet.Text
@@ -1195,11 +1195,11 @@ function mainapi:Load(skipgui, profile)
 	local guidata = {}
 	local savecheck = true
 
-	if isfile('newvape/profiles/'..game.GameId..'.gui.txt') then
-		guidata = loadJson('newvape/profiles/'..game.GameId..'.gui.txt')
+	if isfile('newvain/profiles/'..game.GameId..'.gui.txt') then
+		guidata = loadJson('newvain/profiles/'..game.GameId..'.gui.txt')
 		if not guidata then
 			guidata = {Categories = {}}
-			self:CreateNotification('Vape', 'Failed to load GUI settings.', 10, 'alert')
+			self:CreateNotification('Vain', 'Failed to load GUI settings.', 10, 'alert')
 			savecheck = false
 		end
 
@@ -1225,15 +1225,15 @@ function mainapi:Load(skipgui, profile)
 	}}
 	--self.Categories.Profiles:ChangeValue()
 
-	if isfile('newvape/profiles/'..self.Profile..self.Place..'.txt') then
-		local savedata = loadJson('newvape/profiles/'..self.Profile..self.Place..'.txt')
+	if isfile('newvain/profiles/'..self.Profile..self.Place..'.txt') then
+		local savedata = loadJson('newvain/profiles/'..self.Profile..self.Place..'.txt')
 		if not savedata then
 			savedata = {
 				Categories = {},
 				Modules = {},
 				Legit = {}
 			}
-			self:CreateNotification('Vape', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
+			self:CreateNotification('Vain', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
 			savecheck = false
 		end
 
@@ -1347,8 +1347,8 @@ function mainapi:Save(newprofile)
 		}
 	end
 
-	writefile('newvape/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
-	writefile('newvape/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
+	writefile('newvain/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
+	writefile('newvain/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
 end
 
 function mainapi:SaveOptions(object, savedoptions)
@@ -1395,9 +1395,9 @@ function mainapi:Uninject()
 	table.clear(mainapi.Connections)
 	table.clear(mainapi.Libraries)
 	loopClean(mainapi)
-	shared.vape = nil
-	shared.vapereload = nil
-	shared.VapeIndependent = nil
+	shared.vain = nil
+	shared.vainreload = nil
+	shared.VainIndependent = nil
 end
 
 gui = Instance.new('ScreenGui')
@@ -1738,12 +1738,12 @@ mainapi.Categories.Main:CreateDropdown({
 	List = {'rise', 'new', 'old'},
 	Function = function(val, mouse)
 		if mouse then
-			writefile('newvape/profiles/gui.txt', val)
-			shared.vapereload = true
-			if shared.VapeDeveloper then
-				loadstring(readfile('newvape/loader.lua'), 'loader')()
+			writefile('newvain/profiles/gui.txt', val)
+			shared.vainreload = true
+			if shared.VainDeveloper then
+				loadstring(readfile('newvain/loader.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/loader.lua', true))()
 			end
 		end
 	end
@@ -1767,11 +1767,11 @@ mainapi.RainbowUpdateSpeed = mainapi.Categories.Main:CreateSlider({
 mainapi.Categories.Main:CreateButton({
 	Name = 'Reinject',
 	Function = function()
-		shared.vapereload = true
-		if shared.VapeDeveloper then
-			loadstring(readfile('newvape/loader.lua'), 'loader')()
+		shared.vainreload = true
+		if shared.VainDeveloper then
+			loadstring(readfile('newvain/loader.lua'), 'loader')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/loader.lua', true))()
 		end
 	end
 })
@@ -2127,7 +2127,7 @@ function mainapi:UpdateTextGUI(afterload)
 					holderline.Size = UDim2.fromOffset(2, 18)
 					holderline.Position = UDim2.new(1, 0, 0, 2)
 					holderline.BackgroundTransparency = 1
-					holderline.Image = getcustomasset('newvape/assets/rise/slice.png')
+					holderline.Image = getcustomasset('newvain/assets/rise/slice.png')
 					holderline.ImageColor3 = uipallet.MainColor
 					holderline.ZIndex = -1
 					holderline.Parent = holderbackground

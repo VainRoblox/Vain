@@ -42,7 +42,7 @@ local function doCheck()
 	end
 end
 
-Wallhop = vape.Categories.World:CreateModule({
+Wallhop = vain.Categories.World:CreateModule({
 	Name = 'Wallhop',
 	Function = function(callback)
 		if callback then

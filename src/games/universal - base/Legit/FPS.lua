@@ -5,7 +5,7 @@
 local FPS
 local label
 
-FPS = vape.Legit:CreateModule({
+FPS = vain.Legit:CreateModule({
 	Name = 'FPS',
 	Function = function(callback)
 		if callback then

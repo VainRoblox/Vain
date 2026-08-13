@@ -1,7 +1,7 @@
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err and vain then
+		vain:CreateNotification('Vain', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -14,13 +14,13 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vain updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -42,30 +42,30 @@ local debrisService = cloneref(game:GetService('Debris'))
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local whitelist = vape.Libraries.whitelist
-local prediction = vape.Libraries.prediction
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local getcustomasset = vape.Libraries.getcustomasset
-local drawingactor = loadstring(downloadFile('newvape/libraries/drawing.lua'), 'drawing')(...)
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local whitelist = vain.Libraries.whitelist
+local prediction = vain.Libraries.prediction
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
+local getcustomasset = vain.Libraries.getcustomasset
+local drawingactor = loadstring(downloadFile('newvain/libraries/drawing.lua'), 'drawing')(...)
 local function notif(...)
-	return vape:CreateNotification(...)
+	return vain:CreateNotification(...)
 end
 
 if not select(1, ...) and game.PlaceId == 5938036553 then
 	if run_on_actor and getactors then
-		local oldreload = shared.vapereload
-		vape.Load = function()
+		local oldreload = shared.vainreload
+		vain.Load = function()
 			task.delay(0.1, function()
-				vape:Uninject()
+				vain:Uninject()
 			end)
 		end
 
 		task.spawn(function()
-			repeat task.wait() until not shared.vape
-			local executionString = "loadfile('newvape/main.lua')("..drawingactor..")"
+			repeat task.wait() until not shared.vain
+			local executionString = "loadfile('newvain/main.lua')("..drawingactor..")"
 			for i, v in shared do
 				if type(v) == 'string' then
 					executionString = string.format("shared.%s = '%s'", i, v)..'\n'..executionString
@@ -74,7 +74,7 @@ if not select(1, ...) and game.PlaceId == 5938036553 then
 				end
 			end
 			if oldreload then
-				executionString = 'shared.vapereload = true\n'..executionString
+				executionString = 'shared.vainreload = true\n'..executionString
 			end
 
 			for i, v in getactors() do
@@ -83,11 +83,11 @@ if not select(1, ...) and game.PlaceId == 5938036553 then
 					return
 				end
 			end
-			notif('Vape', 'Failed to find actor', 10, 'alert')
+			notif('Vain', 'Failed to find actor', 10, 'alert')
 		end)
 	else
-		vape.Load = function()
-			notif('Vape', 'Missing actor functions.', 10, 'alert')
+		vain.Load = function()
+			notif('Vain', 'Missing actor functions.', 10, 'alert')
 		end
 	end
 
@@ -102,7 +102,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvape/assets/new/blur.png')
+	blur.Image = getcustomasset('newvain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -142,17 +142,17 @@ local function hookEvent(id, rfunc)
 	end)
 
 	if not suc then
-		notif('Vape', 'Failed to hook ('..id..')', 10, 'alert')
+		notif('Vain', 'Failed to hook ('..id..')', 10, 'alert')
 	end
 
 	return type(res) == 'function' and res or function() end
 end
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if vain.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(vain.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and vain.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -189,8 +189,8 @@ run(function()
 		else
 			break
 		end
-	until vape.Loaded == nil
-	if vape.Loaded == nil then return end
+	until vain.Loaded == nil
+	if vain.Loaded == nil then return end
 	frontlines.Events = debug.getupvalue(frontlines.Main.append_exe_set, 1)
 	frontlines.PickupBit = debug.getupvalue(frontlines.Events[frontlines.Main.exe_func_t.INIT_FPV_SOL_AMMO_PICKUP], 5)
 	--frontlines.Chat = debug.getupvalue(frontlines.Events[frontlines.Main.exe_func_t.UPDATE_CHAT_GUI], 1)
@@ -250,8 +250,8 @@ run(function()
 		end)
 	end]]
 
-	vape:Clean(Drawing.kill or function() end)
-	vape:Clean(function()
+	vain:Clean(Drawing.kill or function() end)
+	vain:Clean(function()
 		for i, v in frontlines.Functions do
 			hookfunction(i, v)
 		end
@@ -259,7 +259,7 @@ run(function()
 		table.clear(frontlines)
 	end)
 end)
-if vape.Loaded == nil then return end
+if vain.Loaded == nil then return end
 
 run(function()
 	entitylib.Wallcheck = function(origin, position, ignoreobject)
@@ -277,9 +277,9 @@ run(function()
 	end
 
 	entitylib.getEntityColor = function(ent)
-		if not (ent.Player and vape.Categories.Main.Options['Use team color'].Enabled) then return end
+		if not (ent.Player and vain.Categories.Main.Options['Use team color'].Enabled) then return end
 		if isFriend(ent.Player, true) then
-			return Color3.fromHSV(vape.Categories.Friends.Options['Friends color'].Hue, vape.Categories.Friends.Options['Friends color'].Sat, vape.Categories.Friends.Options['Friends color'].Value)
+			return Color3.fromHSV(vain.Categories.Friends.Options['Friends color'].Hue, vain.Categories.Friends.Options['Friends color'].Sat, vain.Categories.Friends.Options['Friends color'].Value)
 		end
 		return getTeam({Id = frontlines.Main.globals.cli_state.id}) == getTeam(ent) and Color3.fromRGB(67, 140, 229) or Color3.fromRGB(234, 50, 50)
 	end
@@ -403,5 +403,5 @@ end)
 entitylib.start()
 
 for i, v in {'Reach', 'Health', 'TriggerBot', 'AntiFall', 'AntiRagdoll', 'Invisible', 'Disabler', 'Freecam', 'Parkour', 'HitBoxes', 'SafeWalk', 'Spider', 'Swim', 'GamingChair', 'TargetStrafe', 'Timer', 'MurderMystery', 'Blink', 'AnimationPlayer'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

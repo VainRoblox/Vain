@@ -64,7 +64,7 @@ local function EntityAdded(ent)
 	ToolAdded(ent.Character:FindFirstChildWhichIsA('Tool'))
 end
 
-Viewmodel = vape.Legit:CreateModule({
+Viewmodel = vain.Legit:CreateModule({
 	Name = 'Viewmodel',
 	Function = function(callback)
 		if callback then

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="100%" height="100%">
+  <rect width="520" height="120" fill="#0d0f12" />
+  
+  <g transform="translate(20, 15)">
+    <text x="0" y="72" fill="#ffffff" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="82" letter-spacing="1">VAIN</text>
+    
+    <path d="M 245 22 L 350 22 L 336 78 L 245 78" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <text x="258" y="65" fill="#ffffff" font-family="'Arial', sans-serif" font-weight="bold" font-size="46" letter-spacing="1">V4</text>
+  </g>
+</svg>

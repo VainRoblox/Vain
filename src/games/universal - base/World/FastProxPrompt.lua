@@ -4,7 +4,7 @@ local Value
 local modified = {}
 local thread
 
-FastProxPrompt = vape.Categories.World:CreateModule({
+FastProxPrompt = vain.Categories.World:CreateModule({
 	Name = 'FastProxPrompt',
 	Function = function(callback)
 		if callback then

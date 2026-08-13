@@ -28,8 +28,8 @@ local function getLowestStaffRole(roles)
 end
 
 local function playerAdded(plr)
-	if not vape.Loaded then
-		repeat task.wait() until vape.Loaded
+	if not vain.Loaded then
+		repeat task.wait() until vain.Loaded
 	end
 
 	local user = table.find(Users.ListEnabled, tostring(plr.UserId))
@@ -39,7 +39,7 @@ local function playerAdded(plr)
 
 		if Mode.Value == 'Uninject' then
 			task.spawn(function()
-				vape:Uninject()
+				vain:Uninject()
 			end)
 			game:GetService('StarterGui'):SetCore('SendNotification', {
 				Title = 'StaffDetector',
@@ -49,14 +49,14 @@ local function playerAdded(plr)
 		elseif Mode.Value == 'ServerHop' then
 			serverHop()
 		elseif Mode.Value == 'Profile' then
-			vape.Save = function() end
-			if vape.Profile ~= Profile.Value then
-				vape.Profile = Profile.Value
-				vape:Load(true, Profile.Value)
+			vain.Save = function() end
+			if vain.Profile ~= Profile.Value then
+				vain.Profile = Profile.Value
+				vain:Load(true, Profile.Value)
 			end
 		elseif Mode.Value == 'AutoConfig' then
-			vape.Save = function() end
-			for _, v in vape.Modules do
+			vain.Save = function() end
+			for _, v in vain.Modules do
 				if v.Enabled then
 					v:Toggle()
 				end
@@ -65,7 +65,7 @@ local function playerAdded(plr)
 	end
 end
 
-StaffDetector = vape.Categories.Utility:CreateModule({
+StaffDetector = vain.Categories.Utility:CreateModule({
 	Name = 'StaffDetector',
 	Function = function(callback)
 		if callback then

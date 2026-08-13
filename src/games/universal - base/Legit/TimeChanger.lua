@@ -2,7 +2,7 @@ local TimeChanger
 local Value
 local old
 
-TimeChanger = vape.Legit:CreateModule({
+TimeChanger = vain.Legit:CreateModule({
 	Name = 'Time Changer',
 	Function = function(callback)
 		if callback then

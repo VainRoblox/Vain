@@ -19,7 +19,7 @@ local function switchHotbarItem(block)
 	end
 end
 
-AutoTool = vape.Categories.World:CreateModule({
+AutoTool = vain.Categories.World:CreateModule({
 	Name = 'AutoTool',
 	Function = function(callback)
 		if callback then

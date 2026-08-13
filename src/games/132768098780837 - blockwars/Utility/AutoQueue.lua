@@ -1,6 +1,6 @@
 local AutoQueue
 
-AutoQueue = vape.Categories.Utility:CreateModule({
+AutoQueue = vain.Categories.Utility:CreateModule({
 	Name = 'AutoQueue',
 	Function = function(callback)
 		if callback then

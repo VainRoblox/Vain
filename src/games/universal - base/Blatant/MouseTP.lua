@@ -22,7 +22,7 @@ local function getWaypointInMouse()
 	return obj
 end
 
-MouseTP = vape.Categories.Blatant:CreateModule({
+MouseTP = vain.Categories.Blatant:CreateModule({
 	Name = 'MouseTP',
 	Function = function(callback)
 		if callback then

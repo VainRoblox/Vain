@@ -1,6 +1,6 @@
 local AutoBalloon
 
-AutoBalloon = vape.Categories.Utility:CreateModule({
+AutoBalloon = vain.Categories.Utility:CreateModule({
 	Name = 'AutoBalloon',
 	Function = function(callback)
 		if callback then

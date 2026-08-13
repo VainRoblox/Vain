@@ -13,7 +13,7 @@ local function CreateWindow(self)
 	window.BackgroundColor3 = uipallet.Main
 	window.AnchorPoint = Vector2.new(0.5, 0.5)
 	window.Visible = false
-	window.Parent = vape.gui.ScaledGui
+	window.Parent = vain.gui.ScaledGui
 	local title = Instance.new('TextLabel')
 	title.Name = 'Title'
 	title.Size = UDim2.new(1, -10, 0, 20)
@@ -47,7 +47,7 @@ local function CreateWindow(self)
 	close.Position = UDim2.new(1, -35, 0, 9)
 	close.BackgroundColor3 = Color3.new(1, 1, 1)
 	close.BackgroundTransparency = 1
-	close.Image = getcustomasset('newvape/assets/new/close.png')
+	close.Image = getcustomasset('newvain/assets/new/close.png')
 	close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 	close.ImageTransparency = 0.5
 	close.AutoButtonColor = false
@@ -66,7 +66,7 @@ local function CreateWindow(self)
 	end)
 	close.MouseButton1Click:Connect(function()
 		window.Visible = false
-		vape.gui.ScaledGui.ClickGui.Visible = true
+		vain.gui.ScaledGui.ClickGui.Visible = true
 	end)
 	local closecorner = Instance.new('UICorner')
 	closecorner.CornerRadius = UDim.new(1, 0)
@@ -161,7 +161,7 @@ local function CreateWindow(self)
 	searchicon.Size = UDim2.fromOffset(14, 14)
 	searchicon.Position = UDim2.new(1, -26, 0, 8)
 	searchicon.BackgroundTransparency = 1
-	searchicon.Image = getcustomasset('newvape/assets/new/search.png')
+	searchicon.Image = getcustomasset('newvain/assets/new/search.png')
 	searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	searchicon.Parent = searchbkg
 	local children = Instance.new('ScrollingFrame')
@@ -181,12 +181,12 @@ local function CreateWindow(self)
 	windowlist.CellPadding = UDim2.fromOffset(4, 3)
 	windowlist.Parent = children
 	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
-		children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale)
+		children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / vain.guiscale.Scale)
 	end)
-	table.insert(vape.Windows, window)
+	table.insert(vain.Windows, window)
 
 	local function createitem(id, image)
 		local slotbkg = Instance.new('TextButton')
@@ -250,8 +250,8 @@ local function CreateWindow(self)
 	return window
 end
 
-vape.Components.HotbarList = function(optionsettings, children, api)
-	if vape.ThreadFix then
+vain.Components.HotbarList = function(optionsettings, children, api)
+	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
 	local optionapi = {
@@ -302,7 +302,7 @@ vape.Components.HotbarList = function(optionsettings, children, api)
 	textbuttonicon.Position = UDim2.fromScale(0.5, 0.5)
 	textbuttonicon.AnchorPoint = Vector2.new(0.5, 0.5)
 	textbuttonicon.BackgroundTransparency = 1
-	textbuttonicon.Image = getcustomasset('newvape/assets/new/add.png')
+	textbuttonicon.Image = getcustomasset('newvain/assets/new/add.png')
 	textbuttonicon.ImageColor3 = Color3.fromHSV(0.46, 0.96, 0.52)
 	textbuttonicon.Parent = textbutton
 	local childrenlist = Instance.new('Frame')
@@ -316,10 +316,10 @@ vape.Components.HotbarList = function(optionsettings, children, api)
 	windowlist.Padding = UDim.new(0, 3)
 	windowlist.Parent = childrenlist
 	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
-		hotbarlist.Size = UDim2.fromOffset(220, math.min(43 + windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale, 603))
+		hotbarlist.Size = UDim2.fromOffset(220, math.min(43 + windowlist.AbsoluteContentSize.Y / vain.guiscale.Scale, 603))
 	end)
 	textbutton.MouseButton1Click:Connect(function()
 		optionapi:AddHotbar()
@@ -376,7 +376,7 @@ vape.Components.HotbarList = function(optionsettings, children, api)
 		hotbar.MouseButton1Click:Connect(function()
 			local ind = table.find(optionapi.Hotbars, hotbardata)
 			if ind == optionapi.Selected then
-				vape.gui.ScaledGui.ClickGui.Visible = false
+				vain.gui.ScaledGui.ClickGui.Visible = false
 				optionapi.Window.Visible = true
 				for i = 1, 9 do
 					optionapi.Window['Slot'..i].ImageLabel.Image = hotbardata.Hotbar[tostring(i)] and bedwars.getIcon({itemType = hotbardata.Hotbar[tostring(i)]}, true) or ''
@@ -395,7 +395,7 @@ vape.Components.HotbarList = function(optionsettings, children, api)
 		close.Position = UDim2.new(1, -23, 0, 6)
 		close.BackgroundColor3 = Color3.new(1, 1, 1)
 		close.BackgroundTransparency = 1
-		close.Image = getcustomasset('newvape/assets/new/closemini.png')
+		close.Image = getcustomasset('newvain/assets/new/closemini.png')
 		close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 		close.ImageTransparency = 0.5
 		close.AutoButtonColor = false
@@ -495,7 +495,7 @@ end
 
 local function dispatch(...)
 	bedwars.Store:dispatch(...)
-	vapeEvents.InventoryChanged.Event:Wait()
+	vainEvents.InventoryChanged.Event:Wait()
 end
 
 local function sortCallback()
@@ -549,7 +549,7 @@ local function sortCallback()
 	Active = false
 end
 
-AutoHotbar = vape.Categories.Inventory:CreateModule({
+AutoHotbar = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoHotbar',
 	Function = function(callback)
 		if callback then
@@ -559,7 +559,7 @@ AutoHotbar = vape.Categories.Inventory:CreateModule({
 				return
 			end
 
-			AutoHotbar:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(sortCallback))
+			AutoHotbar:Clean(vainEvents.InventoryAmountChanged.Event:Connect(sortCallback))
 		end
 	end,
 	Tooltip = 'Automatically arranges hotbar to your liking.'

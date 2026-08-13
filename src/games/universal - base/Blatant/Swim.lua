@@ -2,7 +2,7 @@ local Swim
 local terrain = cloneref(workspace:FindFirstChildWhichIsA('Terrain'))
 local lastpos = Region3.new(Vector3.zero, Vector3.zero)
 
-Swim = vape.Categories.Blatant:CreateModule({
+Swim = vain.Categories.Blatant:CreateModule({
 	Name = 'Swim',
 	Function = function(callback)
 		if callback then

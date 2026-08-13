@@ -47,7 +47,7 @@ local function choosesong()
 	end
 end
 
-SongBeats = vape.Legit:CreateModule({
+SongBeats = vain.Legit:CreateModule({
 	Name = 'Song Beats',
 	Function = function(callback)
 		if callback then

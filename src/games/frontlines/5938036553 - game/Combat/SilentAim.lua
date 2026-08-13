@@ -47,7 +47,7 @@ local function raycastLoop(origin, pos)
 	return returned
 end
 
-SilentAim = vape.Categories.Combat:CreateModule({
+SilentAim = vain.Categories.Combat:CreateModule({
 	Name = 'SilentAim',
 	Function = function(callback)
 		if CircleObject then
@@ -162,7 +162,7 @@ SilentAim:CreateToggle({
 			CircleObject = Drawing.new('Circle')
 			CircleObject.Filled = CircleFilled.Enabled
 			CircleObject.Color = Color3.fromHSV(CircleColor.Hue, CircleColor.Sat, CircleColor.Value)
-			CircleObject.Position = vape.gui.AbsoluteSize / 2
+			CircleObject.Position = vain.gui.AbsoluteSize / 2
 			CircleObject.Radius = Range.Value
 			CircleObject.NumSides = 100
 			CircleObject.Transparency = 1 - CircleTransparency.Value

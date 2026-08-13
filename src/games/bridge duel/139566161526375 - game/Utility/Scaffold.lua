@@ -87,7 +87,7 @@ local function getBlock()
 	end
 end
 
-Scaffold = vape.Categories.Utility:CreateModule({
+Scaffold = vain.Categories.Utility:CreateModule({
 	Name = 'Scaffold',
 	Function = function(callback)
 		if callback then

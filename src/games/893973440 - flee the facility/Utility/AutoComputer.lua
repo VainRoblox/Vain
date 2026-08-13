@@ -14,7 +14,7 @@ local function getConnection(event)
 end
 
 
-AutoComputer = vape.Categories.Utility:CreateModule({
+AutoComputer = vain.Categories.Utility:CreateModule({
 	Name = 'AutoComputer',
 	Function = function(callback)
 		if callback then

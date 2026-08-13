@@ -1,6 +1,6 @@
 local AutoReset
 
-AutoReset = vape.Categories.Blatant:CreateModule({
+AutoReset = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoReset',
 	Function = function(callback)
 		if callback then

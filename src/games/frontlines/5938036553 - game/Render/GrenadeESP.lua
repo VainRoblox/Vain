@@ -3,11 +3,11 @@ local Background
 local Color = {}
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 local old
 
 local function addESP(v)
-	if vape.ThreadFix then 
+	if vain.ThreadFix then 
 		setthreadidentity(8) 
 	end
 	if not v.model or v.model.Name ~= 'frag' then return end
@@ -32,7 +32,7 @@ local function addESP(v)
 	uicorner.Parent = image
 	Reference[v.model] = billboard
 	v.model.Destroying:Connect(function()
-		if vape.ThreadFix then 
+		if vain.ThreadFix then 
 			setthreadidentity(8) 
 		end
 		if Reference[v.model] then
@@ -42,7 +42,7 @@ local function addESP(v)
 	end)
 end
 
-GrenadeESP = vape.Categories.Render:CreateModule({
+GrenadeESP = vain.Categories.Render:CreateModule({
 	Name = 'GrenadeESP',
 	Function = function(callback)
 		if callback then

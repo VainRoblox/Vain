@@ -4,7 +4,7 @@ local Spread
 local FireRate
 local Automatic
 
-GunModifications = vape.Categories.Blatant:CreateModule({
+GunModifications = vain.Categories.Blatant:CreateModule({
 	Name = 'GunModifications',
 	Function = function(callback)
 		if callback then

@@ -20,7 +20,7 @@ local function Modify()
 end
 
 
-GunModifications = vape.Categories.Blatant:CreateModule({
+GunModifications = vain.Categories.Blatant:CreateModule({
 	Name = 'GunModifications',
 	Function = function(callback)
 		if callback then

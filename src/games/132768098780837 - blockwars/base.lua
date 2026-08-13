@@ -16,12 +16,12 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local whitelist = vape.Libraries.whitelist
-local prediction = vape.Libraries.prediction
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
+local vain = shared.vain
+local entitylib = vain.Libraries.entity
+local whitelist = vain.Libraries.whitelist
+local prediction = vain.Libraries.prediction
+local targetinfo = vain.Libraries.targetinfo
+local sessioninfo = vain.Libraries.sessioninfo
 
 local bw = {}
 local blocks = {}
@@ -141,7 +141,7 @@ run(function()
 		Inventory = debug.getupvalue(require(replicatedStorage.Modules.ShopUIClient).Start, 8)
 	}
 
-	blocks = collection('BedWarsX_PlacedBlock', vape, function(tab, block)
+	blocks = collection('BedWarsX_PlacedBlock', vain, function(tab, block)
 		tab[block.Position // 3] = block
 	end, function(tab, block)
 		tab[block.Position // 3] = nil
@@ -158,13 +158,13 @@ run(function()
 		end
 	end)
 
-	vape:Clean(lplr:GetAttributeChangedSignal('RoundKills'):Connect(function()
+	vain:Clean(lplr:GetAttributeChangedSignal('RoundKills'):Connect(function()
 		if lplr:GetAttribute('RoundKills') > 0 then
 			kills:Increment()
 		end
 	end))
 
-	vape:Clean(bw.RemoteIndex.Round_Event.OnClientEvent:Connect(function(data)
+	vain:Clean(bw.RemoteIndex.Round_Event.OnClientEvent:Connect(function(data)
 		if type(data) == 'table' and data.id == 'final_kill' then
 			if lplr.Team and lplr.Team.Name == data.teamId then
 				wins:Increment()
@@ -172,13 +172,13 @@ run(function()
 		end
 	end))
 
-	vape:Clean(bw.RemoteIndex.Bed_Destroyed.OnClientEvent:Connect(function(data)
+	vain:Clean(bw.RemoteIndex.Bed_Destroyed.OnClientEvent:Connect(function(data)
 		if type(data) == 'table' and data.breakerId == lplr.UserId then
 			beds:Increment()
 		end
 	end))
 
-	vape:Clean(entitylib.Events.EntityAdded:Connect(function(entity)
+	vain:Clean(entitylib.Events.EntityAdded:Connect(function(entity)
 		BlockTimes[entity.Character] = 0
 
 		local animator = entity.Humanoid:FindFirstChild('Animator')
@@ -191,11 +191,11 @@ run(function()
 		end
 	end))
 
-	vape:Clean(entitylib.Events.EntityRemoving:Connect(function(entity)
+	vain:Clean(entitylib.Events.EntityRemoving:Connect(function(entity)
 		BlockTimes[entity.Character] = nil
 	end))
 end)
 
 for _, v in {'AimAssist', 'Reach', 'SilentAim', 'TriggerBot', 'Jesus', 'AutoRejoin', 'Disabler', 'FastProxPrompt', 'SafeWalk', 'MurderMystery'} do
-	vape:Remove(v)
+	vain:Remove(v)
 end

@@ -1,7 +1,7 @@
 local Ping
 local label
 
-Ping = vape.Legit:CreateModule({
+Ping = vain.Legit:CreateModule({
 	Name = 'Ping',
 	Function = function(callback)
 		if callback then

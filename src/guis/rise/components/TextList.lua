@@ -80,8 +80,8 @@ function optionapi:ChangeValue(val)
 			if ind then
 				if val ~= 'default' then
 					table.remove(mainapi.Profiles, ind)
-					if isfile('newvape/profiles/'..val..mainapi.Place..'.txt') and delfile then
-						delfile('newvape/profiles/'..val..mainapi.Place..'.txt')
+					if isfile('newvain/profiles/'..val..mainapi.Place..'.txt') and delfile then
+						delfile('newvain/profiles/'..val..mainapi.Place..'.txt')
 					end
 				end
 			else

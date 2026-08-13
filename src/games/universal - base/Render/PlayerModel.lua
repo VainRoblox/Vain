@@ -7,7 +7,7 @@ local Rots = {}
 local models = {}
 
 local function addMesh(ent)
-	if vape.ThreadFix then 
+	if vain.ThreadFix then 
 		setthreadidentity(8)
 	end
 	local root = ent.RootPart
@@ -37,7 +37,7 @@ local function removeMesh(ent)
 	end
 end
 
-PlayerModel = vape.Categories.Render:CreateModule({
+PlayerModel = vain.Categories.Render:CreateModule({
 	Name = 'PlayerModel',
 	Function = function(callback)
 		if callback then 

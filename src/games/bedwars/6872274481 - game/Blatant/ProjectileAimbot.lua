@@ -7,7 +7,7 @@ rayCheck.FilterType = Enum.RaycastFilterType.Include
 rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 local old
 
-local ProjectileAimbot = vape.Categories.Blatant:CreateModule({
+local ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 	Name = 'ProjectileAimbot',
 	Function = function(callback)
 		if callback then

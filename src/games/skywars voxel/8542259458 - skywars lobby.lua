@@ -13,8 +13,8 @@ local coreGui = cloneref(game:GetService('CoreGui'))
 local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 
-local vape = shared.vape
-local sessioninfo = vape.Libraries.sessioninfo
+local vain = shared.vain
+local sessioninfo = vain.Libraries.sessioninfo
 
 run(function()
 	local kills = sessioninfo:AddItem('Kills')

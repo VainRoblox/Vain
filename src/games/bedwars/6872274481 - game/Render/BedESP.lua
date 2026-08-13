@@ -1,7 +1,7 @@
 local BedESP
 local Reference = {}
 local Folder = Instance.new('Folder')
-Folder.Parent = vape.gui
+Folder.Parent = vain.gui
 
 local function Added(bed)
 	if not BedESP.Enabled then return end
@@ -35,7 +35,7 @@ local function Added(bed)
 	table.clear(parts)
 end
 
-BedESP = vape.Categories.Render:CreateModule({
+BedESP = vain.Categories.Render:CreateModule({
 	Name = 'BedESP',
 	Function = function(callback)
 		if callback then

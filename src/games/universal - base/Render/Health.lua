@@ -1,6 +1,6 @@
 local Health
 
-Health = vape.Categories.Render:CreateModule({
+Health = vain.Categories.Render:CreateModule({
 	Name = 'Health',
 	Function = function(callback)
 		if callback then
@@ -12,7 +12,7 @@ Health = vape.Categories.Render:CreateModule({
 			label.Text = '100 ❤️'
 			label.TextSize = 18
 			label.Font = Enum.Font.Arial
-			label.Parent = vape.gui
+			label.Parent = vain.gui
 			Health:Clean(label)
 			
 			repeat

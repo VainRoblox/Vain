@@ -66,7 +66,7 @@ local function isMyTurn()
 	return false
 end
 
-AutoAction = vape.Categories.Combat:CreateModule({
+AutoAction = vain.Categories.Combat:CreateModule({
 	Name = 'AutoAction',
 	Function = function(callback)
 		if callback then

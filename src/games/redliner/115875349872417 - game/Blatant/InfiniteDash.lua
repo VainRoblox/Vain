@@ -1,6 +1,6 @@
 local InfiniteDash
 
-InfiniteDash = vape.Categories.Blatant:CreateModule({
+InfiniteDash = vain.Categories.Blatant:CreateModule({
 	Name = 'InfiniteDash',
 	Function = function(callback)
 		if callback then

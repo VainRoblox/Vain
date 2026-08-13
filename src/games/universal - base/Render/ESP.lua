@@ -24,7 +24,7 @@ local ESPAdded = {
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
 		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		local EntityESP = {}
@@ -90,7 +90,7 @@ local ESPAdded = {
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
 		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		local EntityESP = {}
@@ -119,7 +119,7 @@ local ESPAdded = {
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
 		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-		if vape.ThreadFix then
+		if vain.ThreadFix then
 			setthreadidentity(8)
 		end
 		local EntityESP = {}
@@ -147,7 +147,7 @@ local ESPRemoved = {
 	Drawing2D = function(ent)
 		local EntityESP = Reference[ent]
 		if EntityESP then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			Reference[ent] = nil
@@ -167,7 +167,7 @@ local ESPUpdated = {
 	Drawing2D = function(ent)
 		local EntityESP = Reference[ent]
 		if EntityESP then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			
@@ -364,7 +364,7 @@ local ESPLoop = {
 	end
 }
 
-ESP = vape.Categories.Render:CreateModule({
+ESP = vain.Categories.Render:CreateModule({
 	Name = 'ESP',
 	Function = function(callback)
 		if callback then
@@ -393,7 +393,7 @@ ESP = vape.Categories.Render:CreateModule({
 				end
 			end
 			if ColorFunc[methodused] then
-				ESP:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+				ESP:Clean(vain.Categories.Friends.ColorUpdate.Event:Connect(function()
 					ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
 				end))
 			end

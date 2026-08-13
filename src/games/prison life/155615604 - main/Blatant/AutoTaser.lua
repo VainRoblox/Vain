@@ -3,7 +3,7 @@ local Range
 local VelocityCheck
 local cooldown = 0
 
-AutoTaser = vape.Categories.Blatant:CreateModule({
+AutoTaser = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoTaser',
 	Function = function(callback)
 		if callback then

@@ -59,7 +59,7 @@ local function updateKey(inputType)
 	end
 end
 
-Keystrokes = vape.Legit:CreateModule({
+Keystrokes = vain.Legit:CreateModule({
 	Name = 'Keystrokes',
 	Function = function(callback)
 		if callback then

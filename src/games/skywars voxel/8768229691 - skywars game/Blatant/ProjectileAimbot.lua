@@ -28,7 +28,7 @@ local function aimFunction(...)
 	return old(...)
 end
 
-local ProjectileAimbot = vape.Categories.Blatant:CreateModule({
+local ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 	Name = 'ProjectileAimbot',
 	Function = function(callback)
 		if callback then

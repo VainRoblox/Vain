@@ -1,7 +1,7 @@
 local AutoArmor
 local pickups = {}
 
-AutoArmor = vape.Categories.Inventory:CreateModule({
+AutoArmor = vain.Categories.Inventory:CreateModule({
 	Name = 'AutoArmor',
 	Function = function(callback)
 		if callback then

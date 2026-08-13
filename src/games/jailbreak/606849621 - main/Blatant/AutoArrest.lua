@@ -1,7 +1,7 @@
 local AutoArrest
 local cooldown = 0
 
-AutoArrest = vape.Categories.Blatant:CreateModule({
+AutoArrest = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoArrest',
 	Function = function(callback)
 		if callback then

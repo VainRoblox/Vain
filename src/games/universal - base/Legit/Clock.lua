@@ -2,7 +2,7 @@ local Clock
 local TwentyFourHour
 local label
 
-Clock = vape.Legit:CreateModule({
+Clock = vain.Legit:CreateModule({
 	Name = 'Clock',
 	Function = function(callback)
 		if callback then

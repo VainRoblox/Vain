@@ -1,6 +1,6 @@
 local RavenTP
 
-RavenTP = vape.Categories.Utility:CreateModule({
+RavenTP = vain.Categories.Utility:CreateModule({
 	Name = 'RavenTP',
 	Function = function(callback)
 		if callback then

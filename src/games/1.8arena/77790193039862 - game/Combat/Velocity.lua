@@ -25,7 +25,7 @@ local function velocityFunction(...)
 	return old(...)
 end
 
-Velocity = vape.Categories.Combat:CreateModule({
+Velocity = vain.Categories.Combat:CreateModule({
 	Name = 'Velocity',
 	Function = function(callback)
 		if callback then

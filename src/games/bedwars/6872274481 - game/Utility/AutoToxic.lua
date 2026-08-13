@@ -22,11 +22,11 @@ local function sendMessage(name, obj, default)
 	end
 end
 
-AutoToxic = vape.Categories.Utility:CreateModule({
+AutoToxic = vain.Categories.Utility:CreateModule({
 	Name = 'AutoToxic',
 	Function = function(callback)
 		if callback then
-			AutoToxic:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
+			AutoToxic:Clean(vainEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
 				if Toggles.BedDestroyed.Enabled and bedTable.brokenBedTeam.id == lplr:GetAttribute('Team') then
 					sendMessage('BedDestroyed', (bedTable.player.DisplayName or bedTable.player.Name), 'how dare you >:( | <obj>')
 				elseif Toggles.Bed.Enabled and bedTable.player.UserId == lplr.UserId then
@@ -34,7 +34,7 @@ AutoToxic = vape.Categories.Utility:CreateModule({
 					sendMessage('Bed', team and team.displayName:lower() or 'white', 'nice bed lul | <obj>')
 				end
 			end))
-			AutoToxic:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+			AutoToxic:Clean(vainEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 				if deathTable.finalKill then
 					local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
 					local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
@@ -49,7 +49,7 @@ AutoToxic = vape.Categories.Utility:CreateModule({
 					end
 				end
 			end))
-			AutoToxic:Clean(vapeEvents.MatchEndEvent.Event:Connect(function(winstuff)
+			AutoToxic:Clean(vainEvents.MatchEndEvent.Event:Connect(function(winstuff)
 				if GG.Enabled then
 					if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 						textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('gg')

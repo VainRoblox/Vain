@@ -12,11 +12,11 @@ local flyingsound
 local chairanim
 local chair
 
-GamingChair = vape.Categories.Render:CreateModule({
+GamingChair = vain.Categories.Render:CreateModule({
 	Name = 'GamingChair',
 	Function = function(callback)
 		if callback then
-			if vape.ThreadFix then
+			if vain.ThreadFix then
 				setthreadidentity(8)
 			end
 			chair = Instance.new('MeshPart')
@@ -28,12 +28,12 @@ GamingChair = vape.Categories.Render:CreateModule({
 			chair.Material = Enum.Material.SmoothPlastic
 			chair.Parent = workspace
 			movingsound = Instance.new('Sound')
-			--movingsound.SoundId = downloadVapeAsset('vape/assets/ChairRolling.mp3')
+			--movingsound.SoundId = downloadVainAsset('vain/assets/ChairRolling.mp3')
 			movingsound.Volume = 0.4
 			movingsound.Looped = true
 			movingsound.Parent = workspace
 			flyingsound = Instance.new('Sound')
-			--flyingsound.SoundId = downloadVapeAsset('vape/assets/ChairFlying.mp3')
+			--flyingsound.SoundId = downloadVainAsset('vain/assets/ChairFlying.mp3')
 			flyingsound.Volume = 0.4
 			flyingsound.Looped = true
 			flyingsound.Parent = workspace
@@ -121,7 +121,7 @@ GamingChair = vape.Categories.Render:CreateModule({
 					chairfan.Velocity = Vector3.zero
 					chairfan.CFrame = chair.CFrame * CFrame.new(0.047, -1.873, 0) * CFrame.Angles(0, math.rad(tick() * 180 % 360), math.rad(180))
 					local moving = entitylib.character.Humanoid:GetState() == Enum.HumanoidStateType.Running and entitylib.character.Humanoid.MoveDirection ~= Vector3.zero
-					local flying = vape.Modules.Fly and vape.Modules.Fly.Enabled or vape.Modules.LongJump and vape.Modules.LongJump.Enabled or vape.Modules.InfiniteFly and vape.Modules.InfiniteFly.Enabled
+					local flying = vain.Modules.Fly and vain.Modules.Fly.Enabled or vain.Modules.LongJump and vain.Modules.LongJump.Enabled or vain.Modules.InfiniteFly and vain.Modules.InfiniteFly.Enabled
 					if movingsound.TimePosition > 1.9 then
 						movingsound.TimePosition = 0.2
 					end
