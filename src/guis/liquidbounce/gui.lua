@@ -64,17 +64,17 @@ local uipallet = {
 }
 
 local getcustomassets = {
-	['newvain/assets/liquidbounce/blatant.png'] = 'rbxasset://liquidbounce/blatant.png',
-	['newvain/assets/liquidbounce/combat.png'] = 'rbxasset://liquidbounce/combat.png',
-	['newvain/assets/liquidbounce/expand.png'] = 'rbxasset://liquidbounce/expand.png',
-	['newvain/assets/liquidbounce/inventory.png'] = 'rbxasset://liquidbounce/inventory.png',
-	['newvain/assets/liquidbounce/logo.png'] = 'rbxasset://liquidbounce/logo.png',
-	['newvain/assets/liquidbounce/minigames.png'] = 'rbxasset://liquidbounce/minigames.png',
-	['newvain/assets/liquidbounce/render.png'] = 'rbxasset://liquidbounce/render.png',
-	['newvain/assets/liquidbounce/textgui.png'] = 'rbxasset://liquidbounce/textgui.png',
-	['newvain/assets/liquidbounce/utility.png'] = 'rbxasset://liquidbounce/utility.png',
-	['newvain/assets/liquidbounce/world.png'] = 'rbxasset://liquidbounce/world.png',
-	['newvain/assets/new/blur.png'] = 'rbxassetid://14898786664'
+	['vain/assets/liquidbounce/blatant.png'] = 'rbxasset://liquidbounce/blatant.png',
+	['vain/assets/liquidbounce/combat.png'] = 'rbxasset://liquidbounce/combat.png',
+	['vain/assets/liquidbounce/expand.png'] = 'rbxasset://liquidbounce/expand.png',
+	['vain/assets/liquidbounce/inventory.png'] = 'rbxasset://liquidbounce/inventory.png',
+	['vain/assets/liquidbounce/logo.png'] = 'rbxasset://liquidbounce/logo.png',
+	['vain/assets/liquidbounce/minigames.png'] = 'rbxasset://liquidbounce/minigames.png',
+	['vain/assets/liquidbounce/render.png'] = 'rbxasset://liquidbounce/render.png',
+	['vain/assets/liquidbounce/textgui.png'] = 'rbxasset://liquidbounce/textgui.png',
+	['vain/assets/liquidbounce/utility.png'] = 'rbxasset://liquidbounce/utility.png',
+	['vain/assets/liquidbounce/world.png'] = 'rbxasset://liquidbounce/world.png',
+	['vain/assets/new/blur.png'] = 'rbxassetid://14898786664'
 }
 
 local isfile = isfile or function(file)
@@ -99,7 +99,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 42, 1, 42)
 	blur.Position = UDim2.fromOffset(-24, -15)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvain/assets/new/blur.png')
+	blur.Image = getcustomasset('vain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(44, 38, 804, 595)
 	blur.Parent = parent
@@ -174,7 +174,7 @@ local function downloadFile(path, func)
 	if not isfile(path) then
 		createDownloader(path)
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('vain/profiles/commit.txt')..'/'..select(1, path:gsub('vain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -261,19 +261,19 @@ end
 
 local function writeFont()
 	if not assetfunction then return 'rbxasset://fonts/inter.json' end
-	--[[writefile('newvain/assets/liquidbounce/lbfont.json', httpService:JSONEncode({
+	--[[writefile('vain/assets/liquidbounce/lbfont.json', httpService:JSONEncode({
 		name = 'Inter',
 		faces = {
-			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Light.ttf'), name = 'Light', weight = 300},
-			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Regular.ttf'), name = 'Regular', weight = 400},
-			{style = 'normal', assetId = getcustomasset('newvain/assets/liquidbounce/Inter-Medium.ttf'), name = 'Medium', weight = 500}
+			{style = 'normal', assetId = getcustomasset('vain/assets/liquidbounce/Inter-Light.ttf'), name = 'Light', weight = 300},
+			{style = 'normal', assetId = getcustomasset('vain/assets/liquidbounce/Inter-Regular.ttf'), name = 'Regular', weight = 400},
+			{style = 'normal', assetId = getcustomasset('vain/assets/liquidbounce/Inter-Medium.ttf'), name = 'Medium', weight = 500}
 		}
 	}))]]
-	return getcustomasset('newvain/assets/liquidbounce/lbfont.json')
+	return getcustomasset('vain/assets/liquidbounce/lbfont.json')
 end
 
 if inputService.TouchEnabled then
-	writefile('newvain/profiles/gui.txt', 'new')
+	writefile('vain/profiles/gui.txt', 'new')
 	return
 end
 
@@ -283,7 +283,7 @@ do
 	uipallet.FontSemiBold = Font.new(lbfont, Enum.FontWeight.Medium)
 	uipallet.FontLight = Font.new(lbfont, Enum.FontWeight.Light)
 
-	local res = isfile('newvain/profiles/color.txt') and loadJson('newvain/profiles/color.txt')
+	local res = isfile('vain/profiles/color.txt') and loadJson('vain/profiles/color.txt')
 	if res then
 		uipallet.Main = res.Main and Color3.fromRGB(unpack(res.Main)) or uipallet.Main
 		uipallet.Text = res.Text and Color3.fromRGB(unpack(res.Text)) or uipallet.Text
@@ -525,7 +525,7 @@ function mainapi:CreateCategory(categorysettings)
 		expandicon.Position = UDim2.new(1, -20, 0.5, 0)
 		expandicon.AnchorPoint = Vector2.new(0.5, 0.5)
 		expandicon.BackgroundTransparency = 1
-		expandicon.Image = getcustomasset('newvain/assets/liquidbounce/expand.png')
+		expandicon.Image = getcustomasset('vain/assets/liquidbounce/expand.png')
 		expandicon.ImageTransparency = 0.5
 		expandicon.Parent = modulebutton
 		local modulechildren = Instance.new('Frame')
@@ -810,37 +810,37 @@ end))
 
 mainapi:CreateCategory({
 	Name = 'Combat',
-	Icon = getcustomasset('newvain/assets/liquidbounce/combat.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/combat.png'),
 	Size = UDim2.fromOffset(16, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Blatant',
-	Icon = getcustomasset('newvain/assets/liquidbounce/blatant.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/blatant.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Render',
-	Icon = getcustomasset('newvain/assets/liquidbounce/render.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/render.png'),
 	Size = UDim2.fromOffset(15, 9)
 })
 mainapi:CreateCategory({
 	Name = 'Utility',
-	Icon = getcustomasset('newvain/assets/liquidbounce/utility.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/utility.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'World',
-	Icon = getcustomasset('newvain/assets/liquidbounce/world.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/world.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Inventory',
-	Icon = getcustomasset('newvain/assets/liquidbounce/inventory.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/inventory.png'),
 	Size = UDim2.fromOffset(14, 15)
 })
 mainapi:CreateCategory({
 	Name = 'Minigames',
-	Icon = getcustomasset('newvain/assets/liquidbounce/minigames.png'),
+	Icon = getcustomasset('vain/assets/liquidbounce/minigames.png'),
 	Size = UDim2.fromOffset(15, 15)
 })
 

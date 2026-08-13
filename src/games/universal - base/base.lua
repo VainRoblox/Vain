@@ -14,7 +14,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('newvain/profiles/commit.txt')..'/'..select(1, path:gsub('newvain/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/VainRoblox/VainCompiled/'..readfile('vain/profiles/commit.txt')..'/'..select(1, path:gsub('vain/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -74,7 +74,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('newvain/assets/new/blur.png')
+	blur.Image = getcustomasset('vain/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -230,9 +230,9 @@ local function motorMove(target, cf)
 	task.delay(0, part.Destroy, part)
 end
 
-local hash = loadstring(downloadFile('newvain/libraries/hash.lua'), 'hash')()
-local prediction = loadstring(downloadFile('newvain/libraries/prediction.lua'), 'prediction')()
-entitylib = loadstring(downloadFile('newvain/libraries/entity.lua'), 'entitylibrary')()
+local hash = loadstring(downloadFile('vain/libraries/hash.lua'), 'hash')()
+local prediction = loadstring(downloadFile('vain/libraries/prediction.lua'), 'prediction')()
+entitylib = loadstring(downloadFile('vain/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},
 	customtags = {},
@@ -648,7 +648,7 @@ run(function()
 		if success then
 			return sendToast({
 				toastTitle = text,
-				iconImage = getcustomasset('newvain/assets/new/vain.png'),
+				iconImage = getcustomasset('vain/assets/new/vain.png'),
 				swipeUpDismiss = true,
 				onActivated = function() end
 			})
@@ -719,7 +719,7 @@ run(function()
 		iconframe.Parent = mainframe
 		local icon = Instance.new('ImageLabel')
 		icon.Size = UDim2.fromOffset(36, 36)
-		icon.Image = getcustomasset('newvain/assets/new/vain.png')
+		icon.Image = getcustomasset('vain/assets/new/vain.png')
 		icon.BackgroundTransparency = 1
 		icon.Parent = iconframe
 		constraint.MaxSize = Vector2.new(math.max(getfontsize(text, 20, textlabel.FontFace).X + 80, 600), math.huge)
@@ -755,7 +755,7 @@ run(function()
 
 		if not first or whitelist.textdata ~= whitelist.olddata then
 			if not first then
-				whitelist.olddata = isfile('newvain/profiles/whitelist.json') and readfile('newvain/profiles/whitelist.json') or nil
+				whitelist.olddata = isfile('vain/profiles/whitelist.json') and readfile('vain/profiles/whitelist.json') or nil
 			end
 
 			local suc, res = pcall(function()
@@ -799,7 +799,7 @@ run(function()
 				end
 				whitelist.olddata = whitelist.textdata
 				pcall(function()
-					writefile('newvain/profiles/whitelist.json', whitelist.textdata)
+					writefile('vain/profiles/whitelist.json', whitelist.textdata)
 				end)
 			end
 

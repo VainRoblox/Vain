@@ -43,7 +43,7 @@ end
 
 Radar = vain:CreateOverlay({
 	Name = 'Radar',
-	Icon = getcustomasset('newvain/assets/new/radaricon.png'),
+	Icon = getcustomasset('vain/assets/new/radaricon.png'),
 	Size = UDim2.fromOffset(14, 14),
 	Position = UDim2.fromOffset(12, 13),
 	Function = function(callback)

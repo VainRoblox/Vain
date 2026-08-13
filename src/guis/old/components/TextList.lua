@@ -135,7 +135,7 @@ function optionapi:ChangeValue(val)
 		local objectdotin = Instance.new('ImageLabel')
 		objectdotin.Size = UDim2.fromScale(1, 1)
 		objectdotin.BackgroundTransparency = 1
-		objectdotin.Image = getcustomasset('newvain/assets/old/checkbox.png')
+		objectdotin.Image = getcustomasset('vain/assets/old/checkbox.png')
 		objectdotin.ImageColor3 = uipallet.Text
 		objectdotin.Parent = objectdot
 		local objecttitle = Instance.new('TextLabel')
