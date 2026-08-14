@@ -62,5 +62,5 @@ Just set `rankapi.baseUrl` in `src/games/universal - base/base.lua` to your depl
 3. Join a Roblox game running Vain as both the linked (ranked) account and a second unranked account
 4. On the ranked account, either:
    - **Chat**: copy the key to your clipboard, type `;rank key`, then `;rank kick <targetusername> reason here`
-   - **GUI**: Settings → General → paste the key into "Rank key", pick `kick` and the target from the dropdowns (auto-populated with current server players), click "Run rank command"
+   - **GUI**: Settings → General → paste the key into "Rank key", then in "Rank command" type `kick <targetusername> reason here` and press Enter
 5. The target account should get kicked within ~25 seconds
