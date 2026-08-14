@@ -1,0 +1,21 @@
+{
+	"name": "vain-api",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy",
+		"db:init": "wrangler d1 execute vain-api --file=./schema.sql",
+		"db:init:remote": "wrangler d1 execute vain-api --remote --file=./schema.sql",
+		"register-commands": "node scripts/register-commands.js"
+	},
+	"type": "module",
+	"devDependencies": {
+		"wrangler": "^3.90.0"
+	},
+	"allowScripts": {
+		"esbuild@0.17.19": true,
+		"sharp@0.33.5": true,
+		"workerd@1.20250718.0": true
+	}
+}

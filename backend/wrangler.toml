@@ -1,0 +1,17 @@
+name = "vain-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vain-api"
+database_id = "99d34eae-1f22-4a62-98c6-08700eda3bbe"
+
+[vars]
+DISCORD_GUILD_ID = "REPLACE_WITH_YOUR_DISCORD_SERVER_ID" # v1 supports one rank-granting server
+RANK_CACHE_TTL_SECONDS = "120"
+
+# Secrets (set via `wrangler secret put <NAME>`, never committed):
+#   DISCORD_PUBLIC_KEY   - from the Discord Developer Portal, used to verify interaction signatures
+#   DISCORD_BOT_TOKEN    - used to call Discord's REST API (fetch a member's roles)
+#   DISCORD_APP_ID       - Discord application ID
