@@ -8,7 +8,7 @@ database_name = "vain-api"
 database_id = "99d34eae-1f22-4a62-98c6-08700eda3bbe"
 
 [vars]
-DISCORD_GUILD_ID = "REPLACE_WITH_YOUR_DISCORD_SERVER_ID" # v1 supports one rank-granting server
+DISCORD_GUILD_ID = "1537794664931795005" # v1 supports one rank-granting server
 RANK_CACHE_TTL_SECONDS = "120"
 
 # Secrets (set via `wrangler secret put <NAME>`, never committed):

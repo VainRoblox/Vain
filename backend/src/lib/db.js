@@ -1,5 +1,7 @@
 // Thin helpers over the D1 binding. Table shapes are defined in schema.sql.
 
+import { constantTimeEqual } from './crypto.js';
+
 async function getBindingByRobloxId(db, robloxUserId) {
 	return db
 		.prepare('SELECT * FROM bindings WHERE roblox_userid = ?')
@@ -48,7 +50,7 @@ async function verifyOrRegisterClientKey(db, robloxUserId, providedKey) {
 		.bind(robloxUserId, providedKey, now)
 		.run();
 	const row = await db.prepare('SELECT poll_key FROM client_identities WHERE roblox_userid = ?').bind(robloxUserId).first();
-	return row?.poll_key === providedKey;
+	return constantTimeEqual(row?.poll_key ?? '', providedKey);
 }
 
 async function deleteBindingByDiscordId(db, discordId) {

@@ -1,5 +1,11 @@
 import { getBindingByRobloxId } from '../lib/db.js';
 import { issueCommand } from '../lib/commands.js';
+import { constantTimeEqual } from '../lib/crypto.js';
+
+// Same length as a real binding_secret (32 random bytes -> 64 hex chars), so an
+// unlinked issuer_uid takes the same comparison time as a linked one with a wrong key -
+// see the comment below for why that matters.
+const DUMMY_SECRET = '0'.repeat(64);
 
 // Called by a Roblox client issuing a command against another player it sees in-game.
 // (The Discord bot issues commands through issueCommand() directly, not this HTTP route -
@@ -23,7 +29,12 @@ async function handleCommand(request, env) {
 
 	const issuerRobloxUserId = parseInt(issuerUid, 10);
 	const binding = await getBindingByRobloxId(env.DB, issuerRobloxUserId);
-	if (!binding || binding.binding_secret !== key) {
+	// Always compare against something of the right length, and always run the
+	// comparison before branching on whether a binding even exists - otherwise
+	// "no binding" short-circuits instantly while "wrong key" takes measurably longer,
+	// which itself leaks information (even if not the secret's actual bytes).
+	const keyMatches = constantTimeEqual(binding?.binding_secret ?? DUMMY_SECRET, key);
+	if (!binding || !keyMatches) {
 		// Deliberately the same error whether the account isn't linked at all or the key
 		// is just wrong - doesn't help an attacker tell which.
 		return Response.json({ error: 'not authorized' }, { status: 401 });

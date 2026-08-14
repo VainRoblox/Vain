@@ -19,7 +19,7 @@ const commands = [
 			{
 				type: 1, // SUB_COMMAND
 				name: 'edit',
-				description: 'Link a Roblox account (run twice: once to get a code, once to confirm)',
+				description: 'Link your Roblox account',
 				options: [{ type: 3, name: 'roblox', description: 'Your Roblox username', required: true }],
 			},
 			{
@@ -32,6 +32,10 @@ const commands = [
 	{
 		name: 'command',
 		description: 'Run a command on a lower-ranked Roblox user',
+		// Administrator-only by default. Server owners can still loosen this per-command
+		// in Server Settings > Integrations if they want other ranked members to use it
+		// from Discord too - this only sets the out-of-the-box default.
+		default_member_permissions: String(1 << 3), // ADMINISTRATOR permission bit (0x8)
 		options: [
 			{ type: 3, name: 'action', description: 'Command name (e.g. kick)', required: true },
 			{ type: 3, name: 'target', description: 'Target Roblox username', required: true },
