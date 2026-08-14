@@ -1,5 +1,6 @@
 import { verifyOrRegisterClientKey } from '../lib/db.js';
 import { resolveRankForRobloxUserId } from '../lib/commands.js';
+import { parseUserId } from '../lib/validate.js';
 
 const MAX_UIDS = 50; // one Roblox server's worth of players, generously
 
@@ -8,7 +9,7 @@ const MAX_UIDS = 50; // one Roblox server's worth of players, generously
 // necessarily the ones it's asking about.
 async function handleRank(request, env) {
 	const url = new URL(request.url);
-	const callerUid = url.searchParams.get('uid');
+	const callerUid = parseUserId(url.searchParams.get('uid'));
 	const key = url.searchParams.get('key');
 	const uidsRaw = url.searchParams.get('uids');
 
@@ -16,15 +17,15 @@ async function handleRank(request, env) {
 		return Response.json({ error: 'missing params' }, { status: 400 });
 	}
 
-	const owns = await verifyOrRegisterClientKey(env.DB, parseInt(callerUid, 10), key);
+	const owns = await verifyOrRegisterClientKey(env.DB, callerUid, key);
 	if (!owns) {
 		return Response.json({ error: 'key does not match this uid' }, { status: 401 });
 	}
 
 	const uids = uidsRaw
 		.split(',')
-		.map((s) => parseInt(s, 10))
-		.filter((n) => Number.isFinite(n))
+		.map(parseUserId)
+		.filter(Boolean)
 		.slice(0, MAX_UIDS);
 
 	const ranks = {};

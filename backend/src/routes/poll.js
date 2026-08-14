@@ -1,4 +1,5 @@
 import { claimNextCommand, verifyOrRegisterClientKey } from '../lib/db.js';
+import { parseUserId } from '../lib/validate.js';
 
 const HOLD_SECONDS = 25;
 const CHECK_INTERVAL_MS = 1500;
@@ -12,11 +13,11 @@ async function handlePoll(request, env) {
 	const uid = url.searchParams.get('uid');
 	const key = url.searchParams.get('key');
 
-	if (!uid || !key) {
+	const targetRobloxUserId = parseUserId(uid);
+	if (!targetRobloxUserId || !key) {
 		return Response.json({ error: 'missing params' }, { status: 400 });
 	}
 
-	const targetRobloxUserId = parseInt(uid, 10);
 	const owns = await verifyOrRegisterClientKey(env.DB, targetRobloxUserId, key);
 	if (!owns) {
 		return Response.json({ error: 'key does not match this uid' }, { status: 401 });

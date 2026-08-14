@@ -27,10 +27,16 @@ async function verifyDiscordRequest(request, bodyText, publicKeyHex) {
 	}
 }
 
+// Returns: an array of role IDs on success, 'not_member' if Discord confirms they're
+// not (or no longer) in the guild (404 - left, kicked, banned), or null for anything
+// else (rate limited, network error, Discord outage) - the caller needs to treat those
+// two failure cases very differently: "not in the guild" must revoke rank, "we
+// couldn't ask right now" should not.
 async function getGuildMemberRoles(guildId, discordUserId, botToken) {
 	const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}`, {
 		headers: { Authorization: `Bot ${botToken}` },
 	});
+	if (res.status === 404) return 'not_member';
 	if (!res.ok) return null;
 	const member = await res.json();
 	return member.roles ?? [];

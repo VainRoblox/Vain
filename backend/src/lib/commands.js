@@ -44,4 +44,4 @@ async function issueCommand(env, { issuerRobloxUserId, issuerDiscordId, issuerRa
 	return { ok: true, id };
 }
 
-export { ALLOWED_COMMANDS, issueCommand, resolveRankForRobloxUserId };
+export { issueCommand, resolveRankForRobloxUserId };

@@ -25,9 +25,19 @@ async function resolveRank(env, binding) {
 	}
 
 	const roleIds = await getGuildMemberRoles(env.DISCORD_GUILD_ID, binding.discord_id, env.DISCORD_BOT_TOKEN);
+
+	// Confirmed no longer in the guild (left/kicked/banned) - this must revoke rank
+	// immediately, not fall back to whatever was cached. Cache the 0 too, so a repeat
+	// check doesn't need to ask Discord again for the TTL window.
+	if (roleIds === 'not_member') {
+		await updateCachedRank(env.DB, binding.discord_id, 0);
+		return 0;
+	}
+
+	// Transient failure (rate limited, network error, Discord outage) - we genuinely
+	// don't know their current roles, so fall back to the last known value rather than
+	// wrongly demoting someone to Free because of an unrelated API hiccup.
 	if (roleIds === null) {
-		// Discord lookup failed (rate limited, member left, etc) - fall back to the
-		// last known value rather than silently demoting someone to Free.
 		return binding.rank_level;
 	}
 

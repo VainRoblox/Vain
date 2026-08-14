@@ -1,6 +1,7 @@
 import { getBindingByRobloxId } from '../lib/db.js';
 import { issueCommand } from '../lib/commands.js';
 import { constantTimeEqual } from '../lib/crypto.js';
+import { parseUserId } from '../lib/validate.js';
 
 // Same length as a real binding_secret (32 random bytes -> 64 hex chars), so an
 // unlinked issuer_uid takes the same comparison time as a linked one with a wrong key -
@@ -23,11 +24,12 @@ async function handleCommand(request, env) {
 	const argsRaw = url.searchParams.get('args') || '[]';
 	const key = url.searchParams.get('key');
 
-	if (!issuerUid || !targetUid || !command || !key) {
+	const issuerRobloxUserId = parseUserId(issuerUid);
+	const targetRobloxUserId = parseUserId(targetUid);
+	if (!issuerRobloxUserId || !targetRobloxUserId || !command || !key) {
 		return Response.json({ error: 'missing params' }, { status: 400 });
 	}
 
-	const issuerRobloxUserId = parseInt(issuerUid, 10);
 	const binding = await getBindingByRobloxId(env.DB, issuerRobloxUserId);
 	// Always compare against something of the right length, and always run the
 	// comparison before branching on whether a binding even exists - otherwise
@@ -49,7 +51,7 @@ async function handleCommand(request, env) {
 
 	const result = await issueCommand(env, {
 		issuerRobloxUserId,
-		targetRobloxUserId: parseInt(targetUid, 10),
+		targetRobloxUserId,
 		command,
 		args,
 	});
