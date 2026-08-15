@@ -6,6 +6,8 @@ import { issueCommand } from '../lib/commands.js';
 import {
 	upsertAccount,
 	removeAccount,
+	setHas2fa,
+	resetAllRanks,
 	getAccount,
 	getAccountInUseByUser,
 	setInUse,
@@ -153,6 +155,24 @@ async function handleRosterUpdate(env, interaction, name, rank) {
 	await upsertAccount(env.DB, name, normalizedRank);
 	const synced = await syncRosterEmbed(env);
 	return replyMessage(`Updated **${name}** to ${normalizedRank || 'Unranked'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+}
+
+async function handleSet2fa(env, interaction, name, has2fa) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const existing = await getAccount(env.DB, name);
+	if (!existing) return replyMessage(`No account named "${name}" found.`);
+	await setHas2fa(env.DB, name, has2fa);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Set **${name}**'s 2FA Required to **${has2fa ? 'true' : 'false'}**.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+}
+
+// "A new season begins" - resets every account's rank to Unranked, leaving checkout
+// status, kits, 2FA, and wishlist entries untouched.
+async function handleReset(env, interaction) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const count = await resetAllRanks(env.DB);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Reset ${count} account${count === 1 ? '' : 's'} to Unranked.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterUse(env, interaction, name) {
@@ -356,6 +376,14 @@ async function handleDiscordInteraction(request, env) {
 		const accName = getOption(interaction.data.options, 'name');
 		const rank = getOption(interaction.data.options, 'rank');
 		return Response.json(await handleRosterUpdate(env, interaction, accName, rank));
+	}
+	if (name === 'set2fa') {
+		const accName = getOption(interaction.data.options, 'name');
+		const value = getOption(interaction.data.options, 'value');
+		return Response.json(await handleSet2fa(env, interaction, accName, value));
+	}
+	if (name === 'reset') {
+		return Response.json(await handleReset(env, interaction));
 	}
 	if (name === 'use') {
 		const accName = getOption(interaction.data.options, 'name');

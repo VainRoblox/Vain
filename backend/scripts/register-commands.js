@@ -85,6 +85,18 @@ const commands = [
 		],
 	},
 	{
+		name: 'set2fa',
+		description: "Update an account's 2FA Required setting",
+		options: [
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
+			{ type: 5, name: 'value', description: '2FA Required — needs a code from the owner to log in', required: true },
+		],
+	},
+	{
+		name: 'reset',
+		description: 'Reset every account to Unranked (new season)',
+	},
+	{
 		name: 'use',
 		description: 'Mark an account as currently used by you',
 		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],

@@ -14,10 +14,11 @@ const RANK_EMOJIS = {
 };
 
 // has2fa: true/false to set it, or omitted (undefined) to leave it untouched on an
-// existing row - /update calls this without touching 2FA status, since only /add's
-// optional `twofa` option is meant to set it. A brand new row can't be left "untouched"
-// (the column is NOT NULL), so callers inserting a fresh account must pass a real
-// boolean - only handleRosterUpdate (which always targets an existing row) omits it.
+// existing row - /update calls this without touching 2FA status, since that's set via
+// /add's optional `2fa_required` option or changed later with /set2fa. A brand new row
+// can't be left "untouched" (the column is NOT NULL), so callers inserting a fresh
+// account must pass a real boolean - only handleRosterUpdate (which always targets an
+// existing row) omits it.
 async function upsertAccount(db, name, rank, has2fa) {
 	const now = Math.floor(Date.now() / 1000);
 	const has2faValue = has2fa === undefined ? null : has2fa ? 1 : 0;
@@ -34,6 +35,25 @@ async function upsertAccount(db, name, rank, has2fa) {
 async function removeAccount(db, name) {
 	const res = await db.prepare('DELETE FROM account_roster WHERE name = ?').bind(name).run();
 	return res.meta.changes > 0;
+}
+
+// Backs /set2fa - changes only has_2fa on an existing account, unlike upsertAccount
+// which also always touches rank.
+async function setHas2fa(db, name, has2fa) {
+	const now = Math.floor(Date.now() / 1000);
+	const res = await db
+		.prepare('UPDATE account_roster SET has_2fa = ?, updated_at = ? WHERE name = ?')
+		.bind(has2fa ? 1 : 0, now, name)
+		.run();
+	return res.meta.changes > 0;
+}
+
+// Backs /reset ("a new season begins") - only touches rank, leaving checkout status,
+// kits, 2FA, and wishlist entries untouched.
+async function resetAllRanks(db) {
+	const now = Math.floor(Date.now() / 1000);
+	const res = await db.prepare("UPDATE account_roster SET rank = '', updated_at = ?").bind(now).run();
+	return res.meta.changes;
 }
 
 async function getAccount(db, name) {
@@ -230,6 +250,8 @@ async function listWishlist(db) {
 export {
 	upsertAccount,
 	removeAccount,
+	setHas2fa,
+	resetAllRanks,
 	getAccount,
 	getAccountInUseByUser,
 	setInUse,
