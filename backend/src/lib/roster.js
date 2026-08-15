@@ -1,6 +1,18 @@
 // The shared account roster: name, current in-game rank, and who (if anyone) has it
 // checked out. See schema.sql's account_roster table for the shape.
 
+// Guild's custom tier emoji (fetched once via GET /guilds/{id}/emojis and hardcoded
+// here - these are static per-emoji IDs, not something that changes at runtime).
+const RANK_EMOJIS = {
+	bronze: '<:bronze:1537805324101353623>',
+	silver: '<:silver:1537805259571859536>',
+	gold: '<:gold:1537805148527656960>',
+	platinum: '<:platinum:1537805203703730270>',
+	diamond: '<:diamond:1537805177497722920>',
+	emerald: '<:emerald:1537799234055700520>',
+	nightmare: '<:nightmare:1537799266159042701>',
+};
+
 async function upsertAccount(db, name, rank) {
 	const now = Math.floor(Date.now() / 1000);
 	await db
@@ -39,8 +51,12 @@ async function listAccounts(db) {
 function buildRosterEmbed(accounts) {
 	const lines = accounts.length
 		? accounts.map((a) => {
+				const emoji = RANK_EMOJIS[a.rank.toLowerCase()];
+				// Unrecognized rank text (typo, or a tier without an emoji) - fall back to
+				// showing it as plain text rather than dropping it silently.
+				const rankLabel = emoji || `\`${a.rank}\``;
 				const inUse = a.in_use_by ? ` — *in use by <@${a.in_use_by}>*` : '';
-				return `**${a.name}** — ${a.rank}${inUse}`;
+				return `${rankLabel} **${a.name}**${inUse}`;
 			})
 		: ['*No accounts yet — add one with `/add`.*'];
 
