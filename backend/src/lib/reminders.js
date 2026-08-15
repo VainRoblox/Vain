@@ -38,14 +38,12 @@ async function checkUsageBudget(env) {
 	const today = new Date().toISOString().slice(0, 10);
 	if ((await getUsageAlertDate(env.DB)) === today) return;
 
+	// No orderBy needed (unlike /status's query in routes/discord.js) - the filter
+	// already narrows this to a single day, so there's nothing to order.
 	const query = `query {
 		viewer {
 			accounts(filter: { accountTag: "${env.CLOUDFLARE_ACCOUNT_ID}" }) {
-				workersInvocationsAdaptive(
-					limit: 1
-					filter: { scriptName: "vain-api", date_geq: "${today}", date_leq: "${today}" }
-					orderBy: [date_DESC]
-				) {
+				workersInvocationsAdaptive(limit: 1, filter: { scriptName: "vain-api", date_geq: "${today}", date_leq: "${today}" }) {
 					sum { requests }
 				}
 			}
