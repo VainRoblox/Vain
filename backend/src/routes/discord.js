@@ -16,6 +16,7 @@ import {
 	addKit,
 	removeKit,
 	listKitsForAccount,
+	listAccountsWithKit,
 } from '../lib/roster.js';
 import { searchKits } from '../lib/kits.js';
 
@@ -210,6 +211,12 @@ async function handleListKits(env, interaction, accountName) {
 	return replyMessage(`**${accountName}**'s kits:\n${kits.map((k) => `• ${k}`).join('\n')}`);
 }
 
+async function handleKitOwners(env, interaction, kitName) {
+	const owners = await listAccountsWithKit(env.DB, kitName);
+	if (!owners.length) return replyMessage(`No accounts have **${kitName}** recorded.`);
+	return replyMessage(`Accounts with **${kitName}**:\n${owners.map((n) => `• ${n}`).join('\n')}`);
+}
+
 // Live-queries account names (or, for the `kit` option, the static kit catalog) as the
 // user types, rather than a static (and immediately stale, or in the kit list's case
 // way over Discord's 25-choice cap) `choices` list.
@@ -298,6 +305,10 @@ async function handleDiscordInteraction(request, env) {
 	if (name === 'kits') {
 		const accName = getOption(interaction.data.options, 'name');
 		return Response.json(await handleListKits(env, interaction, accName));
+	}
+	if (name === 'kitowners') {
+		const kit = getOption(interaction.data.options, 'kit');
+		return Response.json(await handleKitOwners(env, interaction, kit));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));

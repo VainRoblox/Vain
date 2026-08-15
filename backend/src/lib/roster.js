@@ -109,14 +109,15 @@ function buildRosterEmbed(accounts) {
 			{
 				name: 'Commands',
 				value: [
-					'`/add name:<account> rank:<tier>` — add an account (pick Unranked if it has none)',
-					'`/update name:<account> rank:<tier>` — change its rank (pick Unranked to clear it)',
+					'`/add name:<account> rank:<tier>` — add an account',
+					'`/update name:<account> rank:<tier>` — change its rank',
 					'`/remove name:<account>` — remove it',
-					'`/use name:<account>` — check it out (marks it currently used by you; one at a time)',
-					'`/done` — release whichever account you currently have checked out',
+					'`/use name:<account>` — marks account as being currently used by you',
+					'`/done` — marks your checked-out account as free again',
 					'`/addkit name:<account> kit:<kit>` — record that an account owns a kit',
 					'`/removekit name:<account> kit:<kit>` — remove a kit from an account',
-					"`/kits name:<account>` — list an account's owned kits (only visible to you)",
+					"`/kits name:<account>` — list an account's owned kits",
+					'`/kitowners kit:<kit>` — list every account that owns a kit',
 				].join('\n'),
 			},
 		],
@@ -149,6 +150,14 @@ async function listKitsForAccount(db, accountName) {
 	return results.map((r) => r.kit_name);
 }
 
+async function listAccountsWithKit(db, kitName) {
+	const { results } = await db
+		.prepare('SELECT account_name FROM account_kits WHERE kit_name = ? ORDER BY account_name COLLATE NOCASE')
+		.bind(kitName)
+		.all();
+	return results.map((r) => r.account_name);
+}
+
 export {
 	upsertAccount,
 	removeAccount,
@@ -162,4 +171,5 @@ export {
 	addKit,
 	removeKit,
 	listKitsForAccount,
+	listAccountsWithKit,
 };

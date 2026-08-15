@@ -117,6 +117,11 @@ const commands = [
 		description: "List an account's owned kits",
 		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
 	},
+	{
+		name: 'kitowners',
+		description: 'List every account that owns a given kit',
+		options: [{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true }],
+	},
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`, {
