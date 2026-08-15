@@ -12,7 +12,9 @@ if (!appId || !botToken || !guildId) {
 }
 
 // Must match the keys in src/lib/roster.js's RANK_EMOJIS exactly, or the embed falls
-// back to plain text for whatever doesn't match.
+// back to plain text for whatever doesn't match. 'unranked' is a sentinel handled
+// specially in routes/discord.js (normalized to an empty rank, same as the old
+// "just leave the field blank" behavior) - it's not a real emoji key.
 const RANK_CHOICES = [
 	{ name: 'Bronze', value: 'bronze' },
 	{ name: 'Silver', value: 'silver' },
@@ -21,6 +23,7 @@ const RANK_CHOICES = [
 	{ name: 'Diamond', value: 'diamond' },
 	{ name: 'Emerald', value: 'emerald' },
 	{ name: 'Nightmare', value: 'nightmare' },
+	{ name: 'Unranked', value: 'unranked' },
 ];
 
 const commands = [
@@ -61,7 +64,7 @@ const commands = [
 		description: 'Add an account to the roster',
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
-			{ type: 3, name: 'rank', description: 'Current rank/tier - omit for unranked', required: false, choices: RANK_CHOICES },
+			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true, choices: RANK_CHOICES },
 		],
 	},
 	{
@@ -77,12 +80,12 @@ const commands = [
 		description: "Update an account's rank",
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
-			{ type: 3, name: 'rank', description: 'New rank/tier - omit to clear to unranked', required: false, choices: RANK_CHOICES },
+			{ type: 3, name: 'rank', description: 'New rank/tier', required: true, choices: RANK_CHOICES },
 		],
 	},
 	{
 		name: 'use',
-		description: 'Mark an account as currently in use by you',
+		description: 'Mark an account as currently used by you',
 		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
 	},
 	{

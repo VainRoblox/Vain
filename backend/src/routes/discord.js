@@ -29,6 +29,13 @@ function hasRosterRole(interaction) {
 	return (interaction.member?.roles ?? []).includes(ROSTER_ROLE_ID);
 }
 
+// The 'Unranked' dropdown choice is a sentinel, not a real tier - normalize it (and a
+// missing value, just in case) to the same empty-rank representation roster.js already
+// uses to mean "no rank, show no emoji."
+function normalizeRank(rank) {
+	return rank && rank !== 'unranked' ? rank : '';
+}
+
 // One shot: binds discordId to the given Roblox username immediately and hands back
 // the key. No proof-of-ownership step (no code-in-profile, no waiting) - this is safe
 // because rank is never derived from the Roblox account claimed here, only from
@@ -115,9 +122,10 @@ const ROSTER_SYNC_FAILED_NOTE =
 
 async function handleRosterAdd(env, interaction, name, rank) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
-	await upsertAccount(env.DB, name, rank ?? '');
+	const normalizedRank = normalizeRank(rank);
+	await upsertAccount(env.DB, name, normalizedRank);
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Added **${name}**${rank ? ` (${rank})` : ' (unranked)'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Added **${name}** (${normalizedRank || 'Unranked'}).${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterRemove(env, interaction, name) {
@@ -132,9 +140,10 @@ async function handleRosterUpdate(env, interaction, name, rank) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	const existing = await getAccount(env.DB, name);
 	if (!existing) return replyMessage(`No account named "${name}" found. Use /add first.`);
-	await upsertAccount(env.DB, name, rank ?? '');
+	const normalizedRank = normalizeRank(rank);
+	await upsertAccount(env.DB, name, normalizedRank);
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Updated **${name}** to ${rank || 'unranked'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Updated **${name}** to ${normalizedRank || 'Unranked'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterUse(env, interaction, name) {
@@ -144,7 +153,7 @@ async function handleRosterUse(env, interaction, name) {
 	const requesterId = interaction.member.user.id;
 
 	if (existing.in_use_by && existing.in_use_by !== requesterId) {
-		return replyMessage(`**${name}** is already in use by <@${existing.in_use_by}>.`);
+		return replyMessage(`**${name}** is currently used by <@${existing.in_use_by}>.`);
 	}
 
 	// One account at a time per person - /done has no parameters and relies on this
@@ -156,7 +165,7 @@ async function handleRosterUse(env, interaction, name) {
 
 	await setInUse(env.DB, name, requesterId);
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Marked **${name}** as in use by you.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Marked **${name}** as currently used by you.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterDone(env, interaction) {
