@@ -61,7 +61,7 @@ const commands = [
 		description: 'Add an account to the roster',
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
-			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true, choices: RANK_CHOICES },
+			{ type: 3, name: 'rank', description: 'Current rank/tier - omit for unranked', required: false, choices: RANK_CHOICES },
 		],
 	},
 	{
@@ -77,7 +77,7 @@ const commands = [
 		description: "Update an account's rank",
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
-			{ type: 3, name: 'rank', description: 'New rank/tier', required: true, choices: RANK_CHOICES },
+			{ type: 3, name: 'rank', description: 'New rank/tier - omit to clear to unranked', required: false, choices: RANK_CHOICES },
 		],
 	},
 	{

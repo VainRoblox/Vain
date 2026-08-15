@@ -63,12 +63,16 @@ async function searchAccountNames(db, query) {
 function buildRosterEmbed(accounts) {
 	const lines = accounts.length
 		? accounts.map((a) => {
-				const emoji = RANK_EMOJIS[a.rank.toLowerCase()];
-				// Unrecognized rank text (typo, or a tier without an emoji) - fall back to
-				// showing it as plain text rather than dropping it silently.
-				const rankLabel = emoji || `\`${a.rank}\``;
+				let rankLabel = '';
+				if (a.rank) {
+					const emoji = RANK_EMOJIS[a.rank.toLowerCase()];
+					// Unrecognized rank text (typo, or a tier without an emoji) - fall back to
+					// showing it as plain text rather than dropping it silently.
+					rankLabel = (emoji || `\`${a.rank}\``) + ' ';
+				}
+				// No rank at all (unranked) - no emoji, no label, just the name.
 				const inUse = a.in_use_by ? ` — *in use by <@${a.in_use_by}>*` : '';
-				return `${rankLabel} **${a.name}**${inUse}`;
+				return `${rankLabel}**${a.name}**${inUse}`;
 			})
 		: ['*No accounts yet — add one with `/add`.*'];
 
@@ -80,8 +84,8 @@ function buildRosterEmbed(accounts) {
 			{
 				name: 'Commands',
 				value: [
-					'`/add name:<account> rank:<tier>` — add an account',
-					'`/update name:<account> rank:<tier>` — change its rank',
+					'`/add name:<account> [rank:<tier>]` — add an account (omit rank for unranked)',
+					'`/update name:<account> [rank:<tier>]` — change its rank (omit to clear to unranked)',
 					'`/remove name:<account>` — remove it',
 					'`/use name:<account>` — check it out (marks it in use by you)',
 					'`/done name:<account>` — release it',

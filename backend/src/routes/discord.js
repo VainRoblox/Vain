@@ -105,9 +105,9 @@ const ROSTER_SYNC_FAILED_NOTE =
 
 async function handleRosterAdd(env, interaction, name, rank) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
-	await upsertAccount(env.DB, name, rank);
+	await upsertAccount(env.DB, name, rank ?? '');
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Added **${name}** (${rank}).${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Added **${name}**${rank ? ` (${rank})` : ' (unranked)'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterRemove(env, interaction, name) {
@@ -122,9 +122,9 @@ async function handleRosterUpdate(env, interaction, name, rank) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	const existing = await getAccount(env.DB, name);
 	if (!existing) return replyMessage(`No account named "${name}" found. Use /add first.`);
-	await upsertAccount(env.DB, name, rank);
+	await upsertAccount(env.DB, name, rank ?? '');
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Updated **${name}** to ${rank}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Updated **${name}** to ${rank || 'unranked'}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterUse(env, interaction, name) {
