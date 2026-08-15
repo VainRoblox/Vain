@@ -107,6 +107,14 @@ function sortByRank(accounts) {
 	});
 }
 
+const GUIDELINES = [
+	'**Guidelines**',
+	"• Run `/use` before playing on an account so everyone can see it's taken.",
+	"• Run `/done` the moment you're finished — don't leave it marked as in use.",
+	"• Only play on accounts you've checked out with `/use`.",
+	"• Keep an account's rank up to date with `/update` as it levels.",
+].join('\n');
+
 function buildRosterEmbed(accounts) {
 	const lines = accounts.length
 		? sortByRank(accounts).map((a) => {
@@ -125,7 +133,7 @@ function buildRosterEmbed(accounts) {
 
 	return {
 		title: 'Account Roster',
-		description: lines.join('\n'),
+		description: `${GUIDELINES}\n\n${lines.join('\n')}`,
 		color: 0x054785,
 		fields: [
 			{
