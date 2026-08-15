@@ -60,10 +60,15 @@ CREATE TABLE client_identities (
 -- /add /remove /update /use /done Discord commands (role-gated - see ROSTER_ROLE_ID in
 -- routes/discord.js) and rendered as a single live-edited embed, so anyone with that
 -- role can update any entry instead of only whoever originally posted a chat message.
+-- checked_out_at/reminder_sent back the 2-hour stale-checkout reminder (see
+-- lib/reminders.js): checked_out_at is set when /use runs and cleared by /done;
+-- reminder_sent stops the cron from nagging every 15 minutes once it's fired once.
 CREATE TABLE account_roster (
 	name TEXT PRIMARY KEY,
 	rank TEXT NOT NULL,
 	in_use_by TEXT,
+	checked_out_at INTEGER,
+	reminder_sent INTEGER NOT NULL DEFAULT 0,
 	updated_at INTEGER NOT NULL
 );
 
@@ -83,4 +88,16 @@ CREATE TABLE account_kits (
 	kit_name TEXT NOT NULL,
 	added_at INTEGER NOT NULL,
 	PRIMARY KEY (account_name, kit_name)
+);
+
+-- Kits nobody currently owns but someone wants, optionally tied to a preferred account
+-- to put it on. preferred_account is nullable (a general "we should get this" request
+-- with no specific account in mind) - that's why it isn't part of a composite key here,
+-- just a plain surrogate id.
+CREATE TABLE kit_wishlist (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	kit_name TEXT NOT NULL,
+	preferred_account TEXT,
+	requested_by TEXT NOT NULL,
+	requested_at INTEGER NOT NULL
 );

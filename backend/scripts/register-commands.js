@@ -122,6 +122,31 @@ const commands = [
 		description: 'List every account that owns a given kit',
 		options: [{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true }],
 	},
+	// Wishlist - open to everyone, not role-gated (a suggestion note, not roster state).
+	{
+		name: 'addwish',
+		description: 'Add a kit to the team wishlist',
+		options: [
+			{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true },
+			{ type: 3, name: 'account', description: 'Preferred account for this kit (optional)', required: false, autocomplete: true },
+		],
+	},
+	{
+		name: 'removewish',
+		description: 'Remove a wishlist entry',
+		options: [
+			{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true },
+			{ type: 3, name: 'account', description: 'Preferred account (leave blank for the general entry)', required: false, autocomplete: true },
+		],
+	},
+	{
+		name: 'wishlist',
+		description: 'List the team kit wishlist',
+	},
+	{
+		name: 'status',
+		description: "Show today's Vain API request usage against the daily budget",
+	},
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`, {

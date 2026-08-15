@@ -10,8 +10,15 @@ database_id = "99d34eae-1f22-4a62-98c6-08700eda3bbe"
 [vars]
 DISCORD_GUILD_ID = "1537794664931795005" # v1 supports one rank-granting server
 RANK_CACHE_TTL_SECONDS = "120"
+CLOUDFLARE_ACCOUNT_ID = "d0da6e52b3b5e1a90c2c9f234bdf893b" # not a secret, just an identifier - used by /status to query Workers Analytics
+
+# Only checks for stale (2h+) account checkouts and posts a reminder - a handful of
+# invocations every 15 minutes, not per-online-user traffic like /poll.
+[triggers]
+crons = ["*/15 * * * *"]
 
 # Secrets (set via `wrangler secret put <NAME>`, never committed):
-#   DISCORD_PUBLIC_KEY   - from the Discord Developer Portal, used to verify interaction signatures
-#   DISCORD_BOT_TOKEN    - used to call Discord's REST API (fetch a member's roles)
-#   DISCORD_APP_ID       - Discord application ID
+#   DISCORD_PUBLIC_KEY       - from the Discord Developer Portal, used to verify interaction signatures
+#   DISCORD_BOT_TOKEN        - used to call Discord's REST API (fetch a member's roles)
+#   DISCORD_APP_ID           - Discord application ID
+#   CLOUDFLARE_ANALYTICS_TOKEN - Cloudflare API token used by /status to read Workers request counts via the GraphQL Analytics API

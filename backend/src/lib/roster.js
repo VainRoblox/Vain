@@ -42,12 +42,34 @@ async function getAccountInUseByUser(db, discordUserId) {
 
 async function setInUse(db, name, discordUserId) {
 	const now = Math.floor(Date.now() / 1000);
-	await db.prepare('UPDATE account_roster SET in_use_by = ?, updated_at = ? WHERE name = ?').bind(discordUserId, now, name).run();
+	await db
+		.prepare('UPDATE account_roster SET in_use_by = ?, checked_out_at = ?, reminder_sent = 0, updated_at = ? WHERE name = ?')
+		.bind(discordUserId, now, now, name)
+		.run();
 }
 
 async function clearInUse(db, name) {
 	const now = Math.floor(Date.now() / 1000);
-	await db.prepare('UPDATE account_roster SET in_use_by = NULL, updated_at = ? WHERE name = ?').bind(now, name).run();
+	await db
+		.prepare('UPDATE account_roster SET in_use_by = NULL, checked_out_at = NULL, reminder_sent = 0, updated_at = ? WHERE name = ?')
+		.bind(now, name)
+		.run();
+}
+
+// Backs the 2-hour stale-checkout reminder cron (see lib/reminders.js). reminder_sent
+// stops it from re-notifying every 15 minutes once a reminder's already gone out for
+// the current checkout - it resets to 0 on the next /use.
+async function getStaleCheckouts(db, thresholdSeconds) {
+	const cutoff = Math.floor(Date.now() / 1000) - thresholdSeconds;
+	const { results } = await db
+		.prepare('SELECT * FROM account_roster WHERE in_use_by IS NOT NULL AND checked_out_at IS NOT NULL AND checked_out_at <= ? AND reminder_sent = 0')
+		.bind(cutoff)
+		.all();
+	return results;
+}
+
+async function markReminderSent(db, name) {
+	await db.prepare('UPDATE account_roster SET reminder_sent = 1 WHERE name = ?').bind(name).run();
 }
 
 async function listAccounts(db) {
@@ -158,6 +180,31 @@ async function listAccountsWithKit(db, kitName) {
 	return results.map((r) => r.account_name);
 }
 
+// Kits nobody owns yet, optionally tied to a preferred account. preferredAccount may be
+// null (a general "we should get this" request with no account in mind).
+async function addWish(db, kitName, preferredAccount, requestedBy) {
+	const now = Math.floor(Date.now() / 1000);
+	await db
+		.prepare('INSERT INTO kit_wishlist (kit_name, preferred_account, requested_by, requested_at) VALUES (?, ?, ?, ?)')
+		.bind(kitName, preferredAccount, requestedBy, now)
+		.run();
+}
+
+// `IS` (not `=`) so a null preferredAccount correctly matches rows with a null
+// preferred_account, instead of matching nothing the way `= NULL` would.
+async function removeWish(db, kitName, preferredAccount) {
+	const res = await db
+		.prepare('DELETE FROM kit_wishlist WHERE kit_name = ? AND preferred_account IS ?')
+		.bind(kitName, preferredAccount)
+		.run();
+	return res.meta.changes > 0;
+}
+
+async function listWishlist(db) {
+	const { results } = await db.prepare('SELECT * FROM kit_wishlist ORDER BY kit_name COLLATE NOCASE, requested_at').all();
+	return results;
+}
+
 export {
 	upsertAccount,
 	removeAccount,
@@ -172,4 +219,9 @@ export {
 	removeKit,
 	listKitsForAccount,
 	listAccountsWithKit,
+	getStaleCheckouts,
+	markReminderSent,
+	addWish,
+	removeWish,
+	listWishlist,
 };

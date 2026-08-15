@@ -17,6 +17,9 @@ import {
 	removeKit,
 	listKitsForAccount,
 	listAccountsWithKit,
+	addWish,
+	removeWish,
+	listWishlist,
 } from '../lib/roster.js';
 import { searchKits } from '../lib/kits.js';
 
@@ -217,6 +220,73 @@ async function handleKitOwners(env, interaction, kitName) {
 	return replyMessage(`Accounts with **${kitName}**:\n${owners.map((n) => `• ${n}`).join('\n')}`);
 }
 
+// Wishlist - kits nobody owns yet, optionally with a preferred account to put them on.
+// Not role-gated: it's just a suggestion/desire note, not authoritative roster state, so
+// anyone in the channel can add to or clear it (same as the read-only kit commands).
+
+async function handleAddWish(env, interaction, kitName, preferredAccount) {
+	if (preferredAccount) {
+		const account = await getAccount(env.DB, preferredAccount);
+		if (!account) return replyMessage(`No account named "${preferredAccount}" found.`);
+	}
+	const requestedBy = interaction.member.user.id;
+	await addWish(env.DB, kitName, preferredAccount ?? null, requestedBy);
+	const target = preferredAccount ? ` for **${preferredAccount}**` : '';
+	return replyMessage(`Added **${kitName}** to the wishlist${target}.`);
+}
+
+async function handleRemoveWish(env, interaction, kitName, preferredAccount) {
+	const removed = await removeWish(env.DB, kitName, preferredAccount ?? null);
+	if (!removed) return replyMessage(`No matching wishlist entry for **${kitName}**${preferredAccount ? ` (**${preferredAccount}**)` : ''}.`);
+	return replyMessage(`Removed **${kitName}**${preferredAccount ? ` (**${preferredAccount}**)` : ''} from the wishlist.`);
+}
+
+async function handleWishlist(env) {
+	const entries = await listWishlist(env.DB);
+	if (!entries.length) return replyMessage('The wishlist is empty.');
+	const lines = entries.map(
+		(e) => `• **${e.kit_name}**${e.preferred_account ? ` — for **${e.preferred_account}**` : ''} (requested by <@${e.requested_by}>)`
+	);
+	return replyMessage(`**Kit Wishlist**\n${lines.join('\n')}`);
+}
+
+// Reads today's/yesterday's request counts from Cloudflare's Workers Analytics
+// (GraphQL) instead of self-counting in D1 - self-counting would mean writing a row on
+// every single request, which would double D1 write load right when it's already under
+// the most pressure (lots of online clients polling).
+const DAILY_REQUEST_BUDGET = 100000;
+
+async function handleStatus(env) {
+	const today = new Date().toISOString().slice(0, 10);
+	const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+	const query = `query {
+		viewer {
+			accounts(filter: { accountTag: "${env.CLOUDFLARE_ACCOUNT_ID}" }) {
+				workersInvocationsAdaptive(
+					limit: 2
+					filter: { scriptName: "vain-api", date_geq: "${yesterday}", date_leq: "${today}" }
+					orderBy: [date_DESC]
+				) {
+					sum { requests }
+					dimensions { date }
+				}
+			}
+		}
+	}`;
+	const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+		method: 'POST',
+		headers: { Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_TOKEN}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify({ query }),
+	});
+	if (!res.ok) return replyMessage("Couldn't reach Cloudflare's Analytics API.");
+	const data = await res.json();
+	const rows = data?.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive ?? [];
+	const todayRow = rows.find((r) => r.dimensions.date === today);
+	const todayCount = todayRow?.sum?.requests ?? 0;
+	const pct = ((todayCount / DAILY_REQUEST_BUDGET) * 100).toFixed(1);
+	return replyMessage(`**API usage today:** ${todayCount.toLocaleString()} / ${DAILY_REQUEST_BUDGET.toLocaleString()} requests (${pct}%)`);
+}
+
 // Live-queries account names (or, for the `kit` option, the static kit catalog) as the
 // user types, rather than a static (and immediately stale, or in the kit list's case
 // way over Discord's 25-choice cap) `choices` list.
@@ -309,6 +379,22 @@ async function handleDiscordInteraction(request, env) {
 	if (name === 'kitowners') {
 		const kit = getOption(interaction.data.options, 'kit');
 		return Response.json(await handleKitOwners(env, interaction, kit));
+	}
+	if (name === 'addwish') {
+		const kit = getOption(interaction.data.options, 'kit');
+		const acc = getOption(interaction.data.options, 'account');
+		return Response.json(await handleAddWish(env, interaction, kit, acc));
+	}
+	if (name === 'removewish') {
+		const kit = getOption(interaction.data.options, 'kit');
+		const acc = getOption(interaction.data.options, 'account');
+		return Response.json(await handleRemoveWish(env, interaction, kit, acc));
+	}
+	if (name === 'wishlist') {
+		return Response.json(await handleWishlist(env));
+	}
+	if (name === 'status') {
+		return Response.json(await handleStatus(env));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));
