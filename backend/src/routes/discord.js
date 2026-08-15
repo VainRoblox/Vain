@@ -3,7 +3,7 @@ import { lookupUserId } from '../lib/roblox.js';
 import { upsertBinding, deleteBindingByDiscordId, getRankConfig, getRosterMessage, setRosterMessage } from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
 import { issueCommand } from '../lib/commands.js';
-import { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, buildRosterEmbed } from '../lib/roster.js';
+import { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, searchAccountNames, buildRosterEmbed } from '../lib/roster.js';
 
 // Only members holding this role can run /add /remove /update /use /done. Discord's
 // own default_member_permissions only understands built-in permission bits, not
@@ -149,6 +149,18 @@ async function handleRosterDone(env, interaction, name) {
 	return replyMessage(`Marked **${name}** as free.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
+// Live-queries account names for the `name` option on /update and /remove as the user
+// types, rather than a static (and immediately stale) Discord `choices` list.
+async function handleAutocomplete(env, interaction) {
+	const focused = interaction.data.options?.find((o) => o.focused);
+	const query = focused?.value ?? '';
+	const matches = await searchAccountNames(env.DB, query);
+	return Response.json({
+		type: 8, // APPLICATION_COMMAND_AUTOCOMPLETE_RESULT
+		data: { choices: matches.map((n) => ({ name: n, value: n })) },
+	});
+}
+
 async function handleDiscordInteraction(request, env) {
 	const bodyText = await request.text();
 	const valid = await verifyDiscordRequest(request, bodyText, env.DISCORD_PUBLIC_KEY);
@@ -160,6 +172,10 @@ async function handleDiscordInteraction(request, env) {
 
 	if (interaction.type === 1) {
 		return Response.json({ type: 1 }); // PING
+	}
+
+	if (interaction.type === 4) {
+		return handleAutocomplete(env, interaction);
 	}
 
 	if (interaction.type !== 2) {

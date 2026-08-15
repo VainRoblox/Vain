@@ -48,6 +48,18 @@ async function listAccounts(db) {
 	return results;
 }
 
+// Backs the autocomplete on /update and /remove's `name` option - a static Discord
+// `choices` list can't work here since it's fixed at command-registration time and
+// would go stale the moment an account gets added/removed, so this queries live
+// instead. Discord caps autocomplete results at 25.
+async function searchAccountNames(db, query) {
+	const { results } = await db
+		.prepare("SELECT name FROM account_roster WHERE name LIKE ? ESCAPE '\\' ORDER BY name COLLATE NOCASE LIMIT 25")
+		.bind(`%${query.replace(/[%_]/g, '\\$&')}%`)
+		.all();
+	return results.map((r) => r.name);
+}
+
 function buildRosterEmbed(accounts) {
 	const lines = accounts.length
 		? accounts.map((a) => {
@@ -81,4 +93,4 @@ function buildRosterEmbed(accounts) {
 	};
 }
 
-export { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, buildRosterEmbed };
+export { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, searchAccountNames, buildRosterEmbed };

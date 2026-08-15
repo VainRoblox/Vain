@@ -67,13 +67,16 @@ const commands = [
 	{
 		name: 'remove',
 		description: 'Remove an account from the roster',
-		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+		// autocomplete (not static choices) so the list always reflects the current
+		// roster instead of going stale between registrations - see handleAutocomplete
+		// in routes/discord.js.
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
 	},
 	{
 		name: 'update',
 		description: "Update an account's rank",
 		options: [
-			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
 			{ type: 3, name: 'rank', description: 'New rank/tier', required: true, choices: RANK_CHOICES },
 		],
 	},
