@@ -83,12 +83,12 @@ const commands = [
 	{
 		name: 'use',
 		description: 'Mark an account as currently in use by you',
-		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
 	},
 	{
 		name: 'done',
 		description: 'Mark an account as no longer in use',
-		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
 	},
 ];
 

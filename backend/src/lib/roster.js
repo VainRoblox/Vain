@@ -60,9 +60,27 @@ async function searchAccountNames(db, query) {
 	return results.map((r) => r.name);
 }
 
+// Highest to lowest. Unranked (no rank at all) always sorts below every tier here;
+// unrecognized rank text (a typo, or something without an emoji) sorts just above
+// unranked but below every real tier.
+const RANK_ORDER = ['nightmare', 'emerald', 'diamond', 'platinum', 'gold', 'silver', 'bronze'];
+
+function rankPriority(rank) {
+	if (!rank) return -Infinity;
+	const idx = RANK_ORDER.indexOf(rank.toLowerCase());
+	return idx === -1 ? -1 : RANK_ORDER.length - idx;
+}
+
+function sortByRank(accounts) {
+	return [...accounts].sort((a, b) => {
+		const diff = rankPriority(b.rank) - rankPriority(a.rank);
+		return diff !== 0 ? diff : a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+	});
+}
+
 function buildRosterEmbed(accounts) {
 	const lines = accounts.length
-		? accounts.map((a) => {
+		? sortByRank(accounts).map((a) => {
 				let rankLabel = '';
 				if (a.rank) {
 					const emoji = RANK_EMOJIS[a.rank.toLowerCase()];
