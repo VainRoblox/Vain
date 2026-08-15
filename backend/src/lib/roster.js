@@ -148,7 +148,7 @@ function buildRosterEmbed(accounts) {
 			{
 				name: 'Commands',
 				value: [
-					'`/add name:<account> rank:<tier> 2fa_required:<optional>` — add an account',
+					'`/add name:<account> rank:<tier> 2fa_required:<optional>` — add an account (mark 2fa_required if it needs a code from someone)',
 					'`/update name:<account> rank:<tier>` — change its rank',
 					'`/remove name:<account>` — remove it',
 					'`/use name:<account>` — marks account as being currently used by you',
