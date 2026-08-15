@@ -79,6 +79,9 @@ async function handleCommandInteraction(env, interaction, action, targetUsername
 // Re-renders the roster embed from the current DB state into the one tracked
 // message, editing it in place. If that message was deleted (or none exists yet),
 // posts a fresh one into the fixed roster channel and remembers its ID.
+// Returns true/false rather than swallowing failures - a bad channel permission (or
+// any other post/edit failure) needs to actually surface in the command reply, not
+// look like a silent success while the embed never updates.
 async function syncRosterEmbed(env) {
 	const accounts = await listAccounts(env.DB);
 	const embed = buildRosterEmbed(accounts);
@@ -86,28 +89,33 @@ async function syncRosterEmbed(env) {
 
 	if (existing) {
 		const ok = await editMessage(existing.channel_id, existing.message_id, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
-		if (ok) return;
+		if (ok) return true;
 	}
 
 	const posted = await postMessage(ROSTER_CHANNEL_ID, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
 	if (posted) {
 		await setRosterMessage(env.DB, ROSTER_CHANNEL_ID, posted.id);
+		return true;
 	}
+	return false;
 }
+
+const ROSTER_SYNC_FAILED_NOTE =
+	"\n\n⚠️ Saved, but I couldn't post/update the roster embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
 
 async function handleRosterAdd(env, interaction, name, rank) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	await upsertAccount(env.DB, name, rank);
-	await syncRosterEmbed(env);
-	return replyMessage(`Added **${name}** (${rank}).`);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Added **${name}** (${rank}).${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterRemove(env, interaction, name) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	const removed = await removeAccount(env.DB, name);
 	if (!removed) return replyMessage(`No account named "${name}" found.`);
-	await syncRosterEmbed(env);
-	return replyMessage(`Removed **${name}**.`);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Removed **${name}**.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterUpdate(env, interaction, name, rank) {
@@ -115,8 +123,8 @@ async function handleRosterUpdate(env, interaction, name, rank) {
 	const existing = await getAccount(env.DB, name);
 	if (!existing) return replyMessage(`No account named "${name}" found. Use /add first.`);
 	await upsertAccount(env.DB, name, rank);
-	await syncRosterEmbed(env);
-	return replyMessage(`Updated **${name}** to ${rank}.`);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Updated **${name}** to ${rank}.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterUse(env, interaction, name) {
@@ -128,8 +136,8 @@ async function handleRosterUse(env, interaction, name) {
 		return replyMessage(`**${name}** is already in use by <@${existing.in_use_by}>.`);
 	}
 	await setInUse(env.DB, name, requesterId);
-	await syncRosterEmbed(env);
-	return replyMessage(`Marked **${name}** as in use by you.`);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Marked **${name}** as in use by you.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterDone(env, interaction, name) {
@@ -137,8 +145,8 @@ async function handleRosterDone(env, interaction, name) {
 	const existing = await getAccount(env.DB, name);
 	if (!existing) return replyMessage(`No account named "${name}" found.`);
 	await clearInUse(env.DB, name);
-	await syncRosterEmbed(env);
-	return replyMessage(`Marked **${name}** as free.`);
+	const synced = await syncRosterEmbed(env);
+	return replyMessage(`Marked **${name}** as free.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleDiscordInteraction(request, env) {

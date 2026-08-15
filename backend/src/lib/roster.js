@@ -64,6 +64,18 @@ function buildRosterEmbed(accounts) {
 		title: 'Account Roster',
 		description: lines.join('\n'),
 		color: 0x054785,
+		fields: [
+			{
+				name: 'Commands',
+				value: [
+					'`/add name:<account> rank:<tier>` — add an account',
+					'`/update name:<account> rank:<tier>` — change its rank',
+					'`/remove name:<account>` — remove it',
+					'`/use name:<account>` — check it out (marks it in use by you)',
+					'`/done name:<account>` — release it',
+				].join('\n'),
+			},
+		],
 		footer: { text: `${accounts.length} account${accounts.length === 1 ? '' : 's'}` },
 		timestamp: new Date().toISOString(),
 	};
