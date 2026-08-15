@@ -11,6 +11,18 @@ if (!appId || !botToken || !guildId) {
 	process.exit(1);
 }
 
+// Must match the keys in src/lib/roster.js's RANK_EMOJIS exactly, or the embed falls
+// back to plain text for whatever doesn't match.
+const RANK_CHOICES = [
+	{ name: 'Bronze', value: 'bronze' },
+	{ name: 'Silver', value: 'silver' },
+	{ name: 'Gold', value: 'gold' },
+	{ name: 'Platinum', value: 'platinum' },
+	{ name: 'Diamond', value: 'diamond' },
+	{ name: 'Emerald', value: 'emerald' },
+	{ name: 'Nightmare', value: 'nightmare' },
+];
+
 const commands = [
 	{
 		name: 'whitelist',
@@ -49,7 +61,7 @@ const commands = [
 		description: 'Add an account to the roster',
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
-			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true },
+			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true, choices: RANK_CHOICES },
 		],
 	},
 	{
@@ -62,7 +74,7 @@ const commands = [
 		description: "Update an account's rank",
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
-			{ type: 3, name: 'rank', description: 'New rank/tier', required: true },
+			{ type: 3, name: 'rank', description: 'New rank/tier', required: true, choices: RANK_CHOICES },
 		],
 	},
 	{
