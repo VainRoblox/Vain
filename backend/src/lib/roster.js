@@ -122,6 +122,30 @@ function buildRosterEmbed(accounts) {
 	};
 }
 
+// Kit ownership is deliberately separate from the main embed (the user asked for it to
+// only be visible via an ephemeral /kits reply, not shown to everyone in the channel).
+
+async function addKit(db, accountName, kitName) {
+	const now = Math.floor(Date.now() / 1000);
+	await db
+		.prepare('INSERT INTO account_kits (account_name, kit_name, added_at) VALUES (?, ?, ?) ON CONFLICT(account_name, kit_name) DO NOTHING')
+		.bind(accountName, kitName, now)
+		.run();
+}
+
+async function removeKit(db, accountName, kitName) {
+	const res = await db.prepare('DELETE FROM account_kits WHERE account_name = ? AND kit_name = ?').bind(accountName, kitName).run();
+	return res.meta.changes > 0;
+}
+
+async function listKitsForAccount(db, accountName) {
+	const { results } = await db
+		.prepare('SELECT kit_name FROM account_kits WHERE account_name = ? ORDER BY kit_name COLLATE NOCASE')
+		.bind(accountName)
+		.all();
+	return results.map((r) => r.kit_name);
+}
+
 export {
 	upsertAccount,
 	removeAccount,
@@ -132,4 +156,7 @@ export {
 	listAccounts,
 	searchAccountNames,
 	buildRosterEmbed,
+	addKit,
+	removeKit,
+	listKitsForAccount,
 };

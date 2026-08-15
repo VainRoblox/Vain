@@ -92,6 +92,31 @@ const commands = [
 		name: 'done',
 		description: 'Release whichever account you currently have checked out',
 	},
+	// Kit ownership per account. Separate from the main roster embed on purpose - only
+	// visible via ephemeral replies, not posted into the channel. /addkit and /removekit
+	// are mutations (role-gated in routes/discord.js); /kits is read-only (open to
+	// everyone, same as the embed itself).
+	{
+		name: 'addkit',
+		description: 'Record that an account owns a kit',
+		options: [
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
+			{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true },
+		],
+	},
+	{
+		name: 'removekit',
+		description: 'Remove a kit from an account',
+		options: [
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true },
+			{ type: 3, name: 'kit', description: 'Kit name', required: true, autocomplete: true },
+		],
+	},
+	{
+		name: 'kits',
+		description: "List an account's owned kits",
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
+	},
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`, {

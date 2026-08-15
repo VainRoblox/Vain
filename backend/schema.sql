@@ -74,3 +74,13 @@ CREATE TABLE roster_message (
 	channel_id TEXT NOT NULL,
 	message_id TEXT NOT NULL
 );
+
+-- Which Bedwars kits each roster account owns. Many-to-many; the kit catalog itself
+-- isn't a table since it's a fixed reference list that lives in code (src/lib/kits.js)
+-- and changes rarely - this table just tracks ownership against that list.
+CREATE TABLE account_kits (
+	account_name TEXT NOT NULL,
+	kit_name TEXT NOT NULL,
+	added_at INTEGER NOT NULL,
+	PRIMARY KEY (account_name, kit_name)
+);

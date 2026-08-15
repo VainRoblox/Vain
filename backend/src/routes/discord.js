@@ -13,7 +13,11 @@ import {
 	listAccounts,
 	searchAccountNames,
 	buildRosterEmbed,
+	addKit,
+	removeKit,
+	listKitsForAccount,
 } from '../lib/roster.js';
+import { searchKits } from '../lib/kits.js';
 
 // Only members holding this role can run /add /remove /update /use /done. Discord's
 // own default_member_permissions only understands built-in permission bits, not
@@ -178,12 +182,41 @@ async function handleRosterDone(env, interaction) {
 	return replyMessage(`Marked **${existing.name}** as free.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
-// Live-queries account names for the `name` option on /update and /remove as the user
-// types, rather than a static (and immediately stale) Discord `choices` list.
+// Kit ownership - separate from the main roster embed on purpose (the user wants it
+// only visible via an ephemeral /kits reply, not shown to everyone in the channel).
+// /addkit and /removekit are mutations, so role-gated like the other 5; /kits is
+// read-only, so open to anyone who can already see the roster embed in this channel.
+
+async function handleAddKit(env, interaction, accountName, kitName) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const account = await getAccount(env.DB, accountName);
+	if (!account) return replyMessage(`No account named "${accountName}" found.`);
+	await addKit(env.DB, accountName, kitName);
+	return replyMessage(`Added **${kitName}** to **${accountName}**'s kits.`);
+}
+
+async function handleRemoveKit(env, interaction, accountName, kitName) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const removed = await removeKit(env.DB, accountName, kitName);
+	if (!removed) return replyMessage(`**${accountName}** doesn't have **${kitName}** recorded.`);
+	return replyMessage(`Removed **${kitName}** from **${accountName}**'s kits.`);
+}
+
+async function handleListKits(env, interaction, accountName) {
+	const account = await getAccount(env.DB, accountName);
+	if (!account) return replyMessage(`No account named "${accountName}" found.`);
+	const kits = await listKitsForAccount(env.DB, accountName);
+	if (!kits.length) return replyMessage(`**${accountName}** has no kits recorded yet.`);
+	return replyMessage(`**${accountName}**'s kits:\n${kits.map((k) => `• ${k}`).join('\n')}`);
+}
+
+// Live-queries account names (or, for the `kit` option, the static kit catalog) as the
+// user types, rather than a static (and immediately stale, or in the kit list's case
+// way over Discord's 25-choice cap) `choices` list.
 async function handleAutocomplete(env, interaction) {
 	const focused = interaction.data.options?.find((o) => o.focused);
 	const query = focused?.value ?? '';
-	const matches = await searchAccountNames(env.DB, query);
+	const matches = focused?.name === 'kit' ? searchKits(query) : await searchAccountNames(env.DB, query);
 	return Response.json({
 		type: 8, // APPLICATION_COMMAND_AUTOCOMPLETE_RESULT
 		data: { choices: matches.map((n) => ({ name: n, value: n })) },
@@ -251,6 +284,20 @@ async function handleDiscordInteraction(request, env) {
 	}
 	if (name === 'done') {
 		return Response.json(await handleRosterDone(env, interaction));
+	}
+	if (name === 'addkit') {
+		const accName = getOption(interaction.data.options, 'name');
+		const kit = getOption(interaction.data.options, 'kit');
+		return Response.json(await handleAddKit(env, interaction, accName, kit));
+	}
+	if (name === 'removekit') {
+		const accName = getOption(interaction.data.options, 'name');
+		const kit = getOption(interaction.data.options, 'kit');
+		return Response.json(await handleRemoveKit(env, interaction, accName, kit));
+	}
+	if (name === 'kits') {
+		const accName = getOption(interaction.data.options, 'name');
+		return Response.json(await handleListKits(env, interaction, accName));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));
