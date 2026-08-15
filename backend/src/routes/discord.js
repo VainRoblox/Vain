@@ -345,7 +345,7 @@ async function handleDiscordInteraction(request, env) {
 	if (name === 'add') {
 		const accName = getOption(interaction.data.options, 'name');
 		const rank = getOption(interaction.data.options, 'rank');
-		const twofa = getOption(interaction.data.options, 'twofa');
+		const twofa = getOption(interaction.data.options, '2fa_required');
 		return Response.json(await handleRosterAdd(env, interaction, accName, rank, twofa));
 	}
 	if (name === 'remove') {
