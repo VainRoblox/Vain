@@ -63,10 +63,14 @@ CREATE TABLE client_identities (
 -- checked_out_at/reminder_sent back the 2-hour stale-checkout reminder (see
 -- lib/reminders.js): checked_out_at is set when /use runs and cleared by /done;
 -- reminder_sent stops the cron from nagging every 15 minutes once it's fired once.
+-- has_2fa: whether this account needs a 2FA code from someone to log in. Settable at
+-- creation via /add's optional `twofa` option; preserved across /update (which only
+-- ever touches rank) rather than reset, since it isn't something /update's caller knows.
 CREATE TABLE account_roster (
 	name TEXT PRIMARY KEY,
 	rank TEXT NOT NULL,
 	in_use_by TEXT,
+	has_2fa INTEGER NOT NULL DEFAULT 0,
 	checked_out_at INTEGER,
 	reminder_sent INTEGER NOT NULL DEFAULT 0,
 	updated_at INTEGER NOT NULL

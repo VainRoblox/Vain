@@ -128,12 +128,13 @@ async function syncRosterEmbed(env) {
 const ROSTER_SYNC_FAILED_NOTE =
 	"\n\n⚠️ Saved, but I couldn't post/update the roster embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
 
-async function handleRosterAdd(env, interaction, name, rank) {
+async function handleRosterAdd(env, interaction, name, rank, has2fa) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	const normalizedRank = normalizeRank(rank);
-	await upsertAccount(env.DB, name, normalizedRank);
+	await upsertAccount(env.DB, name, normalizedRank, has2fa ?? false);
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Added **${name}** (${normalizedRank || 'Unranked'}).${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	const twofaNote = has2fa ? ' 🔒 has 2FA.' : '';
+	return replyMessage(`Added **${name}** (${normalizedRank || 'Unranked'}).${twofaNote}${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 async function handleRosterRemove(env, interaction, name) {
@@ -344,7 +345,8 @@ async function handleDiscordInteraction(request, env) {
 	if (name === 'add') {
 		const accName = getOption(interaction.data.options, 'name');
 		const rank = getOption(interaction.data.options, 'rank');
-		return Response.json(await handleRosterAdd(env, interaction, accName, rank));
+		const twofa = getOption(interaction.data.options, 'twofa');
+		return Response.json(await handleRosterAdd(env, interaction, accName, rank, twofa));
 	}
 	if (name === 'remove') {
 		const accName = getOption(interaction.data.options, 'name');

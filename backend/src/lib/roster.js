@@ -13,14 +13,21 @@ const RANK_EMOJIS = {
 	nightmare: '<:nightmare:1537799266159042701>',
 };
 
-async function upsertAccount(db, name, rank) {
+// has2fa: true/false to set it, or omitted (undefined) to leave it untouched on an
+// existing row - /update calls this without touching 2FA status, since only /add's
+// optional `twofa` option is meant to set it. A brand new row can't be left "untouched"
+// (the column is NOT NULL), so callers inserting a fresh account must pass a real
+// boolean - only handleRosterUpdate (which always targets an existing row) omits it.
+async function upsertAccount(db, name, rank, has2fa) {
 	const now = Math.floor(Date.now() / 1000);
+	const has2faValue = has2fa === undefined ? null : has2fa ? 1 : 0;
 	await db
 		.prepare(
-			`INSERT INTO account_roster (name, rank, updated_at) VALUES (?, ?, ?)
-			 ON CONFLICT(name) DO UPDATE SET rank = excluded.rank, updated_at = excluded.updated_at`
+			`INSERT INTO account_roster (name, rank, has_2fa, updated_at) VALUES (?, ?, ?, ?)
+			 ON CONFLICT(name) DO UPDATE SET rank = excluded.rank, updated_at = excluded.updated_at,
+			 	has_2fa = COALESCE(excluded.has_2fa, account_roster.has_2fa)`
 		)
-		.bind(name, rank, now)
+		.bind(name, rank, has2faValue, now)
 		.run();
 }
 
@@ -113,6 +120,7 @@ const GUIDELINES = [
 	"• Run `/done` the moment you're finished — don't leave it marked as in use.",
 	"• Only play on accounts you've checked out with `/use`.",
 	"• Keep an account's rank up to date with `/update` as it levels.",
+	'• 🔒 next to a name means that account has 2FA — you\'ll need a code from whoever owns it.',
 ].join('\n');
 
 function buildRosterEmbed(accounts) {
@@ -125,9 +133,10 @@ function buildRosterEmbed(accounts) {
 					// showing it as plain text rather than dropping it silently.
 					rankLabel = (emoji || `\`${a.rank}\``) + ' ';
 				}
+				const twofa = a.has_2fa ? ' 🔒' : '';
 				// No rank at all (unranked) - no emoji, no label, just the name.
 				const inUse = a.in_use_by ? ` — *currently used by <@${a.in_use_by}>*` : '';
-				return `${rankLabel}**${a.name}**${inUse}`;
+				return `${rankLabel}**${a.name}**${twofa}${inUse}`;
 			})
 		: ['*No accounts yet — add one with `/add`.*'];
 

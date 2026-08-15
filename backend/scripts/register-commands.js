@@ -65,6 +65,7 @@ const commands = [
 		options: [
 			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
 			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true, choices: RANK_CHOICES },
+			{ type: 5, name: 'twofa', description: 'Does this account have 2FA? (needs a code from the owner)', required: false },
 		],
 	},
 	{
