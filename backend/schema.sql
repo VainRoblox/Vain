@@ -105,3 +105,11 @@ CREATE TABLE kit_wishlist (
 	requested_by TEXT NOT NULL,
 	requested_at INTEGER NOT NULL
 );
+
+-- Tracks the last date a "nearing the request budget" warning was posted (see
+-- lib/reminders.js's checkUsageBudget), so it only fires once per day even though the
+-- cron checking for it runs every 15 minutes.
+CREATE TABLE usage_alert_state (
+	id INTEGER PRIMARY KEY CHECK (id = 1),
+	alerted_date TEXT
+);

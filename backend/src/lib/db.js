@@ -120,6 +120,21 @@ async function setRosterMessage(db, channelId, messageId) {
 		.run();
 }
 
+async function getUsageAlertDate(db) {
+	const row = await db.prepare('SELECT alerted_date FROM usage_alert_state WHERE id = 1').first();
+	return row?.alerted_date ?? null;
+}
+
+async function setUsageAlertDate(db, date) {
+	await db
+		.prepare(
+			`INSERT INTO usage_alert_state (id, alerted_date) VALUES (1, ?)
+			 ON CONFLICT(id) DO UPDATE SET alerted_date = excluded.alerted_date`
+		)
+		.bind(date)
+		.run();
+}
+
 export {
 	getBindingByRobloxId,
 	getBindingByDiscordId,
@@ -132,4 +147,6 @@ export {
 	verifyOrRegisterClientKey,
 	getRosterMessage,
 	setRosterMessage,
+	getUsageAlertDate,
+	setUsageAlertDate,
 };
