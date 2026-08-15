@@ -106,6 +106,20 @@ async function claimNextCommand(db, targetRobloxUserId) {
 	return row;
 }
 
+async function getRosterMessage(db) {
+	return db.prepare('SELECT * FROM roster_message WHERE id = 1').first();
+}
+
+async function setRosterMessage(db, channelId, messageId) {
+	await db
+		.prepare(
+			`INSERT INTO roster_message (id, channel_id, message_id) VALUES (1, ?, ?)
+			 ON CONFLICT(id) DO UPDATE SET channel_id = excluded.channel_id, message_id = excluded.message_id`
+		)
+		.bind(channelId, messageId)
+		.run();
+}
+
 export {
 	getBindingByRobloxId,
 	getBindingByDiscordId,
@@ -116,4 +130,6 @@ export {
 	queueCommand,
 	claimNextCommand,
 	verifyOrRegisterClientKey,
+	getRosterMessage,
+	setRosterMessage,
 };

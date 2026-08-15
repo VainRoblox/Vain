@@ -41,6 +41,40 @@ const commands = [
 			{ type: 3, name: 'target', description: 'Target Roblox username', required: true },
 		],
 	},
+	// Account roster. Visible to everyone (Discord has no native per-role gating for
+	// custom roles), but actually restricted to ROSTER_ROLE_ID in routes/discord.js -
+	// anyone else gets an ephemeral "you don't have permission" reply.
+	{
+		name: 'add',
+		description: 'Add an account to the roster',
+		options: [
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
+			{ type: 3, name: 'rank', description: 'Current rank/tier', required: true },
+		],
+	},
+	{
+		name: 'remove',
+		description: 'Remove an account from the roster',
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+	},
+	{
+		name: 'update',
+		description: "Update an account's rank",
+		options: [
+			{ type: 3, name: 'name', description: 'Roblox account name', required: true },
+			{ type: 3, name: 'rank', description: 'New rank/tier', required: true },
+		],
+	},
+	{
+		name: 'use',
+		description: 'Mark an account as currently in use by you',
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+	},
+	{
+		name: 'done',
+		description: 'Mark an account as no longer in use',
+		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true }],
+	},
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`, {

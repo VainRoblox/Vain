@@ -1,11 +1,22 @@
-import { verifyDiscordRequest, replyMessage } from '../lib/discord.js';
+import { verifyDiscordRequest, replyMessage, postMessage, editMessage } from '../lib/discord.js';
 import { lookupUserId } from '../lib/roblox.js';
-import { upsertBinding, deleteBindingByDiscordId, getRankConfig } from '../lib/db.js';
+import { upsertBinding, deleteBindingByDiscordId, getRankConfig, getRosterMessage, setRosterMessage } from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
 import { issueCommand } from '../lib/commands.js';
+import { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, buildRosterEmbed } from '../lib/roster.js';
+
+// Only members holding this role can run /add /remove /update /use /done. Discord's
+// own default_member_permissions only understands built-in permission bits, not
+// arbitrary custom roles, so this has to be enforced here in code.
+const ROSTER_ROLE_ID = '1537821596977340416';
+const ROSTER_CHANNEL_ID = '1537805418728919086';
 
 function getOption(options, name) {
 	return options?.find((o) => o.name === name)?.value;
+}
+
+function hasRosterRole(interaction) {
+	return (interaction.member?.roles ?? []).includes(ROSTER_ROLE_ID);
 }
 
 // One shot: binds discordId to the given Roblox username immediately and hands back
@@ -65,6 +76,71 @@ async function handleCommandInteraction(env, interaction, action, targetUsername
 	return replyMessage(`Queued "${action}" on ${target.username}.`);
 }
 
+// Re-renders the roster embed from the current DB state into the one tracked
+// message, editing it in place. If that message was deleted (or none exists yet),
+// posts a fresh one into the fixed roster channel and remembers its ID.
+async function syncRosterEmbed(env) {
+	const accounts = await listAccounts(env.DB);
+	const embed = buildRosterEmbed(accounts);
+	const existing = await getRosterMessage(env.DB);
+
+	if (existing) {
+		const ok = await editMessage(existing.channel_id, existing.message_id, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+		if (ok) return;
+	}
+
+	const posted = await postMessage(ROSTER_CHANNEL_ID, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+	if (posted) {
+		await setRosterMessage(env.DB, ROSTER_CHANNEL_ID, posted.id);
+	}
+}
+
+async function handleRosterAdd(env, interaction, name, rank) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	await upsertAccount(env.DB, name, rank);
+	await syncRosterEmbed(env);
+	return replyMessage(`Added **${name}** (${rank}).`);
+}
+
+async function handleRosterRemove(env, interaction, name) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const removed = await removeAccount(env.DB, name);
+	if (!removed) return replyMessage(`No account named "${name}" found.`);
+	await syncRosterEmbed(env);
+	return replyMessage(`Removed **${name}**.`);
+}
+
+async function handleRosterUpdate(env, interaction, name, rank) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const existing = await getAccount(env.DB, name);
+	if (!existing) return replyMessage(`No account named "${name}" found. Use /add first.`);
+	await upsertAccount(env.DB, name, rank);
+	await syncRosterEmbed(env);
+	return replyMessage(`Updated **${name}** to ${rank}.`);
+}
+
+async function handleRosterUse(env, interaction, name) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const existing = await getAccount(env.DB, name);
+	if (!existing) return replyMessage(`No account named "${name}" found.`);
+	const requesterId = interaction.member.user.id;
+	if (existing.in_use_by && existing.in_use_by !== requesterId) {
+		return replyMessage(`**${name}** is already in use by <@${existing.in_use_by}>.`);
+	}
+	await setInUse(env.DB, name, requesterId);
+	await syncRosterEmbed(env);
+	return replyMessage(`Marked **${name}** as in use by you.`);
+}
+
+async function handleRosterDone(env, interaction, name) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const existing = await getAccount(env.DB, name);
+	if (!existing) return replyMessage(`No account named "${name}" found.`);
+	await clearInUse(env.DB, name);
+	await syncRosterEmbed(env);
+	return replyMessage(`Marked **${name}** as free.`);
+}
+
 async function handleDiscordInteraction(request, env) {
 	const bodyText = await request.text();
 	const valid = await verifyDiscordRequest(request, bodyText, env.DISCORD_PUBLIC_KEY);
@@ -100,6 +176,29 @@ async function handleDiscordInteraction(request, env) {
 		const action = getOption(interaction.data.options, 'action');
 		const target = getOption(interaction.data.options, 'target');
 		return Response.json(await handleCommandInteraction(env, interaction, action, target));
+	}
+
+	if (name === 'add') {
+		const accName = getOption(interaction.data.options, 'name');
+		const rank = getOption(interaction.data.options, 'rank');
+		return Response.json(await handleRosterAdd(env, interaction, accName, rank));
+	}
+	if (name === 'remove') {
+		const accName = getOption(interaction.data.options, 'name');
+		return Response.json(await handleRosterRemove(env, interaction, accName));
+	}
+	if (name === 'update') {
+		const accName = getOption(interaction.data.options, 'name');
+		const rank = getOption(interaction.data.options, 'rank');
+		return Response.json(await handleRosterUpdate(env, interaction, accName, rank));
+	}
+	if (name === 'use') {
+		const accName = getOption(interaction.data.options, 'name');
+		return Response.json(await handleRosterUse(env, interaction, accName));
+	}
+	if (name === 'done') {
+		const accName = getOption(interaction.data.options, 'name');
+		return Response.json(await handleRosterDone(env, interaction, accName));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));

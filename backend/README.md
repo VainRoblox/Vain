@@ -55,6 +55,18 @@ Earlier drafts of this had one HMAC secret embedded in the script for every Vain
 
 Just set `rankapi.baseUrl` in `src/games/universal - base/base.lua` to your deployed Worker URL.
 
+## Account roster
+
+`/add`, `/remove`, `/update`, `/use`, `/done` manage a shared list of Roblox accounts the team owns and their current in-game rank/tier — a live Discord embed that anyone with the right role can update, instead of raw chat messages only the original poster can edit.
+
+- `/add name:<account> rank:<tier>` — add an account
+- `/update name:<account> rank:<tier>` — change its rank
+- `/remove name:<account>` — remove it
+- `/use name:<account>` — mark it as checked out by you (shows `in use by @you` on the embed; fails if someone else already has it)
+- `/done name:<account>` — mark it free again
+
+The embed lives in one fixed channel (`ROSTER_CHANNEL_ID` in `routes/discord.js`) and gets edited in place every time one of these runs, rather than posting a new message. All five are restricted to `ROSTER_ROLE_ID` (also in `routes/discord.js`) — Discord has no native way to gate a command to an arbitrary custom role, so this is enforced in code; anyone else gets an ephemeral "you don't have permission" reply.
+
 ## Trying it out
 
 1. Deploy the Worker, register commands, map at least one Discord role to a rank (steps above)

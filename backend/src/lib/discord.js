@@ -50,4 +50,25 @@ function replyMessage(content, ephemeral = true) {
 	};
 }
 
-export { verifyDiscordRequest, getGuildMemberRoles, replyMessage };
+async function postMessage(channelId, payload, botToken) {
+	const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+		method: 'POST',
+		headers: { Authorization: `Bot ${botToken}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload),
+	});
+	if (!res.ok) return null;
+	return res.json();
+}
+
+// Returns false (rather than throwing) if the message was deleted or otherwise
+// unreachable - callers use that to know they need to repost instead.
+async function editMessage(channelId, messageId, payload, botToken) {
+	const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`, {
+		method: 'PATCH',
+		headers: { Authorization: `Bot ${botToken}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload),
+	});
+	return res.ok;
+}
+
+export { verifyDiscordRequest, getGuildMemberRoles, replyMessage, postMessage, editMessage };
