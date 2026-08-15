@@ -87,8 +87,7 @@ const commands = [
 	},
 	{
 		name: 'done',
-		description: 'Mark an account as no longer in use',
-		options: [{ type: 3, name: 'name', description: 'Roblox account name', required: true, autocomplete: true }],
+		description: 'Release whichever account you currently have checked out',
 	},
 ];
 

@@ -3,7 +3,17 @@ import { lookupUserId } from '../lib/roblox.js';
 import { upsertBinding, deleteBindingByDiscordId, getRankConfig, getRosterMessage, setRosterMessage } from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
 import { issueCommand } from '../lib/commands.js';
-import { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, searchAccountNames, buildRosterEmbed } from '../lib/roster.js';
+import {
+	upsertAccount,
+	removeAccount,
+	getAccount,
+	getAccountInUseByUser,
+	setInUse,
+	clearInUse,
+	listAccounts,
+	searchAccountNames,
+	buildRosterEmbed,
+} from '../lib/roster.js';
 
 // Only members holding this role can run /add /remove /update /use /done. Discord's
 // own default_member_permissions only understands built-in permission bits, not
@@ -132,21 +142,31 @@ async function handleRosterUse(env, interaction, name) {
 	const existing = await getAccount(env.DB, name);
 	if (!existing) return replyMessage(`No account named "${name}" found.`);
 	const requesterId = interaction.member.user.id;
+
 	if (existing.in_use_by && existing.in_use_by !== requesterId) {
 		return replyMessage(`**${name}** is already in use by <@${existing.in_use_by}>.`);
 	}
+
+	// One account at a time per person - /done has no parameters and relies on this
+	// being true to know which account to release.
+	const alreadyHave = await getAccountInUseByUser(env.DB, requesterId);
+	if (alreadyHave && alreadyHave.name !== name) {
+		return replyMessage(`You already have **${alreadyHave.name}** checked out. Run \`/done\` to release it first.`);
+	}
+
 	await setInUse(env.DB, name, requesterId);
 	const synced = await syncRosterEmbed(env);
 	return replyMessage(`Marked **${name}** as in use by you.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
-async function handleRosterDone(env, interaction, name) {
+async function handleRosterDone(env, interaction) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
-	const existing = await getAccount(env.DB, name);
-	if (!existing) return replyMessage(`No account named "${name}" found.`);
-	await clearInUse(env.DB, name);
+	const requesterId = interaction.member.user.id;
+	const existing = await getAccountInUseByUser(env.DB, requesterId);
+	if (!existing) return replyMessage("You don't have any account checked out.");
+	await clearInUse(env.DB, existing.name);
 	const synced = await syncRosterEmbed(env);
-	return replyMessage(`Marked **${name}** as free.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
+	return replyMessage(`Marked **${existing.name}** as free.${synced ? '' : ROSTER_SYNC_FAILED_NOTE}`);
 }
 
 // Live-queries account names for the `name` option on /update and /remove as the user
@@ -221,8 +241,7 @@ async function handleDiscordInteraction(request, env) {
 		return Response.json(await handleRosterUse(env, interaction, accName));
 	}
 	if (name === 'done') {
-		const accName = getOption(interaction.data.options, 'name');
-		return Response.json(await handleRosterDone(env, interaction, accName));
+		return Response.json(await handleRosterDone(env, interaction));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));

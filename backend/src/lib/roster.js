@@ -33,6 +33,13 @@ async function getAccount(db, name) {
 	return db.prepare('SELECT * FROM account_roster WHERE name = ?').bind(name).first();
 }
 
+// Each Discord user can only have one account checked out at a time - this is what
+// lets /done skip the name parameter entirely (auto-detects which one to release) and
+// what /use checks before letting someone grab a second account.
+async function getAccountInUseByUser(db, discordUserId) {
+	return db.prepare('SELECT * FROM account_roster WHERE in_use_by = ?').bind(discordUserId).first();
+}
+
 async function setInUse(db, name, discordUserId) {
 	const now = Math.floor(Date.now() / 1000);
 	await db.prepare('UPDATE account_roster SET in_use_by = ?, updated_at = ? WHERE name = ?').bind(discordUserId, now, name).run();
@@ -105,8 +112,8 @@ function buildRosterEmbed(accounts) {
 					'`/add name:<account> [rank:<tier>]` — add an account (omit rank for unranked)',
 					'`/update name:<account> [rank:<tier>]` — change its rank (omit to clear to unranked)',
 					'`/remove name:<account>` — remove it',
-					'`/use name:<account>` — check it out (marks it in use by you)',
-					'`/done name:<account>` — release it',
+					'`/use name:<account>` — check it out (marks it in use by you; one at a time)',
+					'`/done` — release whichever account you currently have checked out',
 				].join('\n'),
 			},
 		],
@@ -115,4 +122,14 @@ function buildRosterEmbed(accounts) {
 	};
 }
 
-export { upsertAccount, removeAccount, getAccount, setInUse, clearInUse, listAccounts, searchAccountNames, buildRosterEmbed };
+export {
+	upsertAccount,
+	removeAccount,
+	getAccount,
+	getAccountInUseByUser,
+	setInUse,
+	clearInUse,
+	listAccounts,
+	searchAccountNames,
+	buildRosterEmbed,
+};
