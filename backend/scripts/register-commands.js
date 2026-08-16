@@ -160,6 +160,17 @@ const commands = [
 		name: 'status',
 		description: "Show today's Vain API request usage against the daily budget",
 	},
+	// Target list - separate embed/channel from the account roster, same role gate.
+	{
+		name: 'addtarget',
+		description: 'Add a player to the targets list',
+		options: [{ type: 3, name: 'target', description: 'Roblox username', required: true }],
+	},
+	{
+		name: 'removetarget',
+		description: 'Remove a player from the targets list',
+		options: [{ type: 3, name: 'target', description: 'Roblox username', required: true, autocomplete: true }],
+	},
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`, {

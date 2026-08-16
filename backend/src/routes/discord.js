@@ -1,6 +1,14 @@
 import { verifyDiscordRequest, replyMessage, postMessage, editMessage } from '../lib/discord.js';
 import { lookupUserId } from '../lib/roblox.js';
-import { upsertBinding, deleteBindingByDiscordId, getRankConfig, getRosterMessage, setRosterMessage } from '../lib/db.js';
+import {
+	upsertBinding,
+	deleteBindingByDiscordId,
+	getRankConfig,
+	getRosterMessage,
+	setRosterMessage,
+	getTargetMessage,
+	setTargetMessage,
+} from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
 import { issueCommand } from '../lib/commands.js';
 import {
@@ -24,12 +32,15 @@ import {
 	listWishlist,
 } from '../lib/roster.js';
 import { searchKits } from '../lib/kits.js';
+import { addTarget, removeTarget, listTargets, searchTargetNames, buildTargetsEmbed } from '../lib/targets.js';
 
-// Only members holding this role can run /add /remove /update /use /done. Discord's
-// own default_member_permissions only understands built-in permission bits, not
-// arbitrary custom roles, so this has to be enforced here in code.
+// Only members holding this role can run /add /remove /update /use /done (and, reusing
+// the same role, /addtarget /removetarget). Discord's own default_member_permissions
+// only understands built-in permission bits, not arbitrary custom roles, so this has to
+// be enforced here in code.
 const ROSTER_ROLE_ID = '1537821596977340416';
 const ROSTER_CHANNEL_ID = '1537805418728919086';
+const TARGET_CHANNEL_ID = '1538506373879439430';
 
 function getOption(options, name) {
 	return options?.find((o) => o.name === name)?.value;
@@ -129,6 +140,43 @@ async function syncRosterEmbed(env) {
 
 const ROSTER_SYNC_FAILED_NOTE =
 	"\n\n⚠️ Saved, but I couldn't post/update the roster embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
+
+async function syncTargetEmbed(env) {
+	const targets = await listTargets(env.DB);
+	const embed = buildTargetsEmbed(targets);
+	const existing = await getTargetMessage(env.DB);
+
+	if (existing) {
+		const ok = await editMessage(existing.channel_id, existing.message_id, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+		if (ok) return true;
+	}
+
+	const posted = await postMessage(TARGET_CHANNEL_ID, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+	if (posted) {
+		await setTargetMessage(env.DB, TARGET_CHANNEL_ID, posted.id);
+		return true;
+	}
+	return false;
+}
+
+const TARGET_SYNC_FAILED_NOTE =
+	"\n\n⚠️ Saved, but I couldn't post/update the targets embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
+
+async function handleAddTarget(env, interaction, name) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const addedBy = interaction.member.user.id;
+	await addTarget(env.DB, name, addedBy);
+	const synced = await syncTargetEmbed(env);
+	return replyMessage(`Added **${name}** to targets.${synced ? '' : TARGET_SYNC_FAILED_NOTE}`);
+}
+
+async function handleRemoveTarget(env, interaction, name) {
+	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
+	const removed = await removeTarget(env.DB, name);
+	if (!removed) return replyMessage(`No target named "${name}" found.`);
+	const synced = await syncTargetEmbed(env);
+	return replyMessage(`Removed **${name}** from targets.${synced ? '' : TARGET_SYNC_FAILED_NOTE}`);
+}
 
 async function handleRosterAdd(env, interaction, name, rank, has2fa) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
@@ -314,7 +362,10 @@ async function handleStatus(env) {
 async function handleAutocomplete(env, interaction) {
 	const focused = interaction.data.options?.find((o) => o.focused);
 	const query = focused?.value ?? '';
-	const matches = focused?.name === 'kit' ? searchKits(query) : await searchAccountNames(env.DB, query);
+	let matches;
+	if (focused?.name === 'kit') matches = searchKits(query);
+	else if (focused?.name === 'target') matches = await searchTargetNames(env.DB, query);
+	else matches = await searchAccountNames(env.DB, query);
 	return Response.json({
 		type: 8, // APPLICATION_COMMAND_AUTOCOMPLETE_RESULT
 		data: { choices: matches.map((n) => ({ name: n, value: n })) },
@@ -425,6 +476,14 @@ async function handleDiscordInteraction(request, env) {
 	}
 	if (name === 'status') {
 		return Response.json(await handleStatus(env));
+	}
+	if (name === 'addtarget') {
+		const targetName = getOption(interaction.data.options, 'target');
+		return Response.json(await handleAddTarget(env, interaction, targetName));
+	}
+	if (name === 'removetarget') {
+		const targetName = getOption(interaction.data.options, 'target');
+		return Response.json(await handleRemoveTarget(env, interaction, targetName));
 	}
 
 	return Response.json(replyMessage('Unknown command.'));

@@ -120,6 +120,20 @@ async function setRosterMessage(db, channelId, messageId) {
 		.run();
 }
 
+async function getTargetMessage(db) {
+	return db.prepare('SELECT * FROM target_message WHERE id = 1').first();
+}
+
+async function setTargetMessage(db, channelId, messageId) {
+	await db
+		.prepare(
+			`INSERT INTO target_message (id, channel_id, message_id) VALUES (1, ?, ?)
+			 ON CONFLICT(id) DO UPDATE SET channel_id = excluded.channel_id, message_id = excluded.message_id`
+		)
+		.bind(channelId, messageId)
+		.run();
+}
+
 async function getUsageAlertDate(db) {
 	const row = await db.prepare('SELECT alerted_date FROM usage_alert_state WHERE id = 1').first();
 	return row?.alerted_date ?? null;
@@ -147,6 +161,8 @@ export {
 	verifyOrRegisterClientKey,
 	getRosterMessage,
 	setRosterMessage,
+	getTargetMessage,
+	setTargetMessage,
 	getUsageAlertDate,
 	setUsageAlertDate,
 };

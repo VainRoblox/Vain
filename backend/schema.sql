@@ -113,3 +113,19 @@ CREATE TABLE usage_alert_state (
 	id INTEGER PRIMARY KEY CHECK (id = 1),
 	alerted_date TEXT
 );
+
+-- Shared target list (players being tracked), separate from account_roster. Managed
+-- via /addtarget /removetarget (role-gated - see ROSTER_ROLE_ID in routes/discord.js,
+-- reused here) and rendered as its own single live-edited embed in its own channel,
+-- same self-healing pattern as the roster embed.
+CREATE TABLE targets (
+	name TEXT PRIMARY KEY,
+	added_by TEXT NOT NULL,
+	added_at INTEGER NOT NULL
+);
+
+CREATE TABLE target_message (
+	id INTEGER PRIMARY KEY CHECK (id = 1),
+	channel_id TEXT NOT NULL,
+	message_id TEXT NOT NULL
+);
