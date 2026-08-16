@@ -1,5 +1,5 @@
 import { verifyDiscordRequest, replyMessage, postMessage, editMessage } from '../lib/discord.js';
-import { lookupUserId } from '../lib/roblox.js';
+import { lookupUserId, lookupUserIds, getAvatarThumbnails } from '../lib/roblox.js';
 import {
 	upsertBinding,
 	deleteBindingByDiscordId,
@@ -32,7 +32,7 @@ import {
 	listWishlist,
 } from '../lib/roster.js';
 import { searchKits } from '../lib/kits.js';
-import { addTarget, removeTarget, listTargets, searchTargetNames, buildTargetsEmbed } from '../lib/targets.js';
+import { addTarget, removeTarget, listTargets, searchTargetNames, buildTargetsEmbeds, MAX_TARGET_THUMBNAILS } from '../lib/targets.js';
 
 // Only members holding this role can run /add /remove /update /use /done (and, reusing
 // the same role, /addtarget /removetarget). Discord's own default_member_permissions
@@ -141,17 +141,29 @@ async function syncRosterEmbed(env) {
 const ROSTER_SYNC_FAILED_NOTE =
 	"\n\n⚠️ Saved, but I couldn't post/update the roster embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
 
+// Re-resolves every shown target's Roblox avatar fresh each time this runs (i.e. every
+// /addtarget or /removetarget), rather than caching it - avatars do change over time and
+// this only touches Roblox's public API, not the Discord/Workers request budget.
 async function syncTargetEmbed(env) {
 	const targets = await listTargets(env.DB);
-	const embed = buildTargetsEmbed(targets);
+	const shown = targets.slice(0, MAX_TARGET_THUMBNAILS);
+	const resolved = await lookupUserIds(shown.map((t) => t.name));
+	const thumbnails = await getAvatarThumbnails(resolved.map((r) => r.userId));
+	const avatarUrls = {};
+	for (const r of resolved) {
+		const url = thumbnails[r.userId];
+		if (url) avatarUrls[(r.requestedUsername ?? r.username).toLowerCase()] = url;
+	}
+
+	const embeds = buildTargetsEmbeds(targets, avatarUrls);
 	const existing = await getTargetMessage(env.DB);
 
 	if (existing) {
-		const ok = await editMessage(existing.channel_id, existing.message_id, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+		const ok = await editMessage(existing.channel_id, existing.message_id, { embeds }, env.DISCORD_BOT_TOKEN);
 		if (ok) return true;
 	}
 
-	const posted = await postMessage(TARGET_CHANNEL_ID, { embeds: [embed] }, env.DISCORD_BOT_TOKEN);
+	const posted = await postMessage(TARGET_CHANNEL_ID, { embeds }, env.DISCORD_BOT_TOKEN);
 	if (posted) {
 		await setTargetMessage(env.DB, TARGET_CHANNEL_ID, posted.id);
 		return true;
@@ -162,10 +174,10 @@ async function syncTargetEmbed(env) {
 const TARGET_SYNC_FAILED_NOTE =
 	"\n\n⚠️ Saved, but I couldn't post/update the targets embed - I likely don't have access to that channel. Check the bot's permissions there (View Channel, Send Messages, Embed Links).";
 
-async function handleAddTarget(env, interaction, name) {
+async function handleAddTarget(env, interaction, name, reason) {
 	if (!hasRosterRole(interaction)) return replyMessage("You don't have permission to do that.");
 	const addedBy = interaction.member.user.id;
-	await addTarget(env.DB, name, addedBy);
+	await addTarget(env.DB, name, addedBy, reason);
 	const synced = await syncTargetEmbed(env);
 	return replyMessage(`Added **${name}** to targets.${synced ? '' : TARGET_SYNC_FAILED_NOTE}`);
 }
@@ -479,7 +491,8 @@ async function handleDiscordInteraction(request, env) {
 	}
 	if (name === 'addtarget') {
 		const targetName = getOption(interaction.data.options, 'target');
-		return Response.json(await handleAddTarget(env, interaction, targetName));
+		const reason = getOption(interaction.data.options, 'reason');
+		return Response.json(await handleAddTarget(env, interaction, targetName, reason));
 	}
 	if (name === 'removetarget') {
 		const targetName = getOption(interaction.data.options, 'target');

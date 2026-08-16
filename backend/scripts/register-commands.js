@@ -164,7 +164,10 @@ const commands = [
 	{
 		name: 'addtarget',
 		description: 'Add a player to the targets list',
-		options: [{ type: 3, name: 'target', description: 'Roblox username', required: true }],
+		options: [
+			{ type: 3, name: 'target', description: 'Roblox username', required: true },
+			{ type: 3, name: 'reason', description: 'Why this player is a target (optional)', required: false },
+		],
 	},
 	{
 		name: 'removetarget',

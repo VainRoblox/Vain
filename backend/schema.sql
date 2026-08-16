@@ -121,6 +121,7 @@ CREATE TABLE usage_alert_state (
 CREATE TABLE targets (
 	name TEXT PRIMARY KEY,
 	added_by TEXT NOT NULL,
+	reason TEXT,
 	added_at INTEGER NOT NULL
 );
 
