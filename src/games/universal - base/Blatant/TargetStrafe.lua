@@ -27,7 +27,8 @@ TargetStrafe = vain.Categories.Blatant:CreateModule({
 					Wallcheck = wallcheck,
 					Part = 'RootPart',
 					Players = Targets.Players.Enabled,
-					NPCs = Targets.NPCs.Enabled
+					NPCs = Targets.NPCs.Enabled,
+					Preference = Targets.Preference.Value
 				})
 
 				if ent then

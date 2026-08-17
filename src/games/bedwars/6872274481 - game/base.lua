@@ -413,9 +413,60 @@ local kitorder = {
 	regent = 1
 }
 
+-- Team ids whose bed has been destroyed this match, so the 'Final Kill' target mode can
+-- tell who respawns from who is gone for good. Filled from the BedwarsBedBreak event
+-- (see the event wiring below) and cleared when a match ends.
+local brokenbeds = {}
+
+-- Total damage reduction from everything the player is wearing. Mirrors getStrength,
+-- but reads the armor list instead of held swords, so it answers "who dies fastest".
+local function getArmor(plr)
+	if not plr.Player then
+		return 0
+	end
+
+	local armor = 0
+	for _, v in (store.inventories[plr.Player] or {armor = {}}).armor do
+		local itemmeta = bedwars.ItemMeta[v.itemType]
+		if itemmeta and itemmeta.armor then
+			armor += itemmeta.armor.damageReductionMultiplier or 0
+		end
+	end
+
+	return armor
+end
+
+-- Screen-space distance from the cursor. Entities behind the camera get pushed to the
+-- back rather than wrapping around to the front - WorldToViewportPoint still returns
+-- coordinates for those, so without the visibility check someone directly behind you
+-- could out-rank the player you are actually looking at.
+local function getCursorDistance(ent)
+	local position, visible = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
+	if not visible then
+		return math.huge
+	end
+
+	local mouse = inputService.TouchEnabled and gameCamera.ViewportSize / 2 or inputService:GetMouseLocation()
+	return (mouse - Vector2.new(position.X, position.Y)).Magnitude
+end
+
 local sortmethods = {
 	Damage = function(a, b)
 		return a.Entity.Character:GetAttribute('LastDamageTakenTime') < b.Entity.Character:GetAttribute('LastDamageTakenTime')
+	end,
+	Cursor = function(a, b)
+		return getCursorDistance(a.Entity) < getCursorDistance(b.Entity)
+	end,
+	Armor = function(a, b)
+		return getArmor(a.Entity) < getArmor(b.Entity)
+	end,
+	-- A player whose bed is gone dies for good, so they are worth committing to over
+	-- someone who would just respawn. brokenbeds is filled from the BedwarsBedBreak
+	-- event further down, keyed the same way the game keys a player's Team attribute.
+	['Final Kill'] = function(a, b)
+		local abroken = a.Entity.Player and brokenbeds[a.Entity.Player:GetAttribute('Team')]
+		local bbroken = b.Entity.Player and brokenbeds[b.Entity.Player:GetAttribute('Team')]
+		return (abroken and 1 or 0) > (bbroken and 1 or 0)
 	end,
 	Threat = function(a, b)
 		return getStrength(a.Entity) > getStrength(b.Entity)
@@ -1035,6 +1086,17 @@ run(function()
 			end))
 		end)
 	end
+
+	-- Backs the 'Final Kill' target mode. brokenBedTeam.id is keyed the same way as a
+	-- player's Team attribute, so it can be compared directly when sorting targets.
+	vain:Clean(vainEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
+		if bedTable and bedTable.brokenBedTeam then
+			brokenbeds[bedTable.brokenBedTeam.id] = true
+		end
+	end))
+	vain:Clean(vainEvents.MatchEndEvent.Event:Connect(function()
+		table.clear(brokenbeds)
+	end))
 
 	vain:Clean(bedwars.ZapNetworking.EntityDamageEventZap.On(function(...)
 		vainEvents.EntityDamageEvent:Fire({

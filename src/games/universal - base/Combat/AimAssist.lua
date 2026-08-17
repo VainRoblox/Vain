@@ -39,6 +39,7 @@ AimAssist = vain.Categories.Combat:CreateModule({
 						Part = Part.Value,
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
+						Preference = Targets.Preference.Value,
 						Wallcheck = Targets.Walls.Enabled,
 						Origin = gameCamera.CFrame.Position
 					})

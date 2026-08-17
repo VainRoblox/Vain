@@ -46,6 +46,7 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 						Range = Range.Value,
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
+						Preference = Targets.Preference.Value,
 						Wallcheck = Targets.Walls.Enabled
 					})
 

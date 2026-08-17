@@ -133,6 +133,7 @@ run(function()
 							Part = 'RootPart',
 							Players = Targets.Players.Enabled,
 							NPCs = Targets.NPCs.Enabled,
+							Preference = Targets.Preference.Value,
 							Limit = MaxTargets.Value,
 							Sort = sortmethods[Sort.Value]
 						})
@@ -247,11 +248,18 @@ run(function()
 		Players = true,
 		NPCs = true
 	})
-	local methods = {'Damage', 'Distance'}
+	-- Damage/Distance stay pinned to the front (Damage is the default), the rest are
+	-- sorted so the dropdown order stays stable - iterating sortmethods directly is
+	-- hash order, which reshuffles the list between injections.
+	local methods, extramethods = {'Damage', 'Distance'}, {}
 	for i in sortmethods do
 		if not table.find(methods, i) then
-			table.insert(methods, i)
+			table.insert(extramethods, i)
 		end
+	end
+	table.sort(extramethods)
+	for _, v in extramethods do
+		table.insert(methods, v)
 	end
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',

@@ -19,6 +19,7 @@ local ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 					Range = FOV.Value,
 					Players = Targets.Players.Enabled,
 					NPCs = Targets.NPCs.Enabled,
+					Preference = Targets.Preference.Value,
 					Wallcheck = Targets.Walls.Enabled,
 					Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
 				})

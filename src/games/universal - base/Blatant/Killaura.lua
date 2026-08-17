@@ -41,6 +41,7 @@ Killaura = vain.Categories.Blatant:CreateModule({
 						Part = 'RootPart',
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
+						Preference = Targets.Preference.Value,
 						Limit = Max.Value
 					})
 
