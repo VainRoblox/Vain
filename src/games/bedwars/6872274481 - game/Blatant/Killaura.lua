@@ -1,5 +1,10 @@
 local Attacking
 run(function()
+	-- Resolved at hook time rather than hardcoded: these hold the index of the KnitClient
+	-- upvalue inside the game's own functions, which moves whenever the game shifts a
+	-- local around. Looking it up by value means a shift can't make us overwrite an
+	-- unrelated upvalue, and remembering the index keeps the restore path symmetric.
+	local swingknitindex, scytheknitindex
 	local Killaura
 	local Targets
 	local Sort
@@ -81,8 +86,15 @@ run(function()
 							}
 						}
 					}
-					debug.setupvalue(oldSwing or bedwars.SwordController.playSwordEffect, 6, fake)
-					debug.setupvalue(bedwars.ScytheController.playLocalAnimation, 3, fake)
+					local swingfunc = oldSwing or bedwars.SwordController.playSwordEffect
+					swingknitindex = findUpvalue(swingfunc, bedwars.Knit)
+					if swingknitindex then
+						debug.setupvalue(swingfunc, swingknitindex, fake)
+					end
+					scytheknitindex = findUpvalue(bedwars.ScytheController.playLocalAnimation, bedwars.Knit)
+					if scytheknitindex then
+						debug.setupvalue(bedwars.ScytheController.playLocalAnimation, scytheknitindex, fake)
+					end
 
 					task.spawn(function()
 						local started = false
@@ -231,8 +243,14 @@ run(function()
 						lplr.PlayerGui.MobileUI['2'].Visible = true
 					end)
 				end
-				debug.setupvalue(oldSwing or bedwars.SwordController.playSwordEffect, 6, bedwars.Knit)
-				debug.setupvalue(bedwars.ScytheController.playLocalAnimation, 3, bedwars.Knit)
+				if swingknitindex then
+					debug.setupvalue(oldSwing or bedwars.SwordController.playSwordEffect, swingknitindex, bedwars.Knit)
+					swingknitindex = nil
+				end
+				if scytheknitindex then
+					debug.setupvalue(bedwars.ScytheController.playLocalAnimation, scytheknitindex, bedwars.Knit)
+					scytheknitindex = nil
+				end
 				Attacking = false
 				if armC0 then
 					AnimTween = tweenService:Create(gameCamera.Viewmodel.RightHand.RightWrist, TweenInfo.new(AnimationTween.Enabled and 0.001 or 0.3, Enum.EasingStyle.Exponential), {

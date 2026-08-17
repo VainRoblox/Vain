@@ -207,6 +207,44 @@ local function getWool()
 	end
 end
 
+-- Finds the index of the upvalue holding `value` in `func`, instead of hardcoding one.
+-- Upvalue positions shift whenever the game adds or removes a local in the enclosing
+-- scope, which silently turns a hooking module into one that corrupts an unrelated
+-- upvalue - e.g. writing over the game's Players reference instead of KnitClient.
+-- Returns nil when it isn't there, so callers can skip rather than clobber.
+local function findUpvalue(func, value)
+	if type(func) ~= 'function' then return nil end
+	for i = 1, 40 do
+		local suc, up = pcall(debug.getupvalue, func, i)
+		if not suc then break end
+		if up == value then return i end
+	end
+	return nil
+end
+
+-- Same idea for constants.
+local function findConstant(func, value)
+	if type(func) ~= 'function' then return nil end
+	local suc, constants = pcall(debug.getconstants, func)
+	if not suc or not constants then return nil end
+	for i, v in constants do
+		if v == value then return i end
+	end
+	return nil
+end
+
+-- Swaps a constant by value rather than by position. Modules use this to neuter a
+-- specific check inside a game function (e.g. renaming the key it looks up so the
+-- lookup misses) and to put it back afterwards. Returns false when the value isn't
+-- there, which is the signal that the game changed and the hook should be skipped
+-- instead of writing over whatever happens to sit at a hardcoded index.
+local function swapConstant(func, from, to)
+	local ind = findConstant(func, from)
+	if not ind then return false end
+	local suc = pcall(debug.setconstant, func, ind, to)
+	return suc
+end
+
 local function getStrength(plr)
 	if not plr.Player then
 		return 0

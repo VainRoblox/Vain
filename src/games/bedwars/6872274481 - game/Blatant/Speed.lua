@@ -12,7 +12,7 @@ Speed = vain.Categories.Blatant:CreateModule({
 		frictionTable.Speed = callback or nil
 		updateVelocity()
 		pcall(function()
-			debug.setconstant(bedwars.WindWalkerController.updateSpeed, 7, callback and 'constantSpeedMultiplier' or 'moveSpeedMultiplier')
+			swapConstant(bedwars.WindWalkerController.updateSpeed, callback and 'moveSpeedMultiplier' or 'constantSpeedMultiplier', callback and 'constantSpeedMultiplier' or 'moveSpeedMultiplier')
 		end)
 
 		if callback then
