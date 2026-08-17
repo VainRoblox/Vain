@@ -495,11 +495,11 @@ local sortmethodtips = {
 	Damage = 'Whoever damaged you most recently',
 	Angle = 'Whoever is nearest the direction you are already facing',
 	Cursor = 'Whoever is nearest your crosshair on screen',
-	Armor = 'Whoever is wearing the weakest armor, so dies fastest',
+	Armor = 'Whoever is wearing the weakest armor',
 	Health = 'Whoever has the lowest health',
 	Threat = 'Whoever is holding the strongest sword',
 	Kit = 'Whoever is playing the most dangerous kit',
-	['Final Kill'] = 'Players whose bed is already broken, so the kill is permanent'
+	['Final Kill'] = 'Players whose bed is already broken'
 }
 
 local sortmethods = {
