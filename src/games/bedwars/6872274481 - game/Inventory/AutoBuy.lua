@@ -316,7 +316,9 @@ AutoBuy:CreateTextList({
 
 					local v = bedwars.Shop.getShopItem(tab[2], lplr)
 					if v then
-						local item = getItem(tab[2] == 'wool_white' and bedwars.Shop.getTeamWool(lplr:GetAttribute('Team')) or tab[2])
+						-- getTeamWool was renamed getTeamWoolById upstream; same signature
+						-- (team id in, wool ItemType out).
+						local item = getItem(tab[2] == 'wool_white' and bedwars.Shop.getTeamWoolById(lplr:GetAttribute('Team')) or tab[2])
 						item = (item and tonumber(tab[3]) - item.amount or tonumber(tab[3])) // v.amount
 						if item > 0 and canBuy(v, currencytable, item) then
 							for _ = 1, item do

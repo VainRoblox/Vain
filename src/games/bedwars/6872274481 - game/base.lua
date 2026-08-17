@@ -746,7 +746,14 @@ run(function()
 			}
 		end,
 		HudAliveCount = require(lplr.PlayerScripts.TS.controllers.global['top-bar'].ui.game['hud-alive-player-counts']).HudAlivePlayerCounts,
-		ItemMeta = debug.getupvalue(require(replicatedStorage.TS.item['item-meta']).getItemMeta, 1),
+		-- item-meta now exports the table directly as `items`; the getupvalue path is kept
+		-- as a fallback since it is the only route on older client builds. Reading the
+		-- export first means a future change to getItemMeta's locals can't silently hand
+		-- back the wrong upvalue - ItemMeta backs 23 usages across the modules.
+		ItemMeta = (function()
+			local itemmeta = require(replicatedStorage.TS.item['item-meta'])
+			return itemmeta.items or debug.getupvalue(itemmeta.getItemMeta, 1)
+		end)(),
 		KillEffectMeta = require(replicatedStorage.TS.locker['kill-effect']['kill-effect-meta']).KillEffectMeta,
 		KillFeedController = Flamework.resolveDependency('client/controllers/game/kill-feed/kill-feed-controller@KillFeedController'),
 		Knit = Knit,
