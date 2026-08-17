@@ -71,6 +71,7 @@ NoFall = vain.Categories.Blatant:CreateModule({
 })
 Mode = NoFall:CreateDropdown({
 	Name = 'Mode',
+	Tooltip = 'Which method this module uses',
 	List = {'Packet', 'Gravity', 'Teleport', 'Bounce'},
 	Function = function()
 		if NoFall.Enabled then

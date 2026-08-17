@@ -17,6 +17,7 @@ FastBreak = vain.Categories.Blatant:CreateModule({
 })
 Time = FastBreak:CreateSlider({
 	Name = 'Break speed',
+	Tooltip = 'How fast blocks are broken',
 	Min = 0,
 	Max = 0.3,
 	Default = 0.25,

@@ -358,7 +358,7 @@ AutoKit = vain.Categories.Utility:CreateModule({
 	end,
 	Tooltip = 'Automatically uses kit abilities.'
 })
-Legit = AutoKit:CreateToggle({Name = 'Legit Range'})
+Legit = AutoKit:CreateToggle({Name = 'Legit Range', Tooltip = 'Keeps the range within limits that look legitimate'})
 local sortTable = {}
 for i in AutoKitFunctions do
 	table.insert(sortTable, i)

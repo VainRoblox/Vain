@@ -118,6 +118,7 @@ run(function()
 	end
 	Material = AntiFall:CreateDropdown({
 		Name = 'Material',
+		Tooltip = 'Material used for the blocks',
 		List = materials,
 		Function = function(val)
 			if AntiFallPart then
@@ -127,6 +128,7 @@ run(function()
 	})
 	Color = AntiFall:CreateColorSlider({
 		Name = 'Color',
+		Tooltip = 'Color used for this feature',
 		DefaultOpacity = 0.5,
 		Function = function(h, s, v, o)
 			if AntiFallPart then

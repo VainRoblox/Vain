@@ -116,6 +116,7 @@ AutoBank = vain.Categories.Inventory:CreateModule({
 })
 UIToggle = AutoBank:CreateToggle({
 	Name = 'UI',
+	Tooltip = 'Shows the on screen interface',
 	Function = function(callback)
 		if AutoBank.Enabled then
 			UI.Visible = callback

@@ -64,6 +64,7 @@ local FastConsume = vain.Categories.Inventory:CreateModule({
 })
 Value = FastConsume:CreateSlider({
 	Name = 'Multiplier',
+	Tooltip = 'Multiplies the effect strength',
 	Min = 0,
 	Max = 100
 })

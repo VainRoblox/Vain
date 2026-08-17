@@ -75,6 +75,7 @@ KitESP = vain.Categories.Render:CreateModule({
 })
 Background = KitESP:CreateToggle({
 	Name = 'Background',
+	Tooltip = 'Draws a background behind the text',
 	Function = function(callback)
 		if Color.Object then Color.Object.Visible = callback end
 		for _, v in Reference do
@@ -86,6 +87,7 @@ Background = KitESP:CreateToggle({
 })
 Color = KitESP:CreateColorSlider({
 	Name = 'Background Color',
+	Tooltip = 'Color of the background',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
 	Function = function(hue, sat, val, opacity)

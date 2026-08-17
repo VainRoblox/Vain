@@ -566,6 +566,7 @@ AutoHotbar = vain.Categories.Inventory:CreateModule({
 })
 Mode = AutoHotbar:CreateDropdown({
 	Name = 'Activation',
+	Tooltip = 'What triggers this module',
 	List = {'Toggle', 'On Key'},
 	Function = function()
 		if AutoHotbar.Enabled then
@@ -574,5 +575,5 @@ Mode = AutoHotbar:CreateDropdown({
 		end
 	end
 })
-Clear = AutoHotbar:CreateToggle({Name = 'Clear Hotbar'})
+Clear = AutoHotbar:CreateToggle({Name = 'Clear Hotbar', Tooltip = 'Empties the hotbar before sorting it'})
 List = AutoHotbar:CreateHotbarList({})

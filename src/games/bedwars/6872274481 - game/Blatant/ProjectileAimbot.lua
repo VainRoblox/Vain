@@ -82,19 +82,23 @@ local ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 })
 Targets = ProjectileAimbot:CreateTargets({
 	Players = true,
-	Walls = true
+	Walls = true,
+	Tooltip = 'Which entities this module is allowed to target'
 })
 TargetPart = ProjectileAimbot:CreateDropdown({
 	Name = 'Part',
+	Tooltip = 'Which body part to target',
 	List = {'RootPart', 'Head'}
 })
 FOV = ProjectileAimbot:CreateSlider({
 	Name = 'FOV',
+	Tooltip = 'Field of view, in degrees',
 	Min = 1,
 	Max = 1000,
 	Default = 1000
 })
 OtherProjectiles = ProjectileAimbot:CreateToggle({
 	Name = 'Other Projectiles',
+	Tooltip = 'Also handles projectiles other than the main one',
 	Default = true
 })

@@ -54,6 +54,7 @@ for _, v in Enum.Font:GetEnumItems() do
 end
 Interface:CreateDropdown({
 	Name = 'Health Font',
+	Tooltip = 'Font used for the health text',
 	List = fontitems,
 	Function = function(val)
 		modifyconstant(HotbarHealthbar.render, 77, val)
@@ -61,6 +62,7 @@ Interface:CreateDropdown({
 })
 Interface:CreateColorSlider({
 	Name = 'Health Color',
+	Tooltip = 'Color of the health text',
 	Function = function(hue, sat, val)
 		modifyconstant(HotbarHealthbar.render, 16, tonumber(Color3.fromHSV(hue, sat, val):ToHex(), 16))
 		if Interface.Enabled then
@@ -74,6 +76,7 @@ Interface:CreateColorSlider({
 })
 Interface:CreateColorSlider({
 	Name = 'Hotbar Color',
+	Tooltip = 'Color of the hotbar',
 	DefaultOpacity = 0.8,
 	Function = function(hue, sat, val, opacity)
 		local func = oldinvrender or HotbarOpenInventory.render

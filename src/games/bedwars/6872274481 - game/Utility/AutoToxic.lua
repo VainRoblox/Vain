@@ -71,6 +71,7 @@ AutoToxic = vain.Categories.Utility:CreateModule({
 })
 GG = AutoToxic:CreateToggle({
 	Name = 'AutoGG',
+	Tooltip = 'Sends a message at the end of the match',
 	Default = true
 })
 for _, v in {'Kill', 'Death', 'Bed', 'BedDestroyed', 'Win'} do

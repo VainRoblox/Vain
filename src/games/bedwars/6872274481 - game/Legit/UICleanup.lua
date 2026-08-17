@@ -83,6 +83,7 @@ UICleanup = vain.Legit:CreateModule({
 })
 UICleanup:CreateToggle({
 	Name = 'Resize Health',
+	Tooltip = 'Resizes the health bar',
 	Function = function(callback)
 		modifyconstant(HotbarApp, 60, callback and 1 or nil)
 		modifyconstant(debug.getupvalue(HotbarApp, 15).render, 30, callback and 1 or nil)
@@ -92,6 +93,7 @@ UICleanup:CreateToggle({
 })
 UICleanup:CreateToggle({
 	Name = 'No Hotbar Numbers',
+	Tooltip = 'Hides the hotbar slot numbers',
 	Function = function(callback)
 		local func = oldinvrender or HotbarOpenInventory.render
 		modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
@@ -101,6 +103,7 @@ UICleanup:CreateToggle({
 })
 OpenInv = UICleanup:CreateToggle({
 	Name = 'No Inventory Button',
+	Tooltip = 'Hides the inventory button',
 	Function = function(callback)
 		modifyconstant(HotbarApp, 78, callback and 0 or nil)
 		if UICleanup.Enabled then
@@ -119,6 +122,7 @@ OpenInv = UICleanup:CreateToggle({
 })
 KillFeed = UICleanup:CreateToggle({
 	Name = 'No Kill Feed',
+	Tooltip = 'Hides the kill feed',
 	Function = function(callback)
 		if UICleanup.Enabled then
 			if callback then
@@ -134,6 +138,7 @@ KillFeed = UICleanup:CreateToggle({
 })
 OldTabList = UICleanup:CreateToggle({
 	Name = 'Old Player List',
+	Tooltip = 'Restores the older player list style',
 	Function = function(callback)
 		if UICleanup.Enabled then
 			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, callback)
@@ -143,6 +148,7 @@ OldTabList = UICleanup:CreateToggle({
 })
 UICleanup:CreateToggle({
 	Name = 'Fix Queue Card',
+	Tooltip = 'Fixes the queue card layout',
 	Function = function(callback)
 		modifyconstant(bedwars.QueueCard.render, 15, callback and 0.1 or nil)
 	end,

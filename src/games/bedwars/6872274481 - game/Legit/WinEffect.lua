@@ -28,5 +28,6 @@ end
 table.sort(WinEffectName)
 List = WinEffect:CreateDropdown({
 	Name = 'Effects',
+	Tooltip = 'Which effect set to use',
 	List = WinEffectName
 })

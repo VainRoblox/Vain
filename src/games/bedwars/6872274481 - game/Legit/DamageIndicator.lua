@@ -43,6 +43,7 @@ for _, v in Enum.Font:GetEnumItems() do
 end
 FontOption = DamageIndicator:CreateDropdown({
 	Name = 'Font',
+	Tooltip = 'Font used for the text',
 	List = fontitems,
 	Function = function(val)
 		if DamageIndicator.Enabled then
@@ -52,6 +53,7 @@ FontOption = DamageIndicator:CreateDropdown({
 })
 Color = DamageIndicator:CreateColorSlider({
 	Name = 'Color',
+	Tooltip = 'Color used for this feature',
 	DefaultHue = 0,
 	Function = function(hue, sat, val)
 		if DamageIndicator.Enabled then
@@ -61,6 +63,7 @@ Color = DamageIndicator:CreateColorSlider({
 })
 Size = DamageIndicator:CreateSlider({
 	Name = 'Size',
+	Tooltip = 'Size of the effect',
 	Min = 1,
 	Max = 32,
 	Default = 32,
@@ -73,6 +76,7 @@ Size = DamageIndicator:CreateSlider({
 })
 Anchor = DamageIndicator:CreateSlider({
 	Name = 'Anchor',
+	Tooltip = 'Where the element is anchored on screen',
 	Min = 0,
 	Max = 1,
 	Decimal = 10,
@@ -84,6 +88,7 @@ Anchor = DamageIndicator:CreateSlider({
 })
 Stroke = DamageIndicator:CreateToggle({
 	Name = 'Stroke',
+	Tooltip = 'Draws an outline around the text',
 	Function = function(callback)
 		if DamageIndicator.Enabled then
 			debug.setconstant(bedwars.DamageIndicator, 119, callback and 'Thickness' or 'Enabled')

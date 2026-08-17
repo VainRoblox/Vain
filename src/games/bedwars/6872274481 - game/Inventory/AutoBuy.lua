@@ -199,6 +199,7 @@ AutoBuy = vain.Categories.Inventory:CreateModule({
 })
 Sword = AutoBuy:CreateToggle({
 	Name = 'Buy Sword',
+	Tooltip = 'Automatically buys a sword upgrade',
 	Function = function(callback)
 		npctick = tick()
 		Functions[2] = callback and function(currencytable, shop)
@@ -226,6 +227,7 @@ Sword = AutoBuy:CreateToggle({
 })
 Armor = AutoBuy:CreateToggle({
 	Name = 'Buy Armor',
+	Tooltip = 'Automatically buys armor',
 	Function = function(callback)
 		npctick = tick()
 		Functions[1] = callback and function(currencytable, shop)
@@ -239,6 +241,7 @@ Armor = AutoBuy:CreateToggle({
 })
 AutoBuy:CreateToggle({
 	Name = 'Buy Axe',
+	Tooltip = 'Automatically buys an axe',
 	Function = function(callback)
 		npctick = tick()
 		Functions[3] = callback and function(currencytable, shop)
@@ -249,6 +252,7 @@ AutoBuy:CreateToggle({
 })
 AutoBuy:CreateToggle({
 	Name = 'Buy Pickaxe',
+	Tooltip = 'Automatically buys a pickaxe',
 	Function = function(callback)
 		npctick = tick()
 		Functions[4] = callback and function(currencytable, shop)
@@ -259,6 +263,7 @@ AutoBuy:CreateToggle({
 })
 Upgrades = AutoBuy:CreateToggle({
 	Name = 'Buy Upgrades',
+	Tooltip = 'Automatically buys team upgrades',
 	Function = function(callback)
 		for _, v in UpgradeToggles do
 			v.Object.Visible = callback
@@ -284,9 +289,10 @@ for i, v in bedwars.TeamUpgradeMeta do
 	}))
 	count += 1
 end
-TierCheck = AutoBuy:CreateToggle({Name = 'Tier Check'})
+TierCheck = AutoBuy:CreateToggle({Name = 'Tier Check', Tooltip = 'Only buys when the next tier is actually affordable'})
 BedwarsCheck = AutoBuy:CreateToggle({
 	Name = 'Only Bedwars',
+	Tooltip = 'Only runs while in a bedwars queue',
 	Function = function()
 		if AutoBuy.Enabled then
 			AutoBuy:Toggle()
@@ -295,7 +301,7 @@ BedwarsCheck = AutoBuy:CreateToggle({
 	end,
 	Default = true
 })
-GUI = AutoBuy:CreateToggle({Name = 'GUI check'})
+GUI = AutoBuy:CreateToggle({Name = 'GUI check', Tooltip = 'Stops acting while a game menu is open'})
 SmartCheck = AutoBuy:CreateToggle({
 	Name = 'Smart check',
 	Default = true,
@@ -303,6 +309,7 @@ SmartCheck = AutoBuy:CreateToggle({
 })
 AutoBuy:CreateTextList({
 	Name = 'Item',
+	Tooltip = 'Which items this applies to',
 	Placeholder = 'priority/item/amount/after',
 	Function = function(list)
 		table.clear(Custom)

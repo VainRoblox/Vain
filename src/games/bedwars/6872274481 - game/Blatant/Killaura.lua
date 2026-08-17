@@ -264,8 +264,9 @@ run(function()
 	})
 	Targets = Killaura:CreateTargets({
 		Players = true,
-		NPCs = true
-	})
+		NPCs = true,
+	Tooltip = 'Which entities this module is allowed to target'
+})
 	-- Damage/Distance stay pinned to the front (Damage is the default), the rest are
 	-- sorted so the dropdown order stays stable - iterating sortmethods directly is
 	-- hash order, which reshuffles the list between injections.
@@ -281,6 +282,7 @@ run(function()
 	end
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
+		Tooltip = 'How far your swing reaches, in studs',
 		Min = 1,
 		Max = 28,
 		Default = 28,
@@ -290,6 +292,7 @@ run(function()
 	})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
+		Tooltip = 'How far a target can be and still be hit',
 		Min = 1,
 		Max = 28,
 		Default = 28,
@@ -299,12 +302,14 @@ run(function()
 	})
 	AngleSlider = Killaura:CreateSlider({
 		Name = 'Max angle',
+		Tooltip = 'Widest angle from your view a target may be at',
 		Min = 1,
 		Max = 360,
 		Default = 360
 	})
 	UpdateRate = Killaura:CreateSlider({
 		Name = 'Update rate',
+		Tooltip = 'How many times per second targets are re-checked\nLower costs less performance',
 		Min = 1,
 		Max = 120,
 		Default = 60,
@@ -312,19 +317,22 @@ run(function()
 	})
 	MaxTargets = Killaura:CreateSlider({
 		Name = 'Max targets',
+		Tooltip = 'How many targets to hit per swing',
 		Min = 1,
 		Max = 5,
 		Default = 5
 	})
 	Sort = Killaura:CreateDropdown({
 		Name = 'Target Mode',
+		Tooltip = 'How targets are ranked when several are valid at once',
 		List = methods
 	})
-	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
-	Swing = Killaura:CreateToggle({Name = 'No Swing'})
-	GUI = Killaura:CreateToggle({Name = 'GUI check'})
+	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Tooltip = 'Only acts while you hold left click'})
+	Swing = Killaura:CreateToggle({Name = 'No Swing', Tooltip = 'Attacks without playing the swing animation'})
+	GUI = Killaura:CreateToggle({Name = 'GUI check', Tooltip = 'Stops acting while a game menu is open'})
 	Killaura:CreateToggle({
 		Name = 'Show target',
+		Tooltip = 'Draws a box around the target you are attacking',
 		Function = function(callback)
 			BoxSwingColor.Object.Visible = callback
 			BoxAttackColor.Object.Visible = callback
@@ -349,6 +357,7 @@ run(function()
 	})
 	BoxSwingColor = Killaura:CreateColorSlider({
 		Name = 'Target Color',
+		Tooltip = 'Box color while a target is in swing range',
 		Darker = true,
 		DefaultHue = 0.6,
 		DefaultOpacity = 0.5,
@@ -356,12 +365,14 @@ run(function()
 	})
 	BoxAttackColor = Killaura:CreateColorSlider({
 		Name = 'Attack Color',
+		Tooltip = 'Box color while a target is being attacked',
 		Darker = true,
 		DefaultOpacity = 0.5,
 		Visible = false
 	})
 	Killaura:CreateToggle({
 		Name = 'Target particles',
+		Tooltip = 'Spawns particles on the target you hit',
 		Function = function(callback)
 			ParticleTexture.Object.Visible = callback
 			ParticleColor1.Object.Visible = callback
@@ -404,6 +415,7 @@ run(function()
 	})
 	ParticleTexture = Killaura:CreateTextBox({
 		Name = 'Texture',
+		Tooltip = 'Particle image asset id',
 		Default = 'rbxassetid://14736249347',
 		Function = function()
 			for _, v in Particles do
@@ -415,6 +427,7 @@ run(function()
 	})
 	ParticleColor1 = Killaura:CreateColorSlider({
 		Name = 'Color Begin',
+		Tooltip = 'Particle color when it spawns',
 		Function = function(hue, sat, val)
 			for _, v in Particles do
 				v.ParticleEmitter.Color = ColorSequence.new({
@@ -428,6 +441,7 @@ run(function()
 	})
 	ParticleColor2 = Killaura:CreateColorSlider({
 		Name = 'Color End',
+		Tooltip = 'Particle color as it fades out',
 		Function = function(hue, sat, val)
 			for _, v in Particles do
 				v.ParticleEmitter.Color = ColorSequence.new({
@@ -441,6 +455,7 @@ run(function()
 	})
 	ParticleSize = Killaura:CreateSlider({
 		Name = 'Size',
+		Tooltip = 'Size of the effect',
 		Min = 0,
 		Max = 1,
 		Default = 0.2,
@@ -453,9 +468,10 @@ run(function()
 		Darker = true,
 		Visible = false
 	})
-	Face = Killaura:CreateToggle({Name = 'Face target'})
+	Face = Killaura:CreateToggle({Name = 'Face target', Tooltip = 'Turns your character toward the target'})
 	Animation = Killaura:CreateToggle({
 		Name = 'Custom Animation',
+		Tooltip = 'Replaces the default swing with a custom animation',
 		Function = function(callback)
 			AnimationMode.Object.Visible = callback
 			AnimationTween.Object.Visible = callback
@@ -472,12 +488,14 @@ run(function()
 	end
 	AnimationMode = Killaura:CreateDropdown({
 		Name = 'Animation Mode',
+		Tooltip = 'Which custom swing animation to play',
 		List = animnames,
 		Darker = true,
 		Visible = false
 	})
 	AnimationSpeed = Killaura:CreateSlider({
 		Name = 'Animation Speed',
+		Tooltip = 'How fast the custom animation plays',
 		Min = 0,
 		Max = 2,
 		Default = 1,
@@ -487,6 +505,7 @@ run(function()
 	})
 	AnimationTween = Killaura:CreateToggle({
 		Name = 'No Tween',
+		Tooltip = 'Snaps the animation instead of smoothing it',
 		Darker = true,
 		Visible = false
 	})

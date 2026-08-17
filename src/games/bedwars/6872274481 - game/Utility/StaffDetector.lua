@@ -136,6 +136,7 @@ StaffDetector = vain.Categories.Utility:CreateModule({
 })
 Mode = StaffDetector:CreateDropdown({
 	Name = 'Mode',
+	Tooltip = 'Which method this module uses',
 	List = {'Uninject', 'Profile', 'Requeue', 'AutoConfig', 'Notify'},
 	Function = function(val)
 		if Profile.Object then
@@ -145,19 +146,23 @@ Mode = StaffDetector:CreateDropdown({
 })
 Clans = StaffDetector:CreateToggle({
 	Name = 'Blacklist clans',
+	Tooltip = 'Also flags players wearing known clan tags',
 	Default = true
 })
 Party = StaffDetector:CreateToggle({
-	Name = 'Leave party'
+	Name = 'Leave party',
+	Tooltip = 'Leaves the party as well'
 })
 Profile = StaffDetector:CreateTextBox({
 	Name = 'Profile',
+	Tooltip = 'Profile name to use',
 	Default = 'default',
 	Darker = true,
 	Visible = false
 })
 Users = StaffDetector:CreateTextList({
 	Name = 'Users',
+	Tooltip = 'Usernames this applies to',
 	Placeholder = 'player (userid)'
 })
 

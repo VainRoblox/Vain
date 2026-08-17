@@ -23,6 +23,7 @@ local Crosshair = vain.Legit:CreateModule({
 })
 Image = Crosshair:CreateTextBox({
 	Name = 'Image',
+	Tooltip = 'Image asset id to use',
 	Placeholder = 'image id (roblox)',
 	Function = function(enter)
 		if enter and Crosshair.Enabled then

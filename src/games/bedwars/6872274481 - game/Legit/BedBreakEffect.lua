@@ -28,5 +28,6 @@ end
 table.sort(BreakEffectName)
 List = BedBreakEffect:CreateDropdown({
 	Name = 'Effect',
+	Tooltip = 'Which effect to play',
 	List = BreakEffectName
 })

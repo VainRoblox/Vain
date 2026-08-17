@@ -35,6 +35,7 @@ Velocity = vain.Categories.Combat:CreateModule({
 })
 Horizontal = Velocity:CreateSlider({
 	Name = 'Horizontal',
+	Tooltip = 'Horizontal offset',
 	Min = 0,
 	Max = 100,
 	Default = 0,
@@ -42,6 +43,7 @@ Horizontal = Velocity:CreateSlider({
 })
 Vertical = Velocity:CreateSlider({
 	Name = 'Vertical',
+	Tooltip = 'Vertical offset',
 	Min = 0,
 	Max = 100,
 	Default = 0,
@@ -49,9 +51,10 @@ Vertical = Velocity:CreateSlider({
 })
 Chance = Velocity:CreateSlider({
 	Name = 'Chance',
+	Tooltip = 'Percent chance this happens',
 	Min = 0,
 	Max = 100,
 	Default = 100,
 	Suffix = '%'
 })
-TargetCheck = Velocity:CreateToggle({Name = 'Only when targeting'})
+TargetCheck = Velocity:CreateToggle({Name = 'Only when targeting', Tooltip = 'Only runs while you have a target'})

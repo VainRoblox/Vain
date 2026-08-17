@@ -46,6 +46,7 @@ PickupRange = vain.Categories.Utility:CreateModule({
 })
 Range = PickupRange:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 1,
 	Max = 10,
 	Default = 10,
@@ -55,6 +56,7 @@ Range = PickupRange:CreateSlider({
 })
 Network = PickupRange:CreateToggle({
 	Name = 'Network TP',
+	Tooltip = 'Teleports using network ownership instead of moving normally',
 	Default = true
 })
-Lower = PickupRange:CreateToggle({Name = 'Feet Check'})
+Lower = PickupRange:CreateToggle({Name = 'Feet Check', Tooltip = 'Also checks the block under your feet'})

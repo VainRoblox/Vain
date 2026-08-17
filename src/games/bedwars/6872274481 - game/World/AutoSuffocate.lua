@@ -55,6 +55,7 @@ AutoSuffocate = vain.Categories.World:CreateModule({
 })
 Range = AutoSuffocate:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 1,
 	Max = 20,
 	Default = 20,
@@ -64,5 +65,6 @@ Range = AutoSuffocate:CreateSlider({
 })
 LimitItem = AutoSuffocate:CreateToggle({
 	Name = 'Limit to Items',
+	Tooltip = 'Only acts while holding a matching item',
 	Default = true
 })

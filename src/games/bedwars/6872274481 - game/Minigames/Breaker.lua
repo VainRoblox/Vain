@@ -204,6 +204,7 @@ Breaker = vain.Categories.Minigames:CreateModule({
 })
 Range = Breaker:CreateSlider({
 	Name = 'Break range',
+	Tooltip = 'How far you can break blocks from, in studs',
 	Min = 1,
 	Max = 30,
 	Default = 30,
@@ -213,6 +214,7 @@ Range = Breaker:CreateSlider({
 })
 BreakSpeed = Breaker:CreateSlider({
 	Name = 'Break speed',
+	Tooltip = 'How fast blocks are broken',
 	Min = 0,
 	Max = 0.3,
 	Default = 0.25,
@@ -221,6 +223,7 @@ BreakSpeed = Breaker:CreateSlider({
 })
 UpdateRate = Breaker:CreateSlider({
 	Name = 'Update rate',
+	Tooltip = 'How many times per second blocks are re-checked\nLower costs less performance',
 	Min = 1,
 	Max = 120,
 	Default = 60,
@@ -228,6 +231,7 @@ UpdateRate = Breaker:CreateSlider({
 })
 Custom = Breaker:CreateTextList({
 	Name = 'Custom',
+	Tooltip = 'Extra block names to break',
 	Function = function()
 		if not customlist then return end
 		table.clear(customlist)
@@ -240,18 +244,22 @@ Custom = Breaker:CreateTextList({
 })
 Bed = Breaker:CreateToggle({
 	Name = 'Break Bed',
+	Tooltip = 'Breaks beds',
 	Default = true
 })
 LuckyBlock = Breaker:CreateToggle({
 	Name = 'Break Lucky Block',
+	Tooltip = 'Breaks lucky blocks',
 	Default = true
 })
 IronOre = Breaker:CreateToggle({
 	Name = 'Break Iron Ore',
+	Tooltip = 'Breaks iron ore',
 	Default = true
 })
 Effect = Breaker:CreateToggle({
 	Name = 'Show Healthbar & Effects',
+	Tooltip = 'Shows break progress and particles',
 	Function = function(callback)
 		if CustomHealth.Object then
 			CustomHealth.Object.Visible = callback
@@ -261,12 +269,13 @@ Effect = Breaker:CreateToggle({
 })
 CustomHealth = Breaker:CreateToggle({
 	Name = 'Custom Healthbar',
+	Tooltip = 'Uses the Vain healthbar instead of the game one',
 	Default = true,
 	Darker = true
 })
-Animation = Breaker:CreateToggle({Name = 'Animation'})
-SelfBreak = Breaker:CreateToggle({Name = 'Self Break'})
-InstantBreak = Breaker:CreateToggle({Name = 'Instant Break'})
+Animation = Breaker:CreateToggle({Name = 'Animation', Tooltip = 'Plays the break animation'})
+SelfBreak = Breaker:CreateToggle({Name = 'Self Break', Tooltip = 'Also breaks blocks placed by your own team'})
+InstantBreak = Breaker:CreateToggle({Name = 'Instant Break', Tooltip = 'Breaks blocks in a single hit'})
 LimitItem = Breaker:CreateToggle({
 	Name = 'Limit to items',
 	Tooltip = 'Only breaks when tools are held'

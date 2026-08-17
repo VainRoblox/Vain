@@ -117,6 +117,7 @@ run(function()
 	})
 	Value = Fly:CreateSlider({
 		Name = 'Speed',
+		Tooltip = 'How fast this runs',
 		Min = 1,
 		Max = 23,
 		Default = 23,
@@ -126,6 +127,7 @@ run(function()
 	})
 	VerticalValue = Fly:CreateSlider({
 		Name = 'Vertical Speed',
+		Tooltip = 'How fast you move up and down',
 		Min = 1,
 		Max = 150,
 		Default = 50,
@@ -135,14 +137,17 @@ run(function()
 	})
 	WallCheck = Fly:CreateToggle({
 		Name = 'Wall Check',
+		Tooltip = 'Ignores targets behind walls',
 		Default = true
 	})
 	PopBalloons = Fly:CreateToggle({
 		Name = 'Pop Balloons',
+		Tooltip = 'Pops balloons on contact',
 		Default = true
 	})
 	TP = Fly:CreateToggle({
 		Name = 'TP Down',
+		Tooltip = 'Teleports you back down afterwards',
 		Default = true
 	})
 end)

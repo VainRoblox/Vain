@@ -42,6 +42,7 @@ TriggerBot = vain.Categories.Combat:CreateModule({
 })
 CPS = TriggerBot:CreateTwoSlider({
 	Name = 'CPS',
+	Tooltip = 'Clicks per second, picked at random between both values',
 	Min = 1,
 	Max = 9,
 	DefaultMin = 7,

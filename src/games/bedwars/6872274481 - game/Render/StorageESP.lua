@@ -105,6 +105,7 @@ StorageESP = vain.Categories.Render:CreateModule({
 })
 List = StorageESP:CreateTextList({
 	Name = 'Item',
+	Tooltip = 'Which items this applies to',
 	Function = function()
 		for _, v in Reference do
 			task.spawn(refreshAdornee, v)
@@ -113,6 +114,7 @@ List = StorageESP:CreateTextList({
 })
 Background = StorageESP:CreateToggle({
 	Name = 'Background',
+	Tooltip = 'Draws a background behind the text',
 	Function = function(callback)
 		if Color.Object then Color.Object.Visible = callback end
 		for _, v in Reference do
@@ -124,6 +126,7 @@ Background = StorageESP:CreateToggle({
 })
 Color = StorageESP:CreateColorSlider({
 	Name = 'Background Color',
+	Tooltip = 'Color of the background',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
 	Function = function(hue, sat, val, opacity)

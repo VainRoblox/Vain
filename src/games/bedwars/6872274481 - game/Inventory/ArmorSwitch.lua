@@ -46,14 +46,17 @@ ArmorSwitch = vain.Categories.Inventory:CreateModule({
 })
 Mode = ArmorSwitch:CreateDropdown({
 	Name = 'Mode',
+	Tooltip = 'Which method this module uses',
 	List = {'Toggle', 'On Key'}
 })
 Targets = ArmorSwitch:CreateTargets({
 	Players = true,
-	NPCs = true
+	NPCs = true,
+	Tooltip = 'Which entities this module is allowed to target'
 })
 Range = ArmorSwitch:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 1,
 	Max = 30,
 	Default = 30,

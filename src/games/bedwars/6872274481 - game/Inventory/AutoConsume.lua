@@ -58,6 +58,7 @@ AutoConsume = vain.Categories.Inventory:CreateModule({
 })
 Health = AutoConsume:CreateSlider({
 	Name = 'Health Percent',
+	Tooltip = 'Triggers once your health drops below this percentage',
 	Min = 1,
 	Max = 99,
 	Default = 70,
@@ -65,13 +66,16 @@ Health = AutoConsume:CreateSlider({
 })
 SpeedPotion = AutoConsume:CreateToggle({
 	Name = 'Speed Potions',
+	Tooltip = 'Uses speed potions',
 	Default = true
 })
 Apple = AutoConsume:CreateToggle({
 	Name = 'Apple',
+	Tooltip = 'Eats apples',
 	Default = true
 })
 ShieldPotion = AutoConsume:CreateToggle({
 	Name = 'Shield Potions',
+	Tooltip = 'Uses shield potions',
 	Default = true
 })

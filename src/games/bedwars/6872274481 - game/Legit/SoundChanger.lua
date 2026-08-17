@@ -24,6 +24,7 @@ SoundChanger = vain.Legit:CreateModule({
 })
 List = SoundChanger:CreateTextList({
 	Name = 'Sounds',
+	Tooltip = 'Sounds to use',
 	Placeholder = '(DAMAGE_1/ben.mp3)',
 	Function = function()
 		table.clear(soundlist)

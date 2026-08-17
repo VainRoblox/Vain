@@ -51,6 +51,7 @@ Speed = vain.Categories.Blatant:CreateModule({
 })
 Value = Speed:CreateSlider({
 	Name = 'Speed',
+	Tooltip = 'How fast this runs',
 	Min = 1,
 	Max = 23,
 	Default = 23,
@@ -60,16 +61,19 @@ Value = Speed:CreateSlider({
 })
 WallCheck = Speed:CreateToggle({
 	Name = 'Wall Check',
+	Tooltip = 'Ignores targets behind walls',
 	Default = true
 })
 AutoJump = Speed:CreateToggle({
 	Name = 'AutoJump',
+	Tooltip = 'Jumps automatically',
 	Function = function(callback)
 		AlwaysJump.Object.Visible = callback
 	end
 })
 AlwaysJump = Speed:CreateToggle({
 	Name = 'Always Jump',
+	Tooltip = 'Keeps jumping even when not needed',
 	Visible = false,
 	Darker = true
 })

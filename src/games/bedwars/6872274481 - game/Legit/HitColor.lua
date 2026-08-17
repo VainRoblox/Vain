@@ -31,5 +31,6 @@ HitColor = vain.Legit:CreateModule({
 })
 Color = HitColor:CreateColorSlider({
 	Name = 'Color',
+	Tooltip = 'Color used for this feature',
 	DefaultOpacity = 0.4
 })

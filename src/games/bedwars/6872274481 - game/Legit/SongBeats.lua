@@ -79,10 +79,12 @@ SongBeats = vain.Legit:CreateModule({
 })
 List = SongBeats:CreateTextList({
 	Name = 'Songs',
+	Tooltip = 'Songs to play',
 	Placeholder = 'filepath/bpm/start'
 })
 FOV = SongBeats:CreateToggle({
 	Name = 'Beat FOV',
+	Tooltip = 'Pulses your field of view in time with the beat',
 	Function = function(callback)
 		if FOVValue.Object then
 			FOVValue.Object.Visible = callback
@@ -96,6 +98,7 @@ FOV = SongBeats:CreateToggle({
 })
 FOVValue = SongBeats:CreateSlider({
 	Name = 'Adjustment',
+	Tooltip = 'Fine tunes the timing offset',
 	Min = 1,
 	Max = 30,
 	Default = 5,
@@ -103,6 +106,7 @@ FOVValue = SongBeats:CreateSlider({
 })
 Volume = SongBeats:CreateSlider({
 	Name = 'Volume',
+	Tooltip = 'Playback volume',
 	Function = function(val)
 		if songobj then 
 			songobj.Volume = val / 100 

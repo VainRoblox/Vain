@@ -64,6 +64,7 @@ Mode = HitBoxes:CreateDropdown({
 })
 Expand = HitBoxes:CreateSlider({
 	Name = 'Expand amount',
+	Tooltip = 'How much larger to make the hitbox',
 	Min = 0,
 	Max = 14.4,
 	Default = 14.4,

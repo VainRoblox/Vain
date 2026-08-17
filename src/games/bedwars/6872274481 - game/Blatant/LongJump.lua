@@ -214,6 +214,7 @@ LongJump = vain.Categories.Blatant:CreateModule({
 })
 Value = LongJump:CreateSlider({
 	Name = 'Speed',
+	Tooltip = 'How fast this runs',
 	Min = 1,
 	Max = 37,
 	Default = 37,
@@ -222,5 +223,6 @@ Value = LongJump:CreateSlider({
 	end
 })
 CameraDir = LongJump:CreateToggle({
-	Name = 'Camera Direction'
+	Name = 'Camera Direction',
+	Tooltip = 'Uses your camera direction instead of your character facing'
 })

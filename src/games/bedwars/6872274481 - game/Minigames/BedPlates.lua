@@ -109,6 +109,7 @@ BedPlates = vain.Categories.Minigames:CreateModule({
 })
 Background = BedPlates:CreateToggle({
 	Name = 'Background',
+	Tooltip = 'Draws a background behind the text',
 	Function = function(callback)
 		if Color.Object then 
 			Color.Object.Visible = callback 
@@ -122,6 +123,7 @@ Background = BedPlates:CreateToggle({
 })
 Color = BedPlates:CreateColorSlider({
 	Name = 'Background Color',
+	Tooltip = 'Color of the background',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
 	Function = function(hue, sat, val, opacity)

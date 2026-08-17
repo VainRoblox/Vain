@@ -68,6 +68,7 @@ AutoClicker = vain.Categories.Combat:CreateModule({
 })
 CPS = AutoClicker:CreateTwoSlider({
 	Name = 'CPS',
+	Tooltip = 'Clicks per second, picked at random between both values',
 	Min = 1,
 	Max = 9,
 	DefaultMin = 7,
@@ -75,6 +76,7 @@ CPS = AutoClicker:CreateTwoSlider({
 })
 AutoClicker:CreateToggle({
 	Name = 'Place Blocks',
+	Tooltip = 'Places blocks as part of this module',
 	Default = true,
 	Function = function(callback)
 		if BlockCPS.Object then
@@ -84,6 +86,7 @@ AutoClicker:CreateToggle({
 })
 BlockCPS = AutoClicker:CreateTwoSlider({
 	Name = 'Block CPS',
+	Tooltip = 'Block places per second, picked at random between both values',
 	Min = 1,
 	Max = 12,
 	DefaultMin = 12,

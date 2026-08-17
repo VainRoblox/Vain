@@ -137,6 +137,7 @@ for i in killeffects do
 end
 Mode = KillEffect:CreateDropdown({
 	Name = 'Mode',
+	Tooltip = 'Which method this module uses',
 	List = modes,
 	Function = function(val)
 		List.Object.Visible = val == 'Bedwars'
@@ -153,6 +154,7 @@ end
 table.sort(KillEffectName)
 List = KillEffect:CreateDropdown({
 	Name = 'Bedwars',
+	Tooltip = 'Which bedwars queue this applies to',
 	List = KillEffectName,
 	Function = function(val)
 		if KillEffect.Enabled then

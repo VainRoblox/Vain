@@ -3,6 +3,7 @@ local label
 
 ReachDisplay = vain.Legit:CreateModule({
 	Name = 'Reach Display',
+	Tooltip = 'Shows your current reach on screen',
 	Function = function(callback)
 		if callback then
 			repeat
@@ -15,6 +16,7 @@ ReachDisplay = vain.Legit:CreateModule({
 })
 ReachDisplay:CreateFont({
 	Name = 'Font',
+	Tooltip = 'Font used for the text',
 	Blacklist = 'Gotham',
 	Function = function(val)
 		label.FontFace = val
@@ -22,6 +24,7 @@ ReachDisplay:CreateFont({
 })
 ReachDisplay:CreateColorSlider({
 	Name = 'Color',
+	Tooltip = 'Color used for this feature',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
 	Function = function(hue, sat, val, opacity)

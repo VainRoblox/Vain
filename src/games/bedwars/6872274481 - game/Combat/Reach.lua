@@ -9,6 +9,7 @@ Reach = vain.Categories.Combat:CreateModule({
 })
 Value = Reach:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 0,
 	Max = 18,
 	Default = 18,

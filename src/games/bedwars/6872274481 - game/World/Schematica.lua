@@ -200,6 +200,7 @@ Schematica = vain.Categories.World:CreateModule({
 })
 File = Schematica:CreateTextBox({
 	Name = 'File',
+	Tooltip = 'File to load',
 	Function = function()
 		loadMaterials()
 		point1, point2 = nil, nil
@@ -207,10 +208,12 @@ File = Schematica:CreateTextBox({
 })
 Mode = Schematica:CreateDropdown({
 	Name = 'Mode',
+	Tooltip = 'Which method this module uses',
 	List = {'Load', 'Save'}
 })
 Transparency = Schematica:CreateSlider({
 	Name = 'Transparency',
+	Tooltip = 'How see-through this is',
 	Min = 0,
 	Max = 1,
 	Default = 0.7,

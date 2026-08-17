@@ -55,6 +55,7 @@ FPSBoost = vain.Legit:CreateModule({
 })
 Kill = FPSBoost:CreateToggle({
 	Name = 'Kill Effects',
+	Tooltip = 'Plays your equipped kill effect',
 	Function = function()
 		if FPSBoost.Enabled then
 			FPSBoost:Toggle()
@@ -65,6 +66,7 @@ Kill = FPSBoost:CreateToggle({
 })
 Visualizer = FPSBoost:CreateToggle({
 	Name = 'Visualizer',
+	Tooltip = 'Shows a visualizer for the audio',
 	Function = function()
 		if FPSBoost.Enabled then
 			FPSBoost:Toggle()

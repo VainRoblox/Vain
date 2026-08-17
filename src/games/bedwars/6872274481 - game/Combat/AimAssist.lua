@@ -40,7 +40,8 @@ AimAssist = vain.Categories.Combat:CreateModule({
 })
 Targets = AimAssist:CreateTargets({
 	Players = true,
-	Walls = true
+	Walls = true,
+	Tooltip = 'Which entities this module is allowed to target'
 })
 -- Damage/Distance stay pinned to the front (Damage is the default), the rest are
 -- sorted so the dropdown order stays stable - iterating sortmethods directly is
@@ -57,16 +58,19 @@ for _, v in extramethods do
 end
 Sort = AimAssist:CreateDropdown({
 	Name = 'Target Mode',
+	Tooltip = 'How targets are ranked when several are valid at once',
 	List = methods
 })
 AimSpeed = AimAssist:CreateSlider({
 	Name = 'Aim Speed',
+	Tooltip = 'How quickly your aim moves toward the target',
 	Min = 1,
 	Max = 20,
 	Default = 6
 })
 Distance = AimAssist:CreateSlider({
 	Name = 'Distance',
+	Tooltip = 'Furthest a target can be, in studs',
 	Min = 1,
 	Max = 30,
 	Default = 30,
@@ -76,15 +80,18 @@ Distance = AimAssist:CreateSlider({
 })
 AngleSlider = AimAssist:CreateSlider({
 	Name = 'Max angle',
+	Tooltip = 'Widest angle from your view a target may be at',
 	Min = 1,
 	Max = 360,
 	Default = 70
 })
 ClickAim = AimAssist:CreateToggle({
 	Name = 'Click Aim',
+	Tooltip = 'Only aims while you are clicking',
 	Default = true
 })
 KillauraTarget = AimAssist:CreateToggle({
-	Name = 'Use killaura target'
+	Name = 'Use killaura target',
+	Tooltip = 'Aims at whatever Killaura is currently attacking'
 })
-StrafeIncrease = AimAssist:CreateToggle({Name = 'Strafe increase'})
+StrafeIncrease = AimAssist:CreateToggle({Name = 'Strafe increase', Tooltip = 'Speeds up while strafing'})

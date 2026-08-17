@@ -96,14 +96,17 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 })
 Targets = ProjectileAura:CreateTargets({
 	Players = true,
-	Walls = true
+	Walls = true,
+	Tooltip = 'Which entities this module is allowed to target'
 })
 List = ProjectileAura:CreateTextList({
 	Name = 'Projectiles',
+	Tooltip = 'Which projectiles this applies to',
 	Default = {'arrow', 'snowball'}
 })
 Range = ProjectileAura:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 1,
 	Max = 50,
 	Default = 50,

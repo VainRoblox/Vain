@@ -44,6 +44,7 @@ Viewmodel = vain.Legit:CreateModule({
 })
 Depth = Viewmodel:CreateSlider({
 	Name = 'Depth',
+	Tooltip = 'How deep the viewmodel sits on screen',
 	Min = 0,
 	Max = 2,
 	Default = 0.8,
@@ -56,6 +57,7 @@ Depth = Viewmodel:CreateSlider({
 })
 Horizontal = Viewmodel:CreateSlider({
 	Name = 'Horizontal',
+	Tooltip = 'Horizontal offset',
 	Min = 0,
 	Max = 2,
 	Default = 0.8,
@@ -68,6 +70,7 @@ Horizontal = Viewmodel:CreateSlider({
 })
 Vertical = Viewmodel:CreateSlider({
 	Name = 'Vertical',
+	Tooltip = 'Vertical offset',
 	Min = -0.2,
 	Max = 2,
 	Default = -0.2,
@@ -92,6 +95,7 @@ for _, name in {'Rotation X', 'Rotation Y', 'Rotation Z'} do
 end
 NoBob = Viewmodel:CreateToggle({
 	Name = 'No Bobbing',
+	Tooltip = 'Stops the viewmodel from bobbing as you move',
 	Default = true,
 	Function = function()
 		if Viewmodel.Enabled then

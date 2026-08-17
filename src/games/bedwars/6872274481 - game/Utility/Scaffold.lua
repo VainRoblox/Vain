@@ -130,25 +130,30 @@ Scaffold = vain.Categories.Utility:CreateModule({
 })
 Expand = Scaffold:CreateSlider({
 	Name = 'Expand',
+	Tooltip = 'How much larger to make the hitbox',
 	Min = 1,
 	Max = 6
 })
 Tower = Scaffold:CreateToggle({
 	Name = 'Tower',
+	Tooltip = 'Builds straight upwards',
 	Default = true
 })
 Downwards = Scaffold:CreateToggle({
 	Name = 'Downwards',
+	Tooltip = 'Builds downwards',
 	Default = true
 })
 Diagonal = Scaffold:CreateToggle({
 	Name = 'Diagonal',
+	Tooltip = 'Builds diagonally',
 	Default = true
 })
-LimitItem = Scaffold:CreateToggle({Name = 'Limit to items'})
-Mouse = Scaffold:CreateToggle({Name = 'Require mouse down'})
+LimitItem = Scaffold:CreateToggle({Name = 'Limit to items', Tooltip = 'Only acts while holding a matching item'})
+Mouse = Scaffold:CreateToggle({Name = 'Require mouse down', Tooltip = 'Only acts while you hold left click'})
 Count = Scaffold:CreateToggle({
 	Name = 'Block Count',
+	Tooltip = 'Shows how many blocks you have left',
 	Function = function(callback)
 		if callback then
 			label = Instance.new('TextLabel')

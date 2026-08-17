@@ -56,6 +56,7 @@ ChestSteal = vain.Categories.World:CreateModule({
 })
 Range = ChestSteal:CreateSlider({
 	Name = 'Range',
+	Tooltip = 'How far this reaches, in studs',
 	Min = 0,
 	Max = 18,
 	Default = 18,
@@ -63,9 +64,10 @@ Range = ChestSteal:CreateSlider({
 		return val == 1 and 'stud' or 'studs'
 	end
 })
-Open = ChestSteal:CreateToggle({Name = 'GUI Check'})
+Open = ChestSteal:CreateToggle({Name = 'GUI Check', Tooltip = 'Stops acting while a game menu is open'})
 Skywars = ChestSteal:CreateToggle({
 	Name = 'Only Skywars',
+	Tooltip = 'Only runs while in a skywars queue',
 	Function = function()
 		if ChestSteal.Enabled then
 			ChestSteal:Toggle()
