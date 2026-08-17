@@ -24,10 +24,19 @@ AimAssist = vain.Categories.Combat:CreateModule({
 						Sort = sortmethods[Sort.Value]
 					}) or store.KillauraTarget
 
-					if ent then
+					if ent and ent.RootPart then
 						local delta = (ent.RootPart.Position - entitylib.character.RootPart.Position)
 						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-						local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
+						-- Flatten first and bail on a zero-length horizontal delta. A target
+						-- directly above or below you (a diamond guardian over the generator
+						-- you are standing under) leaves a zero vector, whose .Unit is NaN.
+						-- Comparisons against NaN are always false, so the angle limit was
+						-- silently skipped and the camera got yanked to a target that should
+						-- have been rejected. Clamping the dot also guards float error
+						-- pushing it a hair outside acos's valid range.
+						local flat = delta * Vector3.new(1, 0, 1)
+						if flat.Magnitude <= 0 then return end
+						local angle = math.acos(math.clamp(localfacing:Dot(flat.Unit), -1, 1))
 						if angle >= (math.rad(AngleSlider.Value) / 2) then return end
 						targetinfo.Targets[ent] = tick() + 1
 						gameCamera.CFrame = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.p, ent.RootPart.Position), (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)) * dt)
@@ -59,7 +68,8 @@ end
 Sort = AimAssist:CreateDropdown({
 	Name = 'Target Mode',
 	Tooltip = 'How targets are ranked when several are valid at once',
-	List = methods
+	List = methods,
+	Tooltips = sortmethodtips
 })
 AimSpeed = AimAssist:CreateSlider({
 	Name = 'Aim Speed',
@@ -74,7 +84,7 @@ Distance = AimAssist:CreateSlider({
 	Min = 1,
 	Max = 30,
 	Default = 30,
-	Suffx = function(val)
+	Suffix = function(val)
 		return val == 1 and 'stud' or 'studs'
 	end
 })

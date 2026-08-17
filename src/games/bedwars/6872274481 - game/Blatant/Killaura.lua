@@ -385,7 +385,8 @@ run(function()
 	Sort = Killaura:CreateDropdown({
 		Name = 'Target Mode',
 		Tooltip = 'How targets are ranked when several are valid at once',
-		List = methods
+		List = methods,
+		Tooltips = sortmethodtips
 	})
 	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Tooltip = 'Only acts while you hold left click'})
 	Swing = Killaura:CreateToggle({Name = 'No Swing', Tooltip = 'Attacks without playing the swing animation'})

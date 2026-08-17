@@ -488,6 +488,20 @@ local function getCursorDistance(ent)
 	return (mouse - Vector2.new(position.X, position.Y)).Magnitude
 end
 
+-- Shown when hovering an individual Target Mode option. Keys match sortmethods plus
+-- 'Distance', which is not in that table because it is the default magnitude ordering.
+local sortmethodtips = {
+	Distance = 'Whoever is physically closest to you',
+	Damage = 'Whoever damaged you most recently',
+	Angle = 'Whoever is nearest the direction you are already facing',
+	Cursor = 'Whoever is nearest your crosshair on screen',
+	Armor = 'Whoever is wearing the weakest armor, so dies fastest',
+	Health = 'Whoever has the lowest health',
+	Threat = 'Whoever is holding the strongest sword',
+	Kit = 'Whoever is playing the most dangerous kit',
+	['Final Kill'] = 'Players whose bed is already broken, so the kill is permanent'
+}
+
 local sortmethods = {
 	Damage = function(a, b)
 		return a.Entity.Character:GetAttribute('LastDamageTakenTime') < b.Entity.Character:GetAttribute('LastDamageTakenTime')
