@@ -254,12 +254,14 @@ function optionapi:SetValue(h, s, v, o)
 	preview.ImageTransparency = 1 - self.Opacity
 	if self.Rainbow then
 		-- Continuous per-frame update (called every tick by the RainbowTable loop in
-		-- gui.lua) - each bar offset a quarter turn around the hue wheel so the icon
-		-- itself visibly cycles instead of only the target element it controls.
+		-- gui.lua) - a trailing wave, not a spread: bar 1 (smallest) always shows the
+		-- freshest hue, and each bar after it shows a slightly older hue (self.Hue only
+		-- increases over time), so color visibly enters at bar 1 and travels outward to
+		-- bar 4 before looping, instead of 4 unrelated colors jumping independently.
 		rainbow1.ImageColor3 = Color3.fromHSV(self.Hue, 1, 1)
-		rainbow2.ImageColor3 = Color3.fromHSV((self.Hue + 0.25) % 1, 1, 1)
-		rainbow3.ImageColor3 = Color3.fromHSV((self.Hue + 0.5) % 1, 1, 1)
-		rainbow4.ImageColor3 = Color3.fromHSV((self.Hue + 0.75) % 1, 1, 1)
+		rainbow2.ImageColor3 = Color3.fromHSV((self.Hue - 0.06) % 1, 1, 1)
+		rainbow3.ImageColor3 = Color3.fromHSV((self.Hue - 0.12) % 1, 1, 1)
+		rainbow4.ImageColor3 = Color3.fromHSV((self.Hue - 0.18) % 1, 1, 1)
 	end
 	satSlider.Slider.UIGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 0, self.Value)),
