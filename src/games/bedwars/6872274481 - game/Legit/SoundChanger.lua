@@ -7,16 +7,21 @@ SoundChanger = vain.Legit:CreateModule({
 	Name = 'SoundChanger',
 	Function = function(callback)
 		if callback then
-			old = bedwars.SoundManager.playSound
-			bedwars.SoundManager.playSound = function(self, id, ...)
+			-- Hooks AudioManager rather than SoundManager. SoundManager no longer exists
+			-- in the game, so reading .playSound off it threw the moment this was
+			-- switched on - and even shimmed it would only have caught sounds this
+			-- script plays, never the game's own, which is the entire point here.
+			if not bedwars.AudioManager then return end
+			old = bedwars.AudioManager.playAudio
+			bedwars.AudioManager.playAudio = function(self, id, ...)
 				if soundlist[id] then
 					id = soundlist[id]
 				end
 
 				return old(self, id, ...)
 			end
-		else
-			bedwars.SoundManager.playSound = old
+		elseif old then
+			bedwars.AudioManager.playAudio = old
 			old = nil
 		end
 	end,

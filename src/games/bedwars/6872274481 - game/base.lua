@@ -766,6 +766,8 @@ run(function()
 
 	bedwars = setmetatable({
 		AbilityController = Flamework.resolveDependency('@easy-games/game-core:client/controllers/ability/ability-controller@AbilityController'),
+		AudioCategory = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).AudioCategory,
+		AudioManager = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).AudioManager,
 		AnimationType = require(replicatedStorage.TS.animation['animation-type']).AnimationType,
 		AnimationUtil = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out['shared'].util['animation-util']).AnimationUtil,
 		AppController = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out.client.controllers['app-controller']).AppController,
@@ -834,6 +836,26 @@ run(function()
 			return rawget(self, ind)
 		end
 	})
+
+	-- The game dropped SoundManager for AudioManager:playAudio(sound, config), so
+	-- bedwars.SoundManager resolved to nil and every module that plays a sound threw on
+	-- it. Shimming the old method keeps all of those call sites working instead of
+	-- spreading the rename across each one, and it stays quiet rather than throwing if
+	-- the audio side moves again.
+	if not rawget(bedwars, 'SoundManager') then
+		rawset(bedwars, 'SoundManager', {
+			playSound = function(_, sound, config)
+				local manager = bedwars.AudioManager
+				if not manager then return end
+
+				local settings = {category = bedwars.AudioCategory and bedwars.AudioCategory.GAMEPLAY}
+				for index, value in (config or {}) do
+					settings[index] = value
+				end
+				return manager:playAudio(sound, settings)
+			end
+		})
+	end
 
 	local remoteNames = {
 		AfkStatus = debug.getproto(Knit.Controllers.AfkController.KnitStart, 1),

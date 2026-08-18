@@ -6,6 +6,7 @@ local FOV
 local Range
 local HitChance
 local OtherProjectiles
+local Camera
 local InstantCharge
 local ChargeSpeed
 local SilentBeam
@@ -34,6 +35,18 @@ local function mousePosition()
 		return gameCamera.ViewportSize / 2
 	end
 	return inputService:GetMouseLocation()
+end
+
+-- First person puts the camera inside your own head, so the gap between the camera and
+-- the head is what separates the two views. Shiftlock still counts as third person here,
+-- which matches what you see on screen.
+local function cameraAllowed()
+	if Camera.Value == 'Both' then return true end
+	local head = entitylib.character and entitylib.character.Head
+	if not head then return true end
+
+	local firstperson = (gameCamera.CFrame.Position - head.Position).Magnitude <= 1
+	return firstperson == (Camera.Value == 'First Person')
 end
 
 -- Whichever of the two is closer to your cursor right now.
@@ -105,6 +118,7 @@ local function solve(self, projmeta, worldmeta, origin, shootpos)
 	-- projectile that actually leaves. Handing the arc straight back leaves it pointing
 	-- wherever your crosshair points, so only the shot itself is corrected.
 	if SilentBeam.Enabled and worldmeta then return nil end
+	if not cameraAllowed() then return nil end
 
 	if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
 		return nil
@@ -252,6 +266,16 @@ for _, v in extramethods do
 	table.insert(methods, v)
 end
 
+Camera = ProjectileAimbot:CreateDropdown({
+	Name = 'Camera',
+	Tooltip = 'Which camera view this aims in',
+	List = {'Both', 'First Person', 'Third Person'},
+	Tooltips = {
+		Both = 'Aims in either view',
+		['First Person'] = 'Only aims while the camera is in your head',
+		['Third Person'] = 'Only aims while the camera is behind you'
+	}
+})
 Sort = ProjectileAimbot:CreateDropdown({
 	Name = 'Target Mode',
 	Tooltip = 'How targets are ranked when several are in your FOV at once',
