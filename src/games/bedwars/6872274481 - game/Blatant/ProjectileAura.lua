@@ -2,6 +2,8 @@ local ProjectileAura
 local Targets
 local Range
 local List
+local OtherProjectiles
+local Camera
 local rayCheck = RaycastParams.new()
 rayCheck.FilterType = Enum.RaycastFilterType.Include
 local mapfolder
@@ -34,6 +36,18 @@ local function refreshMapFilter()
 	end
 end
 
+-- First person puts the camera inside your own head, so the gap between the camera and
+-- the head is what separates the two views. Shiftlock still counts as third person here,
+-- which matches what you see on screen.
+local function cameraAllowed()
+	if Camera.Value == 'Both' then return true end
+	local head = entitylib.character and entitylib.character.Head
+	if not head then return true end
+
+	local firstperson = (gameCamera.CFrame.Position - head.Position).Magnitude <= 1
+	return firstperson == (Camera.Value == 'First Person')
+end
+
 local function getAmmo(check)
 	for _, item in store.inventory.inventory.items do
 		if check.ammoItemTypes and table.find(check.ammoItemTypes, item.itemType) then
@@ -50,7 +64,7 @@ local function getProjectiles()
 		local itemmeta = bedwars.ItemMeta[item.itemType]
 		local proj = itemmeta and itemmeta.projectileSource
 		local ammo = proj and getAmmo(proj)
-		if ammo and table.find(List.ListEnabled, ammo) then
+		if ammo and (OtherProjectiles.Enabled or table.find(List.ListEnabled, ammo)) then
 			table.insert(items, {
 				item,
 				ammo,
@@ -73,7 +87,7 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 				-- coroutine outright, leaving the module switched on but permanently dead.
 				-- The wait stays outside so a repeating error cannot spin the CPU.
 				local ok = pcall(function()
-					if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.5 then
+					if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.5 and cameraAllowed() then
 						local ent = entitylib.EntityPosition({
 							Part = 'RootPart',
 							Range = Range.Value,
@@ -136,10 +150,24 @@ Targets = ProjectileAura:CreateTargets({
 	Walls = true,
 	Tooltip = 'Which entities this module is allowed to target'
 })
+Camera = ProjectileAura:CreateDropdown({
+	Name = 'Camera',
+	Tooltip = 'Which camera view this shoots in',
+	List = {'Both', 'First Person', 'Third Person'},
+	Tooltips = {
+		Both = 'Shoots in either view',
+		['First Person'] = 'Only shoots while the camera is in your head',
+		['Third Person'] = 'Only shoots while the camera is behind you'
+	}
+})
 List = ProjectileAura:CreateTextList({
 	Name = 'Projectiles',
 	Tooltip = 'Which projectiles this applies to',
 	Default = {'arrow', 'snowball'}
+})
+OtherProjectiles = ProjectileAura:CreateToggle({
+	Name = 'Other Projectiles',
+	Tooltip = 'Uses every projectile you are holding instead of only the listed ones'
 })
 Range = ProjectileAura:CreateSlider({
 	Name = 'Range',
