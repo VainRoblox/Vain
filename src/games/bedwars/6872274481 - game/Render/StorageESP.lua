@@ -2,6 +2,8 @@ local StorageESP
 local List
 local Background
 local Color = {}
+local ShowAmount
+local ShowAll
 local Reference = {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
@@ -30,7 +32,9 @@ local function refreshAdornee(v)
 	v.Enabled = false
 	local alreadygot = {}
 	for _, item in chestitems do
-		if not alreadygot[item.Name] and (table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)) then
+		-- ShowAll displays all items regardless of the list; otherwise use the filter
+		local shouldShow = ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)
+		if not alreadygot[item.Name] and shouldShow then
 			alreadygot[item.Name] = true
 			v.Enabled = true
 			local blockimage = Instance.new('ImageLabel')
@@ -38,6 +42,26 @@ local function refreshAdornee(v)
 			blockimage.BackgroundTransparency = 1
 			blockimage.Image = bedwars.getIcon({itemType = item.Name}, true)
 			blockimage.Parent = v.Frame
+
+			-- Add amount text if enabled
+			if ShowAmount.Enabled then
+				local amount = item:FindFirstChild('Value')
+				if amount and amount.Value then
+					local textlabel = Instance.new('TextLabel')
+					textlabel.Name = 'Amount'
+					textlabel.Size = UDim2.fromOffset(16, 16)
+					textlabel.Position = UDim2.fromOffset(16, 16)
+					textlabel.BackgroundColor3 = Color3.new(0, 0, 0)
+					textlabel.BackgroundTransparency = 0.3
+					textlabel.TextColor3 = Color3.new(1, 1, 1)
+					textlabel.TextSize = 12
+					textlabel.Text = tostring(amount.Value)
+					textlabel.Parent = blockimage
+					local corner = Instance.new('UICorner')
+					corner.CornerRadius = UDim.new(0, 2)
+					corner.Parent = textlabel
+				end
+			end
 		end
 	end
 	table.clear(chestitems)
@@ -76,12 +100,12 @@ local function Added(v)
 	corner.Parent = frame
 	Reference[v] = billboard
 	StorageESP:Clean(chest.ChildAdded:Connect(function(item)
-		if table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
+		if ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
 			refreshAdornee(billboard)
 		end
 	end))
 	StorageESP:Clean(chest.ChildRemoved:Connect(function(item)
-		if table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
+		if ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
 			refreshAdornee(billboard)
 		end
 	end))
@@ -136,4 +160,22 @@ Color = StorageESP:CreateColorSlider({
 		end
 	end,
 	Darker = true
+})
+ShowAmount = StorageESP:CreateToggle({
+	Name = 'Show Amount',
+	Tooltip = 'Displays the quantity of each item in the corner',
+	Function = function()
+		for _, v in Reference do
+			task.spawn(refreshAdornee, v)
+		end
+	end
+})
+ShowAll = StorageESP:CreateToggle({
+	Name = 'Show All',
+	Tooltip = 'Shows all items instead of only those in the list',
+	Function = function()
+		for _, v in Reference do
+			task.spawn(refreshAdornee, v)
+		end
+	end
 })
