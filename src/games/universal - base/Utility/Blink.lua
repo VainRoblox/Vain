@@ -4,14 +4,21 @@ local AutoSend
 local AutoSendLength
 local oldphys, oldsend
 
+-- Roblox retires fast flags without warning and setfflag throws outright once the name
+-- is gone, so every call goes through this. A missing flag becomes a no-op instead of an
+-- error raised on the same line every frame.
+local function trySetFFlag(flag, value)
+	return setfflag ~= nil and (pcall(setfflag, flag, value))
+end
+
 Blink = vain.Categories.Utility:CreateModule({
 	Name = 'Blink',
 	Function = function(callback)
 		if callback then
 			local teleported
 			Blink:Clean(lplr.OnTeleport:Connect(function()
-				setfflag('PhysicsSenderMaxBandwidthBps', '38760')
-				setfflag('DataSenderRate', '60')
+				trySetFFlag('PhysicsSenderMaxBandwidthBps', '38760')
+				trySetFFlag('DataSenderRate', '60')
 				teleported = true
 			end))
 
@@ -22,8 +29,8 @@ Blink = vain.Categories.Utility:CreateModule({
 				end
 
 				if physicsrate ~= oldphys or senderrate ~= oldsend then
-					setfflag('PhysicsSenderMaxBandwidthBps', physicsrate)
-					setfflag('DataSenderRate', senderrate)
+					trySetFFlag('PhysicsSenderMaxBandwidthBps', physicsrate)
+					trySetFFlag('DataSenderRate', senderrate)
 					oldphys, oldsend = physicsrate, senderrate
 				end
 
@@ -31,8 +38,8 @@ Blink = vain.Categories.Utility:CreateModule({
 			until (not Blink.Enabled and not teleported)
 		else
 			if setfflag then
-				setfflag('PhysicsSenderMaxBandwidthBps', '38760')
-				setfflag('DataSenderRate', '60')
+				trySetFFlag('PhysicsSenderMaxBandwidthBps', '38760')
+				trySetFFlag('DataSenderRate', '60')
 			end
 			oldphys, oldsend = nil, nil
 		end

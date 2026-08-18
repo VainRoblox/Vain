@@ -7,6 +7,13 @@ overlapCheck.MaxParts = 9e9
 local modified, fflag = {}
 local teleported
 
+-- Roblox retires fast flags without warning and setfflag throws outright once the name
+-- is gone, so every call goes through this. A missing flag becomes a no-op instead of an
+-- error raised on the same line every frame.
+local function trySetFFlag(flag, value)
+	return setfflag ~= nil and (pcall(setfflag, flag, value))
+end
+
 local function grabClosestNormal(ray)
 	local partCF, mag, closest = ray.Instance.CFrame, 0, Enum.NormalId.Top
 
@@ -78,8 +85,9 @@ local Functions = {
 	end,
 	FFlag = function()
 		if teleported then return end
-		setfflag('AssemblyExtentsExpansionStudHundredth', '-10000')
-		fflag = true
+		-- Only remember it if the flag was actually accepted, so the restore path does
+		-- not claim to be putting back something that was never set.
+		fflag = trySetFFlag('AssemblyExtentsExpansionStudHundredth', '-10000') or nil
 	end
 }
 Functions.Motor = Functions.CFrame
@@ -97,12 +105,12 @@ Phase = vain.Categories.Blatant:CreateModule({
 			if Mode.Value == 'FFlag' then
 				Phase:Clean(lplr.OnTeleport:Connect(function()
 					teleported = true
-					setfflag('AssemblyExtentsExpansionStudHundredth', '30')
+					trySetFFlag('AssemblyExtentsExpansionStudHundredth', '30')
 				end))
 			end
 		else
 			if fflag then
-				setfflag('AssemblyExtentsExpansionStudHundredth', '30')
+				trySetFFlag('AssemblyExtentsExpansionStudHundredth', '30')
 			end
 			for part in modified do
 				part.CanCollide = true
@@ -119,7 +127,7 @@ Mode = Phase:CreateDropdown({
 	Function = function(val)
 		StudLimit.Object.Visible = val == 'CFrame' or val == 'Motor'
 		if fflag then
-			setfflag('AssemblyExtentsExpansionStudHundredth', '30')
+			trySetFFlag('AssemblyExtentsExpansionStudHundredth', '30')
 		end
 		for part in modified do
 			part.CanCollide = true
