@@ -922,6 +922,18 @@ run(function()
 		remotes[i] = remote
 	end
 
+	-- The names above are scraped out of the game's bytecode because they are not what
+	-- they are called in source. Plenty of remotes are registered under their plain name
+	-- though - BedwarsPurchaseItem and UseAbility among them - and modules referring to
+	-- those got nil, because only the scraped set was ever populated. Falling back to the
+	-- key means an unlisted remote resolves to its own name, which is right whenever the
+	-- game did not rename it and no worse than nil when it did.
+	setmetatable(remotes, {
+		__index = function(_, key)
+			return key
+		end
+	})
+
 	OldBreak = bedwars.BlockController.isBlockBreakable
 
 	Client.Get = function(self, remoteName)
