@@ -1,4 +1,16 @@
 local AntiFallDirection
+-- No module named InfiniteFly is registered anywhere, so vain.Modules.InfiniteFly
+-- was nil and reading .Enabled off it threw - inside a PreSimulation connection,
+-- so once per frame for as long as the fall lasted. Looking each module up by name
+-- and tolerating a missing one keeps this working whether or not a given build
+-- ships that module.
+local function movementActive()
+	for _, name in {'Fly', 'InfiniteFly', 'LongJump'} do
+		local module = vain.Modules[name]
+		if module and module.Enabled then return true end
+	end
+	return false
+end
 run(function()
 	local AntiFall
 	local Mode
@@ -47,7 +59,7 @@ run(function()
 									local lastTeleport = lplr:GetAttribute('LastTeleported')
 									local connection
 									connection = runService.PreSimulation:Connect(function()
-										if vain.Modules.Fly.Enabled or vain.Modules.InfiniteFly.Enabled or vain.Modules.LongJump.Enabled then
+										if movementActive() then
 											connection:Disconnect()
 											AntiFallDirection = nil
 											return
