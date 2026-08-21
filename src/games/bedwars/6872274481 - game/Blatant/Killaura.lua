@@ -343,6 +343,16 @@ run(function()
 									if not inrange then continue end
 									if hits >= MaxTargets.Value then continue end
 
+									-- AntiMelee hides the part the server tracks you by, and an
+									-- attack sent while it is hidden is rejected - the server checks
+									-- your claimed position against a copy of you that is under the
+									-- map. It publishes when the part is briefly back in place, so
+									-- swings wait for that window rather than being thrown away.
+									-- Nil means AntiMelee is not hiding anything and this does not
+									-- apply. The wait costs nothing: its cycle is shorter than a
+									-- sword's attack speed, so a window always comes round first.
+									if store.antiMeleeParked == false then continue end
+
 									-- The loop used to fire on every pass, which with one target in
 									-- range meant an attack every 0.02s - fifty a second against a
 									-- sword that swings about once a second. Hits arriving faster

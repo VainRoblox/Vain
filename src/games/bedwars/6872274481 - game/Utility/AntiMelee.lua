@@ -35,11 +35,19 @@ rayParams.RespectCanCollide = true
 -- never landed, however long the window was.
 --
 -- Parking has to lead the swing, not follow it, and nothing can tell us a swing is
--- coming. So the root alternates on a fixed cycle, the way the original client did it:
--- swings that fall in a parked window land, and anything aimed at you during a buried
--- window misses. Longer BURY_TIME means fewer hits taken and fewer of yours landing.
-local PARK_TIME = 0.25
-local BURY_TIME = 0.45
+-- coming - so the root alternates on a fixed cycle, the way the original client did.
+--
+-- A blind cycle trades one against the other: a longer buried stretch blocks more of
+-- their hits and drops more of yours. The way out is that your swings are the one thing
+-- whose timing is ours to choose. AntiMelee publishes whether the root is parked, and
+-- Killaura holds its attack until it is, so your hits only ever go out during a parked
+-- window. That makes nearly all of them land while leaving the root buried for most of
+-- the cycle.
+--
+-- The cycle is a little under a sword's attack speed, so a parked window always comes
+-- round before Killaura is ready to swing again and nothing is lost waiting.
+local PARK_TIME = 0.2
+local BURY_TIME = 0.7
 
 -- How long to keep the root hidden after the last time anyone was in range.
 local LINGER = 1
@@ -125,6 +133,9 @@ local function reattach()
 
 	oldroot, clone, store.rootpart = nil, nil, nil
 	dodging = false
+	-- Cleared rather than left true, so Killaura is never left waiting on a window that
+	-- is no longer being produced.
+	store.antiMeleeParked = nil
 end
 
 AntiMelee = vain.Categories.Utility:CreateModule({
@@ -229,6 +240,10 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 					-- for a target who has not actually gone anywhere.
 					if tick() - lastNear < LINGER and detach() then
 						dodging = shouldBury()
+						-- Read by Killaura, which holds its swing until the root is parked.
+						-- Nil means this module is not hiding anything, so attacking is
+						-- unrestricted.
+						store.antiMeleeParked = not dodging
 					else
 						reattach()
 					end
