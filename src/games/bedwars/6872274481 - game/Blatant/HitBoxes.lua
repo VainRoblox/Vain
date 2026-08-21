@@ -24,8 +24,7 @@ HitBoxes = vain.Categories.Blatant:CreateModule({
 	Function = function(callback)
 		if callback then
 			if Mode.Value == 'Sword' then
-				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
-				set = true
+				-- Sword mode setconstant is broken (game changed constant type), disabled
 			else
 				HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
 				HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
@@ -39,17 +38,13 @@ HitBoxes = vain.Categories.Blatant:CreateModule({
 				end
 			end
 		else
-			if set then
-				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
-				set = nil
-			end
 			for _, part in objects do
 				part:Destroy()
 			end
 			table.clear(objects)
 		end
 	end,
-	Tooltip = 'Expands attack hitbox'
+	Tooltip = 'Expands attack hitbox (Sword mode disabled - game patch)'
 })
 Mode = HitBoxes:CreateDropdown({
 	Name = 'Mode',
@@ -70,13 +65,9 @@ Expand = HitBoxes:CreateSlider({
 	Default = 14.4,
 	Decimal = 10,
 	Function = function(val)
-		if HitBoxes.Enabled then
-			if Mode.Value == 'Sword' then
-				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
-			else
-				for _, part in objects do
-					part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
-				end
+		if HitBoxes.Enabled and Mode.Value == 'Player' then
+			for _, part in objects do
+				part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
 			end
 		end
 	end,

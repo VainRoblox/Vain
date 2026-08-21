@@ -371,8 +371,8 @@ run(function()
 		Name = 'Attack range',
 		Tooltip = 'How far a target can be and still be hit',
 		Min = 1,
-		Max = 28,
-		Default = 28,
+		Max = 20,
+		Default = 20,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end
