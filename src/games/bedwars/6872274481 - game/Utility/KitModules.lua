@@ -19,6 +19,23 @@
 	from the kit's display name, so expect some of these to need the same treatment.
 ]]
 
+
+-- These modules do work at definition time - bedwars.Client:Get for a remote, most
+-- commonly - and those calls yield. A yield hands the thread back to the scheduler,
+-- and it resumes carrying the game's identity rather than the executor's, at which
+-- point CreateModule cannot parent the window it builds and the module dies with
+-- "lacking capability Plugin". Worse, the failure surfaces on whichever line runs
+-- next, so it reads as a fault in a module that is fine.
+--
+-- Raising the identity at the start of every block means one module's yield cannot
+-- take out the ones after it.
+local function kitRun(func)
+	if setthreadidentity then
+		pcall(setthreadidentity, 8)
+	end
+	func()
+end
+
 -- Shared helpers these modules rely on. They live at the base level in the client
 -- they came from, outside the module blocks, so they had to be brought across too.
 
@@ -110,7 +127,7 @@ local function isHoldingPickaxe()
 	return meta ~= nil and meta.breakBlock ~= nil and meta.breakBlock.stone ~= nil
 end
 
-run(function()
+kitRun(function()
 local AimAssist
 	local Targets
 	local Sort
@@ -1571,7 +1588,7 @@ local lplr = playersService.LocalPlayer
 	end)
 end)
 
-run(function()
+kitRun(function()
 	local KaidaKillaura	
 	local Targets
 	local AttackRange
@@ -2011,7 +2028,7 @@ run(function()
 	end)
 end)
 
-run(function()
+kitRun(function()
     local AutoLasso
     local Targets
     local Range
@@ -2209,7 +2226,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local Beekeeper
     local CollectionToggle
 	local LimitToNet
@@ -3143,7 +3160,7 @@ run(function()
 	end)
 end)
 
-run(function()
+kitRun(function()
     local AutoBuilder
     local Animation
     local Blacklist
@@ -3233,7 +3250,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local Caitlyn
     local MethodDropdown
     local LowHealthSlider
@@ -3442,7 +3459,7 @@ run(function()
     ProximityRangeSlider.Object.Visible = false
 end)
 
-run(function()
+kitRun(function()
     local AutoDavey
     local Switch
     local Break
@@ -3503,7 +3520,7 @@ run(function()
     IncludeWood = AutoDavey:CreateToggle({Name = 'Include Wood Pickaxe', Tooltip = 'Counts the wood pickaxe as a valid item for Limit to Item'})
 end)
 
-run(function()
+kitRun(function()
     local AutoDrill
     local AutoCollect
     local Notify
@@ -3753,7 +3770,7 @@ run(function()
     updateAttackControls()
 end)
 
-run(function()
+kitRun(function()
     local AutoElder
     local Streamer
     local Range
@@ -3840,7 +3857,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
 	local AutoEmber
 	local Targets
 	local Range
@@ -3989,7 +4006,7 @@ run(function()
 	Limit = AutoEmber:CreateToggle({Name = 'Limit to item', Tooltip = 'Only works while the Ember weapon is equipped'})
 end)
 
-run(function()
+kitRun(function()
     local AutoGingerbread
     local Range
     local Delay
@@ -4107,7 +4124,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
 	local AutoHannah
 	local Targets
 	local Sort
@@ -4183,7 +4200,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
     local Kaliyah
     local AutoPunch
     local RangeSlider
@@ -4447,7 +4464,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local AutoLani
     local PlayerDropdown
     local RefreshButton
@@ -4874,7 +4891,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local AutoMarina
     local Range
 
@@ -4927,7 +4944,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoMelody
     local Range
     local SelfHeal
@@ -4985,7 +5002,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local MetalDetector
     local CollectionToggle
     local LimitToItem
@@ -5439,7 +5456,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local AutoNoelle
     local Notify
     local FrostySlime
@@ -5570,7 +5587,7 @@ run(function()
     vain:Clean(playersService.PlayerAdded:Connect(addConnection))
 end)
 
-run(function()
+kitRun(function()
     local AutoNyx
     local Targets
     local Range
@@ -5612,7 +5629,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoRaven
     local Mode
     local Range
@@ -5678,7 +5695,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoJellyfish
     local Range
 
@@ -5726,7 +5743,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoPyro
 
     local list = {'Range', 'Heat', 'Power'}
@@ -5776,7 +5793,7 @@ run(function()
     end
 end)
 
-run(function()
+kitRun(function()
     local AutoRamil
     local Range
     local Sorts
@@ -5877,7 +5894,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoSheep
     local Delay
     local Range
@@ -5928,7 +5945,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoStar
     local Streamer
     local Range
@@ -6020,7 +6037,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoTaliyah
     local Emerald
     local Diamond
@@ -6100,7 +6117,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoUma
     local Range
     local Limit
@@ -6273,7 +6290,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoWhisper
     local PlayerDropdown
     local AutoHeal
@@ -6679,7 +6696,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local AutoZeno
     local Targets
     local TargetMode
@@ -6849,7 +6866,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local DaveyAim
     local Range
     local Mode
@@ -6958,7 +6975,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local FishermanSpy
     local Teammates
     local GoldNotify
@@ -7050,7 +7067,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local old
 
     vain.Categories.Kit:CreateModule({
@@ -7071,7 +7088,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local SigridExploit
     local Kit, Mount = 'elk_master', bedwars.Client:Get('ElkKitMounted')
 
@@ -7097,7 +7114,7 @@ end)
     Legit
 ]]
 
-run(function()
+kitRun(function()
     local AutoVanessa
     local oldGetChargeTime
     local lastChargeTime = 0
@@ -7131,7 +7148,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
 	local AutoJack
 	local InstantCharge
 	local ChargeSpeed
@@ -7524,7 +7541,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
     local PromptUnlock
 
     local savedPromptStates = {}
@@ -7560,7 +7577,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local Fisherman
     local AutoMinigameToggle
     local CompleteDelaySlider
@@ -7921,7 +7938,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local StarCollector
     local CollectionToggle
     local Animation
@@ -8256,7 +8273,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local Gingerbread
     local LimitToItem
     local BreakDelay
@@ -8565,7 +8582,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
     local Grove
     local NoSlow
     local NoSlowOnAbility
@@ -9127,7 +9144,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local Lucia
     local AutoDepositToggle
     local RangeSlider
@@ -9823,7 +9840,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
 	local AutoWarden
 	local Range
 	local Delay
@@ -9911,7 +9928,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
     local BeehiveSpy
     local BackgroundToggle
     local ColorSlider
@@ -10127,7 +10144,7 @@ run(function()
     end)
 end)
 
-run(function()
+kitRun(function()
     local LuciaSpy
     local IgnoreTeammatesSpy
     local DisplayNameToggle
@@ -10328,7 +10345,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
 	local JadeCD
 	local CD
 	local lastDash = -math.huge
@@ -10379,7 +10396,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
 	local RegentCD
 	local CD
 	local lastDash = -math.huge
@@ -10430,7 +10447,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
     local YuziDasher
     local ImpulseSlider
     local JumpHeightSlider
@@ -10558,7 +10575,7 @@ run(function()
     })
 end)
 
-run(function()
+kitRun(function()
 	local AutoPotion
 	local BrewSleep
 	local BrewShield
@@ -10638,7 +10655,7 @@ run(function()
 	})
 end)
 
-run(function()
+kitRun(function()
     local FarmerCletus
     local CollectionToggle
     local Animation
