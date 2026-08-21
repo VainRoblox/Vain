@@ -1,3 +1,8 @@
+-- Lives in Utility/ rather than a Kit/ folder because VainBundler enumerates a
+-- hardcoded category list (Combat, Blatant, Render, Utility, World, Inventory,
+-- Minigames, Legit) - a Kit/ folder is skipped entirely and never reaches the
+-- compiled bundle. The folder only decides what gets bundled; the category a
+-- module appears under is the one it is created from, which is Kit below.
 local AutoAdetunde
 local Priority
 local Notify
