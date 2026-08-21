@@ -12,7 +12,35 @@ local Animation
 local SelfBreak
 local InstantBreak
 local LimitItem
+local Tesla
 local customlist, parts = {}, {}
+
+-- iron_ore, tesla and tesla_trap are ItemType names, not CollectionService tags -
+-- 'iron-ore' was never a tag the game applies, so that collection was always empty and
+-- ores were never broken. They are ordinary blocks carrying the 'block' tag, named by
+-- their item type, so they are matched by name out of that collection like any custom
+-- entry. Teslas were not covered at all before.
+-- Every setting here is created after CreateModule returns, so all three can still be
+-- nil while this file is executing, and the module can be switched on inside that
+-- window when the GUI restores a saved config.
+local function wantedBlock(name)
+	if Custom and Custom.ListEnabled and table.find(Custom.ListEnabled, name) then return true end
+	if IronOre and IronOre.Enabled and name == 'iron_ore' then return true end
+	if Tesla and Tesla.Enabled and (name == 'tesla' or name == 'tesla_trap') then return true end
+	return false
+end
+
+-- The collection is filtered as it is built, so anything that changes what counts has
+-- to rebuild it from the block store rather than just flipping a flag.
+local function rebuildList()
+	if not customlist then return end
+	table.clear(customlist)
+	for _, obj in store.blocks do
+		if wantedBlock(obj.Name) then
+			table.insert(customlist, obj)
+		end
+	end
+end
 
 local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
 	if block:GetAttribute('NoHealthbar') then return end
@@ -184,9 +212,8 @@ Breaker = vain.Categories.Minigames:CreateModule({
 
 			local beds = collection('bed', Breaker)
 			local luckyblock = collection('LuckyBlock', Breaker)
-			local ironores = collection('iron-ore', Breaker)
 			customlist = collection('block', Breaker, function(tab, obj)
-				if table.find(Custom.ListEnabled, obj.Name) then
+				if wantedBlock(obj.Name) then
 					table.insert(tab, obj)
 				end
 			end)
@@ -199,7 +226,6 @@ Breaker = vain.Categories.Minigames:CreateModule({
 						if attemptBreak(Bed.Enabled and beds, localPosition) then return end
 						if attemptBreak(customlist, localPosition) then return end
 						if attemptBreak(LuckyBlock.Enabled and luckyblock, localPosition) then return end
-						if attemptBreak(IronOre.Enabled and ironores, localPosition) then return end
 
 						for _, v in parts do
 							v.Position = Vector3.zero
@@ -252,15 +278,7 @@ UpdateRate = Breaker:CreateSlider({
 Custom = Breaker:CreateTextList({
 	Name = 'Custom',
 	Tooltip = 'Extra block names to break',
-	Function = function()
-		if not customlist then return end
-		table.clear(customlist)
-		for _, obj in store.blocks do
-			if table.find(Custom.ListEnabled, obj.Name) then
-				table.insert(customlist, obj)
-			end
-		end
-	end
+	Function = rebuildList
 })
 Bed = Breaker:CreateToggle({
 	Name = 'Break Bed',
@@ -275,7 +293,14 @@ LuckyBlock = Breaker:CreateToggle({
 IronOre = Breaker:CreateToggle({
 	Name = 'Break Iron Ore',
 	Tooltip = 'Breaks iron ore',
-	Default = true
+	Default = true,
+	Function = rebuildList
+})
+Tesla = Breaker:CreateToggle({
+	Name = 'Break Tesla',
+	Tooltip = 'Breaks tesla traps',
+	Default = true,
+	Function = rebuildList
 })
 Effect = Breaker:CreateToggle({
 	Name = 'Show Healthbar & Effects',
