@@ -34,7 +34,12 @@ run(function()
 						local mass = (1.5 + (flyAllowed and 6 or 0) * (tick() % 0.4 < 0.2 and -1 or 1)) + ((up + down) * VerticalValue.Value)
 						local root, moveDirection = entitylib.character.RootPart, entitylib.character.Humanoid.MoveDirection
 						local velo = getSpeed()
-						local destination = (moveDirection * math.max(Value.Value - velo, 0) * dt)
+						-- ZephyrSpeed overrides WalkSpeed directly, which getSpeed() cannot
+						-- see, so flying would stay pinned to this slider while running was
+						-- faster. Taking whichever is higher lets the kit's speed carry into
+						-- flight; it falls back to the slider the moment the orbs reset.
+						local target = math.max(Value.Value, store.zephyrSpeed or 0)
+						local destination = (moveDirection * math.max(target - velo, 0) * dt)
 						rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera, AntiFallPart}
 						rayCheck.CollisionGroup = root.CollisionGroup
 

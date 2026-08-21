@@ -8,7 +8,7 @@
 -- multiplier of 1 once the orbs reset. Hooking updateSpeed is therefore the cleanest
 -- signal for "does the player currently have stacks", which is all this needs.
 -- Fixed rather than a slider, by request. Sprinting normally sits at 26.
-local SPEED = 50
+local SPEED = 45
 
 local ZephyrSpeed
 local oldUpdateSpeed
@@ -43,7 +43,10 @@ ZephyrSpeed = vain.Categories.Kit:CreateModule({
 				-- when the module was switched on - joining before the round starts, or
 				-- switching to Zephyr mid-game.
 				if not oldUpdateSpeed then hookController() end
-				if not (hasStacks and entitylib.isAlive) then return end
+				if not (hasStacks and entitylib.isAlive) then
+					store.zephyrSpeed = nil
+					return
+				end
 
 				-- Written every frame rather than once, because the game recalculates
 				-- WalkSpeed from its own modifiers whenever they change - sprinting
@@ -51,9 +54,16 @@ ZephyrSpeed = vain.Categories.Kit:CreateModule({
 				-- hasStacks goes false and the game is left to set the speed itself,
 				-- which is what returns you to default.
 				entitylib.character.Humanoid.WalkSpeed = SPEED
+				-- Published for Fly, which tops your natural speed up to its own target
+				-- rather than replacing it, and works that out from getSpeed() - which
+				-- reads the game's movement modifiers and so cannot see a WalkSpeed
+				-- written directly. Without this it would keep flying at its own slower
+				-- cap while you sprinted faster on the ground.
+				store.zephyrSpeed = SPEED
 			end))
 		else
 			hasStacks = false
+			store.zephyrSpeed = nil
 		end
 	end,
 	ExtraText = function()
