@@ -60,6 +60,14 @@ local REQUEST_TIMEOUT = 0.6
 -- Never stay surfaced longer than this, however many requests arrive.
 local MAX_PARK = 0.4
 
+-- Toggling the module by hand turned out to work better than leaving it on, which says
+-- the burying is not the only thing doing work here. Both detach and reattach move the
+-- character out to ReplicatedStorage and back, and for that moment it is not in the
+-- workspace at all - so nobody's sword query can find it. Cycling the swap reproduces
+-- that on its own rather than needing it driven by hand.
+local FLICKER_INTERVAL = 0.35
+local lastFlicker = 0
+
 -- Parking the root writes a CFrame; the server does not have that position until it has
 -- been replicated. Announcing the window the instant it opens meant Killaura fired
 -- immediately, while the server still held the buried copy, and the hit was rejected -
@@ -188,6 +196,7 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 			dodging = false
 			lastNear = 0
 			parkStart = 0
+			lastFlicker = 0
 			store.antiMeleeWantAttack = nil
 
 			-- Far enough under the lowest block that nothing can reach it. Recomputed on
@@ -289,6 +298,14 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 						-- that position has reached the server. Nil means this module is not
 						-- hiding anything, so attacking is unrestricted.
 						store.antiMeleeParked = mayAttack
+
+						-- Never while surfaced for a swing: the swap would undo the parked
+						-- position the attack is about to be validated against.
+						if bury and tick() - lastFlicker > FLICKER_INTERVAL then
+							lastFlicker = tick()
+							reattach()
+							detach()
+						end
 					else
 						reattach()
 					end
