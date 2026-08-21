@@ -8,6 +8,13 @@ local Reference = {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
 
+-- Settings are created after CreateModule returns, so they can still be nil while
+-- this file is executing - and the module can be switched on inside that window
+-- when the GUI restores a saved config. Reading .Enabled straight off them threw.
+local function on(setting)
+	return setting ~= nil and setting.Enabled
+end
+
 local function nearStorageItem(item)
 	for _, v in List.ListEnabled do
 		if item:find(v) then return v end
@@ -33,7 +40,7 @@ local function refreshAdornee(v)
 	local alreadygot = {}
 	for _, item in chestitems do
 		-- ShowAll displays all items regardless of the list; otherwise use the filter
-		local shouldShow = ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)
+		local shouldShow = on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)
 		if not alreadygot[item.Name] and shouldShow then
 			alreadygot[item.Name] = true
 			v.Enabled = true
@@ -44,7 +51,7 @@ local function refreshAdornee(v)
 			blockimage.Parent = v.Frame
 
 			-- Add amount text if enabled
-			if ShowAmount.Enabled then
+			if on(ShowAmount) then
 				local amount = item:FindFirstChild('Value')
 				if amount and amount.Value then
 					local textlabel = Instance.new('TextLabel')
@@ -80,11 +87,11 @@ local function Added(v)
 	billboard.ClipsDescendants = false
 	billboard.Adornee = v
 	local blur = addBlur(billboard)
-	blur.Visible = Background.Enabled
+	blur.Visible = on(Background)
 	local frame = Instance.new('Frame')
 	frame.Size = UDim2.fromScale(1, 1)
 	frame.BackgroundColor3 = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-	frame.BackgroundTransparency = 1 - (Background.Enabled and Color.Opacity or 0)
+	frame.BackgroundTransparency = 1 - (on(Background) and (Color.Opacity or 0.5) or 0)
 	frame.Parent = billboard
 	local layout = Instance.new('UIListLayout')
 	layout.FillDirection = Enum.FillDirection.Horizontal
@@ -100,12 +107,12 @@ local function Added(v)
 	corner.Parent = frame
 	Reference[v] = billboard
 	StorageESP:Clean(chest.ChildAdded:Connect(function(item)
-		if ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
+		if on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
 			refreshAdornee(billboard)
 		end
 	end))
 	StorageESP:Clean(chest.ChildRemoved:Connect(function(item)
-		if ShowAll.Enabled or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
+		if on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
 			refreshAdornee(billboard)
 		end
 	end))
