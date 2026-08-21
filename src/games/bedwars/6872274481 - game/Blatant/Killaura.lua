@@ -116,10 +116,8 @@ run(function()
 						if scytheknitindex then
 							debug.setupvalue(bedwars.ScytheController.playLocalAnimation, scytheknitindex, fake)
 						end
-					end
-				end)
 
-					task.spawn(function()
+						task.spawn(function()
 						local started = false
 						repeat
 							-- Guarded: this touches gameCamera.Viewmodel, which does not exist while
@@ -168,8 +166,9 @@ run(function()
 								task.wait(1 / UpdateRate.Value)
 							end
 						until (not Killaura.Enabled) or (not Animation.Enabled)
-					end)
-				end
+						end)
+					end
+				end)
 
 				repeat
 					local attacked = {}
