@@ -1086,7 +1086,11 @@ run(function()
 
 						if blockhealthbar.blockHealth <= 0 then
 							bedwars.BlockBreaker.breakEffect:playBreak(dblock.Name, dpos, lplr)
-							bedwars.BlockBreaker.healthbarMaid:DoCleaning()
+							-- healthbarMaid is gone from BlockBreaker in current builds, and
+							-- throwing here rejects the DamageBlock promise and aborts the break.
+							if bedwars.BlockBreaker.healthbarMaid then
+								bedwars.BlockBreaker.healthbarMaid:DoCleaning()
+							end
 							blockhealthbar.breakingBlockPosition = Vector3.zero
 						else
 							bedwars.BlockBreaker.breakEffect:playHit(dblock.Name, dpos, lplr)
