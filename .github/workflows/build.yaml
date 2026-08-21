@@ -51,5 +51,12 @@ jobs:
       run: |-
         cd ./VainCompiled
         git add .
-        git commit -m "Updated Vain"
-        git push origin
+        # A commit that only touches files outside src/ produces an identical bundle,
+        # and git commit exits non-zero when there is nothing to commit - which failed
+        # the whole run and reported a broken build when nothing was wrong.
+        if git diff --cached --quiet; then
+          echo "No bundle changes to publish."
+        else
+          git commit -m "Updated Vain"
+          git push origin
+        fi
