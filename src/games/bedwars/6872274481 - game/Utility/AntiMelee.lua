@@ -7,10 +7,6 @@ local Duration
 local Offset
 local choking
 local chokeUntil = 0
--- Tracks the offset currently applied to the root, so it can always be taken back
--- off relative to wherever you have since walked to. Left un-reverted you would be
--- permanently displaced upward.
-local applied = Vector3.zero
 
 -- Roblox retires fast flags without warning and setfflag throws once the name is gone,
 -- so every call goes through this - same reason Blink does it.
@@ -29,33 +25,26 @@ local function setChoke(state)
 	trySetFFlag('PhysicsSenderMaxBandwidthBps', state and '0' or '38760')
 end
 
--- Teleport mode. Roblox replicates the value a part holds at send time, not every
--- assignment, so offsetting and restoring inside one frame reaches the server as
--- nothing at all - the offset has to survive at least one replication tick. That is
--- also why this is visible: anyone watching sees you flick between the two spots.
-local function revert()
-	if applied == Vector3.zero then return end
-	if entitylib.isAlive then
-		local root = entitylib.character.RootPart
-		-- Subtracted relative to the current position so walking in between is kept.
-		root.CFrame = root.CFrame - applied
-	end
-	applied = Vector3.zero
-end
+-- Teleport mode.
+--
+-- The offset is applied on Heartbeat and taken back off at the very start of the next
+-- frame, at render priority 0 - before the camera runs, which sits at priority 200.
+-- Replication samples the root between those two points, so the server sees the
+-- displaced position while your screen and camera only ever see the real one.
+--
+-- The first version alternated the offset across whole frames instead, which is what
+-- made the camera flicker: every other frame genuinely rendered you 16 studs up. It
+-- also answers "which parts" - the character is one welded assembly, so there is no
+-- subset to move on its own, and there is no need to: only the window matters, not
+-- the parts. This is the same split Invisible uses, for the same reason.
+local realCF
+local nearby = false
 
-local function jitter()
-	if not entitylib.isAlive then
-		applied = Vector3.zero
-		return
+local function restore()
+	if realCF and entitylib.isAlive then
+		entitylib.character.RootPart.CFrame = realCF
 	end
-
-	local root = entitylib.character.RootPart
-	if applied == Vector3.zero then
-		applied = Vector3.new(0, Offset.Value, 0)
-		root.CFrame = root.CFrame + applied
-	else
-		revert()
-	end
+	realCF = nil
 end
 
 -- Blink drives the same two flags. Two modules writing them in opposite directions
@@ -70,6 +59,22 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 	Function = function(callback)
 		if callback then
 			chokeUntil = 0
+			nearby = false
+			realCF = nil
+
+			local bindKey = httpService:GenerateGUID(true)
+			runService:BindToRenderStep(bindKey, 0, restore)
+			AntiMelee:Clean(function()
+				runService:UnbindFromRenderStep(bindKey)
+				restore()
+			end)
+
+			AntiMelee:Clean(runService.Heartbeat:Connect(function()
+				if not (Mode.Value == 'Teleport' and nearby and entitylib.isAlive) then return end
+				local root = entitylib.character.RootPart
+				realCF = root.CFrame
+				root.CFrame = realCF + Vector3.new(0, Offset.Value, 0)
+			end))
 
 			-- On Hit mode. The victim's client is told about damage after the fact -
 			-- onEntityDamaged in the game, a health drop from here - which is useless for
@@ -77,16 +82,7 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 			-- one. Melee is repeated swings about a second apart, so choking for a
 			-- fraction of a second on each hit breaks the follow-ups in a combo while
 			-- leaving you fully synced the rest of the time.
-			AntiMelee:Clean(entitylib.Events.LocalAdded:Connect(function(ent)
-				AntiMelee:Clean(ent.Humanoid.HealthChanged:Connect(function(health)
-					if health < (ent.Health or health) then
-						chokeUntil = tick() + Duration.Value
-					end
-					ent.Health = health
-				end))
-			end))
-			if entitylib.isAlive then
-				local ent = entitylib.character
+			local function watchHealth(ent)
 				AntiMelee:Clean(ent.Humanoid.HealthChanged:Connect(function(health)
 					if health < (ent.Health or health) then
 						chokeUntil = tick() + Duration.Value
@@ -94,25 +90,33 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 					ent.Health = health
 				end))
 			end
+			AntiMelee:Clean(entitylib.Events.LocalAdded:Connect(watchHealth))
+			if entitylib.isAlive then
+				watchHealth(entitylib.character)
+			end
 
 			repeat
 				local ok = pcall(function()
 					if blinkActive() or not entitylib.isAlive then
 						setChoke(false)
+						nearby = false
 						return
 					end
 
 					if Mode.Value == 'Teleport' then
 						setChoke(false)
-						local ent = entitylib.EntityPosition({
+						-- Only the proximity test lives here. The offset itself is driven off
+						-- Heartbeat so it always lands inside the replication window.
+						nearby = entitylib.EntityPosition({
 							Part = 'RootPart',
 							Range = Range.Value,
 							Players = Targets.Players.Enabled,
 							NPCs = Targets.NPCs.Enabled
-						})
-						if ent then jitter() else revert() end
+						}) ~= nil
 						return
 					end
+
+					nearby = false
 
 					if Mode.Value == 'On Hit' then
 						setChoke(tick() < chokeUntil)
@@ -143,33 +147,48 @@ AntiMelee = vain.Categories.Utility:CreateModule({
 			until not AntiMelee.Enabled
 
 			setChoke(false)
-			revert()
+			nearby = false
+			restore()
 		else
 			setChoke(false)
-			revert()
+			nearby = false
+			restore()
 		end
 	end,
-	Tooltip = 'Chokes movement packets while someone is in melee range\nOnly works while you keep moving'
+	ExtraText = function()
+		return Mode.Value
+	end,
+	Tooltip = 'Desyncs your position from the server while someone is in melee range'
 })
 Mode = AntiMelee:CreateDropdown({
 	Name = 'Mode',
-	Tooltip = 'When to choke movement packets',
-	List = {'On Hit', 'Proximity', 'Teleport'},
+	Tooltip = 'How to break the position the server validates hits against',
+	List = {'Teleport', 'On Hit', 'Proximity'},
 	Tooltips = {
+		Teleport = 'Offsets you only during the replication window, so the server sees you elsewhere\nThe camera never sees it, so there is no flicker',
 		['On Hit'] = 'Chokes for a moment each time you take damage, to break the rest of a combo\nStays synced the rest of the time',
-		Proximity = 'Chokes the whole time anyone is within range\nStronger, but you desync constantly',
-		Teleport = 'Flicks you in and out of an offset position so swings land where you are not\nVery visible, and the offset has to clear sword reach to do anything'
+		Proximity = 'Chokes the whole time anyone is within range\nStronger, but you desync constantly'
 	},
 	Function = function()
 		if AntiMelee.Enabled then
 			setChoke(false)
-			revert()
+			restore()
 		end
 	end
 })
 Offset = AntiMelee:CreateSlider({
 	Name = 'Offset',
-	Tooltip = 'How far to flick away in Teleport mode\nSword reach is about 14 studs, so less than that changes nothing',
+	Tooltip = 'How far up to sit during the replication window\nSword reach is about 14 studs, so less than that changes nothing',
+	Min = 1,
+	Max = 30,
+	Default = 16,
+	Suffix = function(val)
+		return val == 1 and 'stud' or 'studs'
+	end
+})
+Range = AntiMelee:CreateSlider({
+	Name = 'Range',
+	Tooltip = 'How close someone has to be before this engages\nSword reach is about 14 studs',
 	Min = 1,
 	Max = 30,
 	Default = 16,
@@ -179,7 +198,7 @@ Offset = AntiMelee:CreateSlider({
 })
 Duration = AntiMelee:CreateSlider({
 	Name = 'Duration',
-	Tooltip = 'How long to choke after being hit',
+	Tooltip = 'How long to choke after being hit, in On Hit mode',
 	Min = 0.05,
 	Max = 1,
 	Default = 0.4,
@@ -188,23 +207,9 @@ Duration = AntiMelee:CreateSlider({
 		return val == 1 and 'second' or 'seconds'
 	end
 })
-Targets = AntiMelee:CreateTargets({
-	Players = true,
-	Tooltip = 'Which entities this watches for'
-})
-Range = AntiMelee:CreateSlider({
-	Name = 'Range',
-	Tooltip = 'How close someone has to be before choking starts\nSword reach is about 14 studs',
-	Min = 1,
-	Max = 30,
-	Default = 16,
-	Suffix = function(val)
-		return val == 1 and 'stud' or 'studs'
-	end
-})
 Resync = AntiMelee:CreateSlider({
 	Name = 'Resync',
-	Tooltip = 'How long to choke before letting a packet through\nLonger desyncs harder but snaps back further',
+	Tooltip = 'How long to choke before letting a packet through, in Proximity mode\nLonger desyncs harder but snaps back further',
 	Min = 0.05,
 	Max = 1,
 	Default = 0.35,
@@ -212,4 +217,8 @@ Resync = AntiMelee:CreateSlider({
 	Suffix = function(val)
 		return val == 1 and 'second' or 'seconds'
 	end
+})
+Targets = AntiMelee:CreateTargets({
+	Players = true,
+	Tooltip = 'Which entities this watches for'
 })

@@ -78,7 +78,11 @@ run(function()
 												for _ = 1, 10 do
 													local dpos = roundPos(ray.Position + ray.Normal * 1.5) + Vector3.new(0, 3, 0)
 													if not getPlacedBlock(dpos) then
-														top = Vector3.new(top.X, pos.Y, top.Z)
+														-- dpos, not pos: there is no pos in this scope, so this
+														-- read whatever global another module had left behind -
+														-- everything in the bundle shares one scope - and threw
+														-- "attempt to index number with 'Y'" every frame of a fall.
+														top = Vector3.new(top.X, dpos.Y, top.Z)
 														break
 													end
 												end

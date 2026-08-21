@@ -65,9 +65,21 @@ local function buyOrder(enum)
 end
 
 local function nextPurchase(enum)
+	-- Only one track may reach the top tier. Once one has, the rest cap a tier below,
+	-- and asking for that last tier anyway is simply refused - which left this
+	-- repeating the same rejected purchase forever, stuck on the second track.
+	local anyMaxed = false
+	for _, upgrade in buyOrder(enum) do
+		if levelOf(upgrade) >= #COSTS then
+			anyMaxed = true
+			break
+		end
+	end
+
 	for _, upgrade in buyOrder(enum) do
 		local level = levelOf(upgrade)
-		if level < #COSTS then
+		local cap = anyMaxed and (#COSTS - 1) or #COSTS
+		if level < cap then
 			return upgrade, level + 1, COSTS[level + 1]
 		end
 	end
