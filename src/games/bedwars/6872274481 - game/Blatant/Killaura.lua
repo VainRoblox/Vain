@@ -351,7 +351,14 @@ run(function()
 									-- Nil means AntiMelee is not hiding anything and this does not
 									-- apply. The wait costs nothing: its cycle is shorter than a
 									-- sword's attack speed, so a window always comes round first.
-									if store.antiMeleeParked == false then continue end
+									if store.antiMeleeParked == false then
+										-- Ask for one. AntiMelee keeps the root buried by default and
+										-- surfaces it because this asked, so a swing is delayed only by
+										-- the time that takes rather than waiting for a window on a
+										-- clock that its own attack cooldown drifts against.
+										store.antiMeleeWantAttack = tick()
+										continue
+									end
 
 									-- The loop used to fire on every pass, which with one target in
 									-- range meant an attack every 0.02s - fifty a second against a
@@ -362,6 +369,9 @@ run(function()
 									-- Hit delay slider when it is set above zero.
 									if (AttackTimes[v] or 0) > tick() then continue end
 									AttackTimes[v] = tick() + (HitDelay.Value > 0 and HitDelay.Value or (meta.sword.attackSpeed or 0.5))
+									-- The swing this asked for is going out, so release AntiMelee to
+									-- bury the root again rather than leaving it surfaced.
+									store.antiMeleeWantAttack = nil
 
 									-- PrimaryPart is not guaranteed to be set on a character model.
 									-- Bailing out when it was nil skipped the attack entirely while
