@@ -3925,6 +3925,11 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('vain/assets/new/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
+mainapi:CreateCategory({
+	Name = 'Kit',
+	Icon = getcustomasset('vain/assets/new/combaticon.png'),
+	Size = UDim2.fromOffset(13, 14)
+})
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[
