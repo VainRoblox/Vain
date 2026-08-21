@@ -69,5 +69,5 @@ ZephyrSpeed = vain.Categories.Kit:CreateModule({
 	ExtraText = function()
 		return SPEED .. ''
 	end,
-	Tooltip = 'Holds a walkspeed of ' .. SPEED .. ' while Zephyr has orbs'
+	Tooltip = 'Increase Zephyr speed'
 })
