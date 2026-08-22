@@ -415,7 +415,12 @@ async function handleDiscordInteraction(request, env, ctx) {
 	// So acknowledge immediately with a deferred response and edit the real answer in
 	// once the work finishes. waitUntil keeps the Worker alive for that after the
 	// response has already gone back.
-	if (ctx && env.DISCORD_APP_ID) {
+	// application_id comes in on the interaction itself, so this does not depend on
+	// DISCORD_APP_ID being set as a Worker secret - it is only ever needed as an env var
+	// for the registration script, so relying on it here would have quietly skipped the
+	// deferral on any deployment that never set it.
+	const appId = interaction.application_id ?? env.DISCORD_APP_ID;
+	if (ctx && appId) {
 		ctx.waitUntil(
 			(async () => {
 				let payload;
@@ -424,7 +429,7 @@ async function handleDiscordInteraction(request, env, ctx) {
 				} catch (err) {
 					payload = replyMessage(`Something went wrong running that command: ${err}`);
 				}
-				await followUpOriginal(env.DISCORD_APP_ID, interaction.token, payload?.data);
+				await followUpOriginal(appId, interaction.token, payload?.data);
 			})(),
 		);
 		// Ephemeral, matching replyMessage's default - the flag is fixed at defer time

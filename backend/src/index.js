@@ -14,6 +14,32 @@ export default {
 		// ctx is passed through so interactions can be deferred - see routes/discord.js.
 		if (url.pathname === '/discord/interactions') return handleDiscordInteraction(request, env, ctx);
 
+		// Reports whether the Worker is configured, without exposing any secret values -
+		// only whether each one is present. A bot that never answers looks identical
+		// whether the public key is missing, the endpoint is misconfigured, or the code
+		// is timing out, and there was no way to tell those apart from outside.
+		if (url.pathname === '/status') {
+			let db = 'unknown';
+			try {
+				await env.DB.prepare('SELECT 1').first();
+				db = 'ok';
+			} catch (err) {
+				db = `error: ${err}`;
+			}
+			return Response.json({
+				ok: true,
+				db,
+				guildId: env.DISCORD_GUILD_ID ?? null,
+				secrets: {
+					DISCORD_PUBLIC_KEY: Boolean(env.DISCORD_PUBLIC_KEY),
+					DISCORD_BOT_TOKEN: Boolean(env.DISCORD_BOT_TOKEN),
+					DISCORD_APP_ID: Boolean(env.DISCORD_APP_ID),
+				},
+				// Present only on a build that includes interaction deferral.
+				defersInteractions: true,
+			});
+		}
+
 		return new Response('not found', { status: 404 });
 	},
 
