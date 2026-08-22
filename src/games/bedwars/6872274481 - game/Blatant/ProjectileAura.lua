@@ -107,7 +107,18 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 									local projSpeed = meta and meta.launchVelocity
 									if not projSpeed then continue end
 									local gravity = meta.gravitationalAcceleration or 196.2
-									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck)
+									-- Aimed a round trip ahead of where the target appears, for the
+									-- same reason ProjectileAimbot does: their replicated position
+									-- is already about one trip old and the shot needs another
+									-- before the server acts on it. The solver covers movement
+									-- during flight but not that, so without it the miss grows
+									-- with ping. Clamped because the ping reading can spike.
+									local latency = 0
+									pcall(function()
+										latency = lplr:GetNetworkPing() * 2
+									end)
+									local aimAt = ent.RootPart.Position + (ent.RootPart.Velocity * math.clamp(latency, 0, 0.5))
+									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, aimAt, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck)
 									if calc then
 										targetinfo.Targets[ent] = tick() + 1
 										local switched = switchItem(item.tool)
