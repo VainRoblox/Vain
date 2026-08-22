@@ -15,20 +15,38 @@ const RANK_EMOJIS = {
 
 // has2fa: true/false to set it, or omitted (undefined) to leave it untouched on an
 // existing row - /update calls this without touching 2FA status, since that's set via
-// /add's optional `2fa_required` option or changed later with /set2fa. A brand new row
-// can't be left "untouched" (the column is NOT NULL), so callers inserting a fresh
-// account must pass a real boolean - only handleRosterUpdate (which always targets an
-// existing row) omits it.
+// /add's optional `2fa_required` option or changed later with /set2fa. Callers that do
+// not mean to change it - handleRosterUpdate, which always targets an existing row -
+// omit it entirely.
+//
+// Omitting has to mean leaving the column out of the statement, not binding NULL to it.
+// has_2fa is NOT NULL, and SQLite enforces that against the row being inserted before it
+// resolves the ON CONFLICT clause, so a NULL bind failed with a constraint error before
+// the COALESCE that was meant to preserve the old value ever ran. The column DEFAULT
+// cannot cover it either: an explicit NULL overrides a default, it does not fall back to
+// one. Left out of the statement, a new row takes the default and an existing row keeps
+// whatever it already had.
 async function upsertAccount(db, name, rank, has2fa) {
 	const now = Math.floor(Date.now() / 1000);
-	const has2faValue = has2fa === undefined ? null : has2fa ? 1 : 0;
+
+	if (has2fa === undefined) {
+		await db
+			.prepare(
+				`INSERT INTO account_roster (name, rank, updated_at) VALUES (?, ?, ?)
+				 ON CONFLICT(name) DO UPDATE SET rank = excluded.rank, updated_at = excluded.updated_at`
+			)
+			.bind(name, rank, now)
+			.run();
+		return;
+	}
+
 	await db
 		.prepare(
 			`INSERT INTO account_roster (name, rank, has_2fa, updated_at) VALUES (?, ?, ?, ?)
 			 ON CONFLICT(name) DO UPDATE SET rank = excluded.rank, updated_at = excluded.updated_at,
-			 	has_2fa = COALESCE(excluded.has_2fa, account_roster.has_2fa)`
+			 	has_2fa = excluded.has_2fa`
 		)
-		.bind(name, rank, has2faValue, now)
+		.bind(name, rank, has2fa ? 1 : 0, now)
 		.run();
 }
 
