@@ -71,4 +71,20 @@ async function editMessage(channelId, messageId, payload, botToken) {
 	return res.ok;
 }
 
-export { verifyDiscordRequest, getGuildMemberRoles, replyMessage, postMessage, editMessage };
+// Replaces the "thinking..." placeholder left by a deferred (type 5) response with the
+// real reply. Deferring is what keeps a command from dying against Discord's 3 second
+// interaction deadline: acknowledge instantly, then edit in the answer once the work
+// behind it - D1 queries, roster syncs, Discord REST calls - has finished.
+//
+// Uses the interaction token rather than a bot token: the token is the authorisation
+// here, and it stays valid for 15 minutes after the interaction.
+async function followUpOriginal(appId, interactionToken, data) {
+	const res = await fetch(`https://discord.com/api/v10/webhooks/${appId}/${interactionToken}/messages/@original`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(data ?? {}),
+	});
+	return res.ok;
+}
+
+export { verifyDiscordRequest, getGuildMemberRoles, replyMessage, postMessage, editMessage, followUpOriginal };

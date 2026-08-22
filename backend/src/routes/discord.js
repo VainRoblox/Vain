@@ -1,4 +1,4 @@
-import { verifyDiscordRequest, replyMessage, postMessage, editMessage } from '../lib/discord.js';
+import { verifyDiscordRequest, replyMessage, postMessage, editMessage, followUpOriginal } from '../lib/discord.js';
 import { lookupUserId, lookupUserIds, getAvatarThumbnails } from '../lib/roblox.js';
 import {
 	upsertBinding,
@@ -384,7 +384,7 @@ async function handleAutocomplete(env, interaction) {
 	});
 }
 
-async function handleDiscordInteraction(request, env) {
+async function handleDiscordInteraction(request, env, ctx) {
 	const bodyText = await request.text();
 	const valid = await verifyDiscordRequest(request, bodyText, env.DISCORD_PUBLIC_KEY);
 	if (!valid) {
@@ -405,6 +405,40 @@ async function handleDiscordInteraction(request, env) {
 		return Response.json({ error: 'unsupported interaction type' }, { status: 400 });
 	}
 
+	// Discord gives an interaction 3 seconds to be acknowledged, and several of these
+	// commands cannot make that: the roster ones run two D1 queries and then a Discord
+	// REST call to edit the roster embed before they reply, which on a cold start is
+	// comfortably past the deadline. Discord then shows "the application did not
+	// respond" even though the work completed - the command had simply answered too
+	// late to count.
+	//
+	// So acknowledge immediately with a deferred response and edit the real answer in
+	// once the work finishes. waitUntil keeps the Worker alive for that after the
+	// response has already gone back.
+	if (ctx && env.DISCORD_APP_ID) {
+		ctx.waitUntil(
+			(async () => {
+				let payload;
+				try {
+					payload = await runCommand(request, env, ctx, interaction);
+				} catch (err) {
+					payload = replyMessage(`Something went wrong running that command: ${err}`);
+				}
+				await followUpOriginal(env.DISCORD_APP_ID, interaction.token, payload?.data);
+			})(),
+		);
+		// Ephemeral, matching replyMessage's default - the flag is fixed at defer time
+		// and cannot be changed by the follow-up.
+		return Response.json({ type: 5, data: { flags: 64 } });
+	}
+
+	// No execution context to defer with, so answer inline and hope it fits the budget.
+	return Response.json(await runCommand(request, env, ctx, interaction));
+}
+
+// The dispatch itself, returning an interaction payload rather than a Response so it
+// can be used either as an immediate reply or as the follow-up to a deferred one.
+async function runCommand(request, env, ctx, interaction) {
 	const discordId = interaction.member?.user?.id;
 	const name = interaction.data.name;
 
@@ -412,94 +446,94 @@ async function handleDiscordInteraction(request, env) {
 		const sub = interaction.data.options?.[0];
 		if (sub?.name === 'edit') {
 			const username = getOption(sub.options, 'roblox');
-			return Response.json(await handleWhitelistEdit(env, discordId, username));
+			return await handleWhitelistEdit(env, discordId, username);
 		}
 		if (sub?.name === 'unlink') {
-			return Response.json(await handleWhitelistUnlink(env, discordId));
+			return await handleWhitelistUnlink(env, discordId);
 		}
 	}
 
 	if (name === 'command') {
 		const action = getOption(interaction.data.options, 'action');
 		const target = getOption(interaction.data.options, 'target');
-		return Response.json(await handleCommandInteraction(env, interaction, action, target));
+		return await handleCommandInteraction(env, interaction, action, target);
 	}
 
 	if (name === 'add') {
 		const accName = getOption(interaction.data.options, 'name');
 		const rank = getOption(interaction.data.options, 'rank');
 		const twofa = getOption(interaction.data.options, '2fa_required');
-		return Response.json(await handleRosterAdd(env, interaction, accName, rank, twofa));
+		return await handleRosterAdd(env, interaction, accName, rank, twofa);
 	}
 	if (name === 'remove') {
 		const accName = getOption(interaction.data.options, 'name');
-		return Response.json(await handleRosterRemove(env, interaction, accName));
+		return await handleRosterRemove(env, interaction, accName);
 	}
 	if (name === 'update') {
 		const accName = getOption(interaction.data.options, 'name');
 		const rank = getOption(interaction.data.options, 'rank');
-		return Response.json(await handleRosterUpdate(env, interaction, accName, rank));
+		return await handleRosterUpdate(env, interaction, accName, rank);
 	}
 	if (name === 'set2fa') {
 		const accName = getOption(interaction.data.options, 'name');
 		const value = getOption(interaction.data.options, 'value');
-		return Response.json(await handleSet2fa(env, interaction, accName, value));
+		return await handleSet2fa(env, interaction, accName, value);
 	}
 	if (name === 'reset') {
-		return Response.json(await handleReset(env, interaction));
+		return await handleReset(env, interaction);
 	}
 	if (name === 'use') {
 		const accName = getOption(interaction.data.options, 'name');
-		return Response.json(await handleRosterUse(env, interaction, accName));
+		return await handleRosterUse(env, interaction, accName);
 	}
 	if (name === 'done') {
-		return Response.json(await handleRosterDone(env, interaction));
+		return await handleRosterDone(env, interaction);
 	}
 	if (name === 'addkit') {
 		const accName = getOption(interaction.data.options, 'name');
 		const kit = getOption(interaction.data.options, 'kit');
-		return Response.json(await handleAddKit(env, interaction, accName, kit));
+		return await handleAddKit(env, interaction, accName, kit);
 	}
 	if (name === 'removekit') {
 		const accName = getOption(interaction.data.options, 'name');
 		const kit = getOption(interaction.data.options, 'kit');
-		return Response.json(await handleRemoveKit(env, interaction, accName, kit));
+		return await handleRemoveKit(env, interaction, accName, kit);
 	}
 	if (name === 'kits') {
 		const accName = getOption(interaction.data.options, 'name');
-		return Response.json(await handleListKits(env, interaction, accName));
+		return await handleListKits(env, interaction, accName);
 	}
 	if (name === 'kitowners') {
 		const kit = getOption(interaction.data.options, 'kit');
-		return Response.json(await handleKitOwners(env, interaction, kit));
+		return await handleKitOwners(env, interaction, kit);
 	}
 	if (name === 'addwish') {
 		const kit = getOption(interaction.data.options, 'kit');
 		const acc = getOption(interaction.data.options, 'account');
-		return Response.json(await handleAddWish(env, interaction, kit, acc));
+		return await handleAddWish(env, interaction, kit, acc);
 	}
 	if (name === 'removewish') {
 		const kit = getOption(interaction.data.options, 'kit');
 		const acc = getOption(interaction.data.options, 'account');
-		return Response.json(await handleRemoveWish(env, interaction, kit, acc));
+		return await handleRemoveWish(env, interaction, kit, acc);
 	}
 	if (name === 'wishlist') {
-		return Response.json(await handleWishlist(env));
+		return await handleWishlist(env);
 	}
 	if (name === 'status') {
-		return Response.json(await handleStatus(env));
+		return await handleStatus(env);
 	}
 	if (name === 'addtarget') {
 		const targetName = getOption(interaction.data.options, 'target');
 		const reason = getOption(interaction.data.options, 'reason');
-		return Response.json(await handleAddTarget(env, interaction, targetName, reason));
+		return await handleAddTarget(env, interaction, targetName, reason);
 	}
 	if (name === 'removetarget') {
 		const targetName = getOption(interaction.data.options, 'target');
-		return Response.json(await handleRemoveTarget(env, interaction, targetName));
+		return await handleRemoveTarget(env, interaction, targetName);
 	}
 
-	return Response.json(replyMessage('Unknown command.'));
+	return replyMessage('Unknown command.');
 }
 
 export { handleDiscordInteraction };
