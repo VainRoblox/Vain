@@ -7,6 +7,16 @@ local nextScan = 0
 local incoming = {}
 local currentRoot
 local autoRotate
+local nextSwing = 0
+
+-- Swings are paced rather than thrown every pass.
+--
+-- Without this the module asked Godmode for an attack window on every single pass, so
+-- the window never closed and the root never went back into hiding - Godmode was
+-- surfaced permanently and protected nothing. Leaving gaps between swings is what gives
+-- it somewhere to hide, and a weapon cannot swing faster than its own animation anyway,
+-- so nothing is lost.
+local SWING_INTERVAL = 0.6
 
 -- Dodging.
 --
@@ -112,7 +122,7 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 	Function = function(callback)
 		if callback then
 			warned = false
-			nextAbility = 0
+			nextSwing = 0
 			nextScan = 0
 			table.clear(candidates)
 			table.clear(incoming)
@@ -219,19 +229,27 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 							gameCamera.CFrame = CFrame.new(gameCamera.CFrame.Position, targetPos)
 						end)
 
-						-- Godmode hides the part the server identifies you by, and it
-						-- checks that same position when you swing - so attacking while
-						-- hidden is rejected. Ask for it back, wait to be told it has
-						-- arrived, then attack. When Godmode is off there is nothing to
-						-- wait for and this is skipped entirely.
+						-- Abilities first, and outside everything below. They do not need
+						-- the root to be back where you are, and gating them behind the
+						-- swing meant they only went off when a swing was due - so one
+						-- coming off cooldown sat unused until then.
+						dq.useAbility()
+
+						if tick() < nextSwing then return end
+
+						-- Godmode hides the part the server identifies you by and checks
+						-- that same one when you swing, so a hit sent while hidden is
+						-- rejected. Ask for it back and wait to be told it has arrived.
+						-- Asking only when a swing is actually due is what lets it hide in
+						-- between; asking every pass held it open permanently.
 						local combat = dq.combat
 						if combat.hidden then
 							combat.wantAttack = tick()
 							if not combat.attackReady then return end
 						end
 
+						nextSwing = tick() + SWING_INTERVAL
 						dq.swing()
-						dq.useAbility()
 					end)
 
 					task.wait(ok and 0.15 or 0.4)
