@@ -96,6 +96,10 @@ vain.Libraries.dungeonquest = {
 		-- Set by AutoFarm when it wants to attack.
 		wantAttack = 0,
 		-- Set by Godmode once the surfaced position has had time to replicate.
-		attackReady = false
+		attackReady = false,
+		-- Set by AutoFarm the moment it sees something on course to hit you, so Godmode
+		-- can hide before it lands rather than after. AutoFarm already works this out for
+		-- dodging, so it costs nothing to share.
+		threat = 0
 	}
 }

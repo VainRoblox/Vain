@@ -171,6 +171,11 @@ local function dodgeDirection(myPos)
 		local closest = (relative + (velocity * time)).Magnitude
 		if closest > DODGE_RADIUS then continue end
 
+		-- Something is on course to hit you. Godmode watches this so it can hide before
+		-- it lands rather than after, which is the difference between taking the hit and
+		-- not.
+		vain.Libraries.dungeonquest.combat.threat = tick()
+
 		-- Sideways relative to its travel, which is the shortest way out of its path.
 		local sideways = Vector3.new(-velocity.Z, 0, velocity.X)
 		if sideways.Magnitude < 0.1 then continue end

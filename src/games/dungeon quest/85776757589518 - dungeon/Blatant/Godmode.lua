@@ -35,7 +35,13 @@ local surfacedAt = 0
 --
 -- Health dropping is the one signal for this that needs no knowledge of the game: it is
 -- true whatever hit you, melee, ranged or otherwise.
-local HIDE_AFTER_HIT = 2.5
+-- Kept short. This is time spent where your own attacks need a window bought for them,
+-- so a long tail costs damage for protection you are mostly not using - the follow up
+-- either comes quickly or not at all.
+local HIDE_AFTER_HIT = 1
+-- Hiding from something already in the air, before it arrives. Long enough to cover the
+-- flight of what was seen, short enough to be back out almost immediately.
+local HIDE_ON_THREAT = 0.5
 local hideUntil = 0
 local lastHealth
 
@@ -143,9 +149,12 @@ Godmode = vain.Categories.Blatant:CreateModule({
 				if not (oldroot and oldroot.Parent and clone and clone.Parent) then return end
 				oldroot.AssemblyLinearVelocity = Vector3.zero
 
-				-- Out in the open unless something has just hurt you, so your own
-				-- attacks land without having to buy a window for each one.
+				-- Out in the open unless something has just hurt you, or something is
+				-- on its way - so your own attacks land without buying a window each
+				-- time. Reacting to the incoming shot rather than the damage it does is
+				-- what turns this from surviving a hit into not taking it.
 				local hurt = tick() < hideUntil
+					or (tick() - (combat.threat or 0)) < HIDE_ON_THREAT
 				local wants = (tick() - (combat.wantAttack or 0)) < REQUEST_TIMEOUT
 
 				if not hurt then
