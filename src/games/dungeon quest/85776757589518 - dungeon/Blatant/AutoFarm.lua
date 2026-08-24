@@ -29,7 +29,9 @@ local DODGE_DISTANCE = 14
 -- was never why they missed. Now that a swing is a real click at the crosshair the limit
 -- is the weapon's own range, so height is free and worth taking.
 local STAND_OFF = 2
-local STAND_UP = 14
+-- Just inside melee reach. Higher was out of range of your own swings, and height is not
+-- what keeps you alive anyway - Godmode is, by moving the part you are hit through.
+local STAND_UP = 7
 
 -- Attacking through tool:Activate and firetouchinterest does nothing here. That works in
 -- games whose damage comes off a touch or off the tool itself; this one runs combat
@@ -288,6 +290,17 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 						pcall(function()
 							gameCamera.CFrame = CFrame.new(gameCamera.CFrame.Position, targetPos)
 						end)
+
+						-- Godmode hides the part the server identifies you by, and it
+						-- checks that same position when you swing - so attacking while
+						-- hidden is rejected. Ask for it back, wait to be told it has
+						-- arrived, then attack. When Godmode is off there is nothing to
+						-- wait for and this is skipped entirely.
+						local combat = vain.Libraries.dungeonquest.combat
+						if combat.hidden then
+							combat.wantAttack = tick()
+							if not combat.attackReady then return end
+						end
 
 						swing()
 						useAbility()

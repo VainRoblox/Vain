@@ -84,7 +84,18 @@ run(function()
 	end)
 end)
 
+-- Shared between Godmode and AutoFarm. Godmode hides the part the game tracks you by,
+-- which also stops your own attacks landing, since the server checks that same position
+-- when you swing. So AutoFarm asks for the part to be put back for a moment, waits to be
+-- told it has arrived, attacks, and Godmode hides it again.
 vain.Libraries.dungeonquest = {
 	isEnemy = isEnemy,
-	tracked = tracked
+	tracked = tracked,
+	combat = {
+		hidden = false,
+		-- Set by AutoFarm when it wants to attack.
+		wantAttack = 0,
+		-- Set by Godmode once the surfaced position has had time to replicate.
+		attackReady = false
+	}
 }

@@ -8,6 +8,24 @@ local warned = false
 -- dungeon has.
 local HIDE_OFFSET = Vector3.new(0, 2000, 0)
 
+-- Hiding the part also stops your own attacks landing, because the server checks that
+-- same position when you swing. So AutoFarm asks for it back for a moment, and it goes
+-- straight up again once the swing is away.
+--
+-- Moving a loose part is all this takes - no reparenting, which is the slow and fragile
+-- part - so surfacing costs a frame rather than a rebuild of the character.
+local combat = vain.Libraries.dungeonquest.combat
+
+-- Long enough for the surfaced position to reach the server before the attack does.
+-- Without this the swing goes out while the server still has you two thousand studs up
+-- and is rejected, which is the whole problem this is meant to solve.
+local SETTLE = 0.12
+
+-- How long a request stays live, so one that never becomes a swing cannot hold you out
+-- in the open indefinitely.
+local REQUEST_TIMEOUT = 0.6
+local surfacedAt = 0
+
 -- Damage aimed at you is worked out from where the server thinks you are, and where the
 -- server thinks you are comes from the part it identifies you by - which is yours to
 -- move, since you own your own character.
@@ -92,6 +110,10 @@ local function restore()
 
 	oldroot, clone = nil, nil
 	hidden = false
+	surfacedAt = 0
+	-- Cleared so AutoFarm stops waiting on a window nothing is producing any more.
+	combat.hidden = false
+	combat.attackReady = false
 end
 
 Godmode = vain.Categories.Blatant:CreateModule({
@@ -105,7 +127,21 @@ Godmode = vain.Categories.Blatant:CreateModule({
 			Godmode:Clean(runService.PostSimulation:Connect(function()
 				if not (oldroot and oldroot.Parent and clone and clone.Parent) then return end
 				oldroot.AssemblyLinearVelocity = Vector3.zero
-				oldroot.CFrame = CFrame.new(clone.CFrame.Position + HIDE_OFFSET)
+
+				local wants = (tick() - (combat.wantAttack or 0)) < REQUEST_TIMEOUT
+				if wants then
+					if surfacedAt == 0 then
+						surfacedAt = tick()
+					end
+					-- Back where you actually are, so the swing is validated against a
+					-- position that matches the enemy you are stood next to.
+					oldroot.CFrame = clone.CFrame
+					combat.attackReady = (tick() - surfacedAt) >= SETTLE
+				else
+					surfacedAt = 0
+					combat.attackReady = false
+					oldroot.CFrame = CFrame.new(clone.CFrame.Position + HIDE_OFFSET)
+				end
 			end))
 
 			Godmode:Clean(entitylib.Events.LocalRemoved:Connect(restore))
@@ -120,6 +156,7 @@ Godmode = vain.Categories.Blatant:CreateModule({
 
 						if hide() and not hidden then
 							hidden = true
+							combat.hidden = true
 							if not warned then
 								warned = true
 								notif('Godmode', 'Hidden. Anything that damages you without checking where you are still applies.', 8, 'info')
