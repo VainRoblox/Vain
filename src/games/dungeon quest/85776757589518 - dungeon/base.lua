@@ -34,7 +34,11 @@ local function isEnemy(model)
 	local humanoid = model:FindFirstChildOfClass('Humanoid')
 	if not (humanoid and humanoid.Health > 0) then return false end
 
-	return model:FindFirstChild('HumanoidRootPart') ~= nil
+	-- Humanoid.RootPart rather than a child named HumanoidRootPart: the name is a
+	-- convention for player characters, and an NPC rigged any other way has a root
+	-- without carrying that name. Requiring the name rejected enemies that were
+	-- perfectly usable, which left nothing to farm.
+	return humanoid.RootPart ~= nil
 end
 
 local function addEnemy(model)
