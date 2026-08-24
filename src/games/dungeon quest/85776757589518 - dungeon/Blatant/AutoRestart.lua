@@ -13,6 +13,28 @@ local RESTART_WORDS = {
 
 local virtualInput = cloneref(game:GetService('VirtualInputManager'))
 
+-- The game keeps its own remote for this, under ReplicatedStorage.remotes, so the
+-- restart can be asked for directly instead of being mimed through the interface.
+-- Hunting for a button meant guessing at its label, and a guess that is close but wrong
+-- looks exactly like the module being broken.
+--
+-- The button is still used as a fallback: firing the remote is only right once a run has
+-- actually ended, and the button appearing is what says so.
+local function startRemote()
+	local remotes = replicatedStorage:FindFirstChild('remotes')
+	local remote = remotes and remotes:FindFirstChild('startDungeon')
+	if not remote then return false end
+
+	local ok = pcall(function()
+		if remote:IsA('RemoteFunction') then
+			remote:InvokeServer()
+		else
+			remote:FireServer()
+		end
+	end)
+	return ok
+end
+
 -- A button is only really on screen if every frame above it is visible too, so this
 -- walks up rather than trusting the button's own Visible.
 local function onScreen(object)
@@ -112,8 +134,13 @@ AutoRestart = vain.Categories.Blatant:CreateModule({
 						if not button then return end
 
 						nextPress = tick() + 3
+
+						-- Both: the remote is the reliable half, the press covers a build
+						-- where the remote is named something else or expects arguments
+						-- this does not send.
+						local viaRemote = startRemote()
 						press(button)
-						notif('AutoRestart', 'Starting the dungeon over.', 4, 'info')
+						notif('AutoRestart', viaRemote and 'Starting the dungeon over.' or 'Starting over (button only).', 4, 'info')
 					end)
 
 					task.wait(ok and 0.5 or 1)
