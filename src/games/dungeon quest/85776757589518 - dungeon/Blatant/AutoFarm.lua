@@ -109,7 +109,7 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 					local ok = pcall(function()
 						if not entitylib.isAlive then return end
 
-						dq.dq.rescan()
+						dq.rescan()
 						local enemy, root = dq.findEnemy()
 
 						-- Deliberately does nothing when there is nothing to do. An
@@ -127,7 +127,7 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 						end
 
 						warned = false
-						dq.dq.equipWeapon()
+						dq.equipWeapon()
 
 						local me = entitylib.character.RootPart
 						local targetPos = root.Position
