@@ -5,6 +5,8 @@ local abilityIndex = 1
 local candidates = {}
 local nextScan = 0
 local incoming = {}
+local currentRoot
+local autoRotate
 
 -- Dodging.
 --
@@ -70,6 +72,36 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 			table.clear(incoming)
 			AutoFarm:Clean(watchProjectiles())
 
+			-- Aim is held every frame, not once per pass.
+			--
+			-- Setting it on the 0.15s loop left the character free to turn in between,
+			-- because the humanoid rotates itself toward wherever it thinks you are
+			-- heading - so swings kept going out while facing somewhere else. AutoRotate
+			-- is switched off for the same reason, and put back when the module stops.
+			AutoFarm:Clean(runService.PostSimulation:Connect(function()
+				if not (currentRoot and currentRoot.Parent and entitylib.isAlive) then return end
+
+				local me = entitylib.character.RootPart
+				local targetPos = currentRoot.Position
+				-- Aimed at the target itself, pitch included, rather than at a point level
+				-- with you. Flattening it to the horizontal meant that standing above an
+				-- enemy you faced its direction but never looked down at it, so swings
+				-- went out over its head.
+				me.CFrame = CFrame.new(me.CFrame.Position, targetPos)
+				pcall(function()
+					gameCamera.CFrame = CFrame.new(gameCamera.CFrame.Position, targetPos)
+				end)
+			end))
+
+			AutoFarm:Clean(function()
+				currentRoot = nil
+				local character = lplr.Character
+				local humanoid = character and character:FindFirstChildOfClass('Humanoid')
+				if humanoid and autoRotate ~= nil then
+					humanoid.AutoRotate = autoRotate
+				end
+			end)
+
 			task.spawn(function()
 				repeat
 					-- Guarded, yielding outside, so one bad pass cannot spin or end the
@@ -86,6 +118,7 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 						-- was found. Enemies also only appear once a room starts, so
 						-- finding none early on is normal rather than a fault.
 						if not enemy then
+							currentRoot = nil
 							if not warned then
 								warned = true
 								notif('AutoFarm', 'Waiting for enemies to spawn.', 6, 'info')
@@ -116,6 +149,16 @@ AutoFarm = vain.Categories.Blatant:CreateModule({
 						local dodge = dodgeDirection(me.Position)
 						if dodge then
 							spot += dodge * DODGE_DISTANCE
+						end
+
+						currentRoot = root
+
+						local humanoid = entitylib.character.Humanoid
+						if humanoid then
+							if autoRotate == nil then
+								autoRotate = humanoid.AutoRotate
+							end
+							humanoid.AutoRotate = false
 						end
 
 						me.CFrame = CFrame.new(spot, targetPos)

@@ -224,18 +224,23 @@ end
 -- Still one key per pass rather than both at once: a game will generally drop all but the
 -- first of a burst. With only two keys each comes round twice a second, which is faster
 -- than either cooldown, so nothing is held up waiting its turn.
+-- Pressed every pass, with no rate limit of its own.
+--
+-- There is no reading a cooldown from here, but there is no need to: pressing an ability
+-- that is still cooling does nothing at all. So the way to cast the moment one comes back
+-- is simply to keep asking, and the old quarter second gate only meant an ability could
+-- sit ready for a quarter second doing nothing.
+--
+-- The two keys are still separated by a frame rather than sent together, because a game
+-- will generally act on the first of a burst and drop the rest.
 local function useAbility()
-	if tick() < nextAbility then return end
-	nextAbility = tick() + 0.25
-
-	local key = ABILITY_KEYS[abilityIndex]
-	abilityIndex = abilityIndex % #ABILITY_KEYS + 1
-
-	pcall(function()
-		virtualInput:SendKeyEvent(true, key, false, game)
-		task.wait()
-		virtualInput:SendKeyEvent(false, key, false, game)
-	end)
+	for _, key in ABILITY_KEYS do
+		pcall(function()
+			virtualInput:SendKeyEvent(true, key, false, game)
+			task.wait()
+			virtualInput:SendKeyEvent(false, key, false, game)
+		end)
+	end
 end
 
 
