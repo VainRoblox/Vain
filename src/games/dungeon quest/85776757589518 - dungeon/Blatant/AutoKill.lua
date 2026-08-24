@@ -31,6 +31,50 @@ local DWELL = 0.12
 local STRIKE_INTERVAL = 0.6
 local nextStrike = 0
 
+-- How far apart two enemies can be and still be caught by one swing. A guess at the
+-- weapon's arc rather than a known figure, so it errs small - clustering too eagerly
+-- would have you standing between enemies that a swing cannot actually reach.
+local CLUSTER_RADIUS = 12
+
+-- Picks where to strike, rather than what to strike.
+--
+-- Going to the nearest enemy hits exactly one per trip, and with a wait between trips
+-- that is what made clearing a room slow. Melee swings in an arc, so standing where
+-- several enemies overlap catches them together and the same number of trips does
+-- several times the work.
+--
+-- Ties go to whichever cluster is closest, so it is not crossing the room for a group no
+-- bigger than the one at its feet.
+local function bestCluster(origin)
+	local roots = dq.allEnemies()
+	if #roots == 0 then return nil end
+
+	local bestCentre, bestCount, bestDist
+
+	for _, root in roots do
+		local centre, count = root.Position, 0
+		local sum = Vector3.zero
+
+		for _, other in roots do
+			if (other.Position - root.Position).Magnitude <= CLUSTER_RADIUS then
+				count += 1
+				sum += other.Position
+			end
+		end
+
+		-- The middle of the group rather than the enemy it was measured from, so the
+		-- swing is centred on all of them instead of favouring one edge.
+		centre = sum / count
+		local dist = (centre - origin).Magnitude
+
+		if not bestCount or count > bestCount or (count == bestCount and dist < bestDist) then
+			bestCentre, bestCount, bestDist = centre, count, dist
+		end
+	end
+
+	return bestCentre, bestCount
+end
+
 AutoKill = vain.Categories.Blatant:CreateModule({
 	Name = 'AutoKill',
 	Function = function(callback)
@@ -51,10 +95,10 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 						if tick() < nextStrike then return end
 
 						dq.rescan()
-						local enemy, root = dq.findEnemy()
-						if not (enemy and root) then return end
 
 						local me = entitylib.character.RootPart
+						local targetCentre = bestCluster(me.Position)
+						if not targetCentre then return end
 						-- Captured before moving and returned to afterwards, so the trip
 						-- leaves you exactly where you were rather than drifting a little
 						-- further out with each one.
@@ -65,7 +109,7 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 						-- Approached from the side you are already on, and aimed at the
 						-- target itself so the pitch is right - a swing is a click at the
 						-- centre of the screen, so it lands wherever the camera looks.
-						local targetPos = root.Position
+						local targetPos = targetCentre
 						local away = me.Position - targetPos
 						away = Vector3.new(away.X, 0, away.Z)
 						if away.Magnitude < 0.1 then
@@ -111,5 +155,5 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 			end)
 		end
 	end,
-	Tooltip = 'Darts to the nearest enemy, swings, and returns instantly'
+	Tooltip = 'Darts to wherever the most enemies are in reach, swings, and returns instantly'
 })

@@ -244,6 +244,23 @@ local function useAbility()
 end
 
 
+-- Every live enemy, not just the closest. AutoKill uses this to find where several are
+-- stood together, so one swing can catch more than one of them.
+local function allEnemies()
+	local list = {}
+	for _, model in candidates do
+		-- Re-checked rather than trusted: the list is up to a second old and most of what
+		-- is on it is in the middle of being killed.
+		if model.Parent and isFarmable(model) then
+			local root = rootOf(model)
+			if root then
+				table.insert(list, root)
+			end
+		end
+	end
+	return list
+end
+
 -- Re-exported so the modules can share one implementation of each.
 vain.Libraries.dungeonquest = {
 	isEnemy = isEnemy,
@@ -253,6 +270,7 @@ vain.Libraries.dungeonquest = {
 	swing = swing,
 	useAbility = useAbility,
 	findEnemy = nearestEnemy,
+	allEnemies = allEnemies,
 	rescan = rescan,
 	rootOf = rootOf,
 	combat = {
