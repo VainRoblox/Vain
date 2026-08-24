@@ -31,6 +31,10 @@ local DODGE_DISTANCE = 14
 local STAND_OFF = 2
 -- Just inside melee reach. Higher was out of range of your own swings, and height is not
 -- what keeps you alive anyway - Godmode is, by moving the part you are hit through.
+--
+-- WeaponReach stretches the weapon's own hit check, so with that on there is room to
+-- stand further off. It is left short here regardless, because this has to work whether
+-- that module is on or not, and standing close costs nothing when it is.
 local STAND_UP = 7
 
 -- Attacking through tool:Activate and firetouchinterest does nothing here. That works in
