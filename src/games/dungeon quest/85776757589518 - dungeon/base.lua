@@ -4,6 +4,9 @@ local cloneref = cloneref or function(obj) return obj end
 local playersService = cloneref(game:GetService('Players'))
 local inputService = cloneref(game:GetService('UserInputService'))
 local runService = cloneref(game:GetService('RunService'))
+-- Used as somewhere to park the character during a reparent, so it is never seen
+-- rootless - see Godmode.
+local replicatedStorage = cloneref(game:GetService('ReplicatedStorage'))
 local collectionService = cloneref(game:GetService('CollectionService'))
 
 local gameCamera = workspace.CurrentCamera
