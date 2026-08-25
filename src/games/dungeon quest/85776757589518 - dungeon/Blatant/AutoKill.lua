@@ -46,7 +46,7 @@ local CLUSTER_RADIUS = 12
 -- Ties go to whichever cluster is closest, so it is not crossing the room for a group no
 -- bigger than the one at its feet.
 local function bestCluster(origin)
-	local roots = dq.allEnemies()
+	local roots = dq.enemyParts()
 	if #roots == 0 then return nil end
 
 	local bestCentre, bestCount, bestDist
@@ -85,16 +85,17 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 					-- Guarded, yielding outside, so one bad pass cannot spin or end the
 					-- module for the session.
 					local ok = pcall(function()
-						if not entitylib.isAlive then return end
+						-- Only inside a dungeon: the game says so itself through peaceful
+						-- and busyCasting, which is far better than inferring it from
+						-- whether enemies happen to be visible.
+						if not (entitylib.isAlive and dq.inCombat()) then return end
 
 						-- Abilities are cast from here, before going anywhere. They do not
 						-- need to be near the target, so casting them on the trip would
 						-- only lengthen the time spent in reach.
-						dq.useAbility()
+						dq.castAbilities()
 
 						if tick() < nextStrike then return end
-
-						dq.rescan()
 
 						local me = entitylib.character.RootPart
 						local targetCentre = bestCluster(me.Position)
@@ -103,8 +104,6 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 						-- leaves you exactly where you were rather than drifting a little
 						-- further out with each one.
 						local home = me.CFrame
-
-						dq.equipWeapon()
 
 						-- Approached from the side you are already on, and aimed at the
 						-- target itself so the pitch is right - a swing is a click at the
