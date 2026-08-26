@@ -90,6 +90,18 @@ AutoKill = vain.Categories.Blatant:CreateModule({
 						-- whether enemies happen to be visible.
 						if not (entitylib.isAlive and dq.inCombat()) then return end
 
+						-- Step out of anything thrown before darting in. Auto Farm covers
+						-- boss area attacks through the game's own telegraph bridge; this
+						-- is the other half, for things already in the air.
+						dq.watchProjectiles()
+						local dodge = dq.projectileDodge(entitylib.character.RootPart.Position)
+						if dodge then
+							local me = entitylib.character.RootPart
+							me.CFrame = CFrame.new(dodge)
+							me.AssemblyLinearVelocity = Vector3.zero
+							return
+						end
+
 						-- Abilities are cast from here, before going anywhere. They do not
 						-- need to be near the target, so casting them on the trip would
 						-- only lengthen the time spent in reach.
