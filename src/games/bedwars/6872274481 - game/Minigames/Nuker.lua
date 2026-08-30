@@ -486,7 +486,7 @@ ViewMode = Nuker:CreateDropdown({
 })
 Range = Nuker:CreateSlider({
 	Name = 'Break Range',
-	Tooltip = 'How far you can break blocks from\nThe game allows 18',
+	Tooltip = 'How far you can break blocks from\nGame default is 18',
 	Min = 1,
 	Max = 30,
 	Default = 30,
@@ -496,7 +496,7 @@ Range = Nuker:CreateSlider({
 })
 BreakSpeed = Nuker:CreateSlider({
 	Name = 'Break Speed',
-	Tooltip = 'Delay between blocks, lower is faster\nThe game uses 0.3',
+	Tooltip = 'Delay between blocks, lower is faster\nGame default is 0.3',
 	Min = 0,
 	Max = 0.3,
 	Default = 0.25,
