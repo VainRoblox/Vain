@@ -18,6 +18,12 @@ local LimitItem
 local AutoTool
 local customlist, parts, candidates = {}, {}, {}
 
+-- The block one step further in for each thing being dug towards, so a started hole is
+-- carried on through rather than abandoned for whatever the mode ranks best on the
+-- outer face. Reused rather than rebuilt so breakBlock is handed the same table.
+local tunnel = {}
+local breakOptions = {}
+
 -- Ranks used by the Priority target mode, in the order the categories were tried
 -- before target modes existed.
 local RANK_BED = 1
@@ -338,9 +344,17 @@ local function attemptBreak()
 			-- Self Break has to reach the dig route, not just the target: breakBlock
 			-- tunnels towards a block rather than hitting it directly, so with the check
 			-- on the target alone every block on the way there got broken regardless.
-			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, Range.Value, entryScorers[TargetMode.Value])
+			breakOptions.Range = Range.Value
+			breakOptions.Score = entryScorers[TargetMode.Value]
+			breakOptions.Prefer = tunnel[v]
+
+			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, breakOptions)
 			if not target then return end
 			broke = true
+			-- path maps each block to the one nearer the target, so this is the next step
+			-- inwards. It is only reachable once the block being hit is gone, which is
+			-- exactly when it should be taken.
+			tunnel[v] = path and path[target] or nil
 
 			if Effect.Enabled and path then
 				local currentnode = target
@@ -432,6 +446,7 @@ Nuker = vain.Categories.Minigames:CreateModule({
 			clearHealthbar()
 			table.clear(candidates)
 			table.clear(hitsCache)
+			table.clear(tunnel)
 			for _, v in parts do
 				v:ClearAllChildren()
 				v:Destroy()
@@ -443,7 +458,10 @@ Nuker = vain.Categories.Minigames:CreateModule({
 })
 TargetMode = Nuker:CreateDropdown({
 	Name = 'Target Mode',
-	Tooltip = 'Which block is broken first, measured from you',
+	Tooltip = 'Where the way in starts, measured from you',
+	Function = function()
+		table.clear(tunnel)
+	end,
 	List = {'Smart', 'Nearest', 'Farthest', 'Health', 'Shortest', 'Lowest', 'Highest', 'Random'},
 	Tooltips = {
 		Smart = 'Nearest side in, unless it is much thicker',
