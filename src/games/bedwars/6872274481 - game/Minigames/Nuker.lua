@@ -26,10 +26,6 @@ local RANK_ORE = 3
 local RANK_LUCKY = 4
 local RANK_TESLA = 5
 
--- Walking a dig route is the only expensive thing in here, so Shortest only asks for
--- one from the closest few candidates; the rest sort behind them on distance.
-local PATH_LIMIT = 12
-
 -- Random has to stay put once it has chosen, or every pass reshuffles and the nuker
 -- hops between blocks without ever finishing one. Hashing the position gives an order
 -- that is arbitrary but stable, and the salt makes it a different one each time the
@@ -254,54 +250,65 @@ local function gather(list, rank, localPosition)
 	end
 end
 
-local function blockHits(entry)
-	if not entry.Hits then
-		local ok, hits = pcall(bedwars.getBlockHits, entry.Block, entry.Position)
-		entry.Hits = (ok and hits) or math.huge
+-- Health scores every opening of a structure, which is a store lookup each, so the
+-- answers are held for the length of one pass and dropped with the candidates.
+local hitsCache = {}
+
+local function blockHitsAt(node)
+	local cached = hitsCache[node]
+	if cached then return cached end
+
+	local ok, hits = pcall(function()
+		local block = bedwars.getPlacedBlock(node)
+		return block and bedwars.getBlockHits(block, node) or nil
+	end)
+	hits = (ok and hits) or math.huge
+	hitsCache[node] = hits
+	return hits
+end
+
+--[[
+	A target mode picks the block that actually gets broken, measured from your
+	character - the defences in front of a bed, not the bed sitting behind them. These
+	score the openings breakBlock can start at; ranking only the beds and ore left the
+	choice of which wall to mine to whichever the pathfinder happened to reach first,
+	so standing at one side of a build was no reason for it to break that side.
+	node is a world position, cost is the hits to tunnel from there to the target, and
+	reach is the distance from your character.
+]]
+local entryScorers = {
+	Nearest = function(_, _, reach)
+		return reach
+	end,
+	Farthest = function(_, _, reach)
+		return -reach
+	end,
+	Health = function(node)
+		return blockHitsAt(node)
+	end,
+	Shortest = function(_, cost)
+		return cost
+	end,
+	Lowest = function(node)
+		return node.Y
+	end,
+	Highest = function(node)
+		return -node.Y
+	end,
+	Random = function(node)
+		return randomKey(node)
 	end
-	return entry.Hits
-end
+}
 
-local function pathCost(entry)
-	local ok, cost = pcall(bedwars.getBlockPathCost, entry.Block, not SelfBreak.Enabled, Range.Value)
-	return (ok and cost) or math.huge
-end
-
-local function byDistance(a, b)
-	return a.Distance < b.Distance
-end
-
--- Every mode reduces to one number per candidate, so the sort itself can never throw
--- on a comparison it cannot make.
+-- What to go for is fixed: beds first, then whatever else is switched on, nearest of
+-- each. Which block gets broken on the way in is the target mode's job, and that is
+-- decided per opening in entryScorers rather than here.
 local function rankCandidates()
-	-- Nothing to order, and Shortest would walk a dig route for no reason.
 	if #candidates < 2 then return end
-	local mode = TargetMode and TargetMode.Value or 'Priority'
-
-	if mode == 'Nearest' then
-		for _, entry in candidates do entry.Key = entry.Distance end
-	elseif mode == 'Farthest' then
-		for _, entry in candidates do entry.Key = -entry.Distance end
-	elseif mode == 'Health' then
-		for _, entry in candidates do entry.Key = blockHits(entry) end
-	elseif mode == 'Lowest' then
-		for _, entry in candidates do entry.Key = entry.Position.Y end
-	elseif mode == 'Highest' then
-		for _, entry in candidates do entry.Key = -entry.Position.Y end
-	elseif mode == 'Random' then
-		for _, entry in candidates do entry.Key = randomKey(entry.Position) end
-	elseif mode == 'Shortest' then
-		table.sort(candidates, byDistance)
-		for i, entry in candidates do
-			entry.Key = i <= PATH_LIMIT and pathCost(entry) or math.huge
-		end
-	else
-		for _, entry in candidates do entry.Key = entry.Rank end
-	end
 
 	table.sort(candidates, function(a, b)
-		if a.Key == b.Key then return a.Distance < b.Distance end
-		return a.Key < b.Key
+		if a.Rank == b.Rank then return a.Distance < b.Distance end
+		return a.Rank < b.Rank
 	end)
 end
 
@@ -331,7 +338,7 @@ local function attemptBreak()
 			-- Self Break has to reach the dig route, not just the target: breakBlock
 			-- tunnels towards a block rather than hitting it directly, so with the check
 			-- on the target alone every block on the way there got broken regardless.
-			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, Range.Value)
+			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, Range.Value, entryScorers[TargetMode.Value])
 			if not target then return end
 			broke = true
 
@@ -403,6 +410,7 @@ Nuker = vain.Categories.Minigames:CreateModule({
 
 					local localPosition = entitylib.character.RootPart.Position
 					table.clear(candidates)
+					table.clear(hitsCache)
 					gather(Bed.Enabled and beds, RANK_BED, localPosition)
 					gather(customlist, nil, localPosition)
 					gather(Tesla.Enabled and teslas, RANK_TESLA, localPosition)
@@ -423,6 +431,7 @@ Nuker = vain.Categories.Minigames:CreateModule({
 		else
 			clearHealthbar()
 			table.clear(candidates)
+			table.clear(hitsCache)
 			for _, v in parts do
 				v:ClearAllChildren()
 				v:Destroy()
@@ -434,14 +443,14 @@ Nuker = vain.Categories.Minigames:CreateModule({
 })
 TargetMode = Nuker:CreateDropdown({
 	Name = 'Target Mode',
-	Tooltip = 'Which block is broken first',
-	List = {'Priority', 'Nearest', 'Farthest', 'Health', 'Shortest', 'Lowest', 'Highest', 'Random'},
+	Tooltip = 'Which block is broken first, measured from you',
+	List = {'Smart', 'Nearest', 'Farthest', 'Health', 'Shortest', 'Lowest', 'Highest', 'Random'},
 	Tooltips = {
-		Priority = 'Beds, then your list, ore, lucky blocks, teslas',
+		Smart = 'Nearest side in, unless it is much thicker',
 		Nearest = 'Closest block to you',
 		Farthest = 'Furthest block still in range',
-		Health = 'Fewest hits left, your tool counted',
-		Shortest = 'Cheapest way in, block strength counted',
+		Health = 'Weakest block, your tool counted',
+		Shortest = 'Fewest blocks through to the bed',
 		Lowest = 'Lowest block first, cuts supports',
 		Highest = 'Highest block first',
 		Random = 'No fixed order'

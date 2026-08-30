@@ -1038,20 +1038,50 @@ run(function()
 		Source: https://stackoverflow.com/questions/39355587/speeding-up-dijkstras-algorithm-to-solve-a-3d-maze
 	]]
 	-- Which opening you can actually reach depends on where you stand, so it is chosen
-	-- per call rather than baked into the cache. The globally cheapest one used to win
-	-- outright even when it sat on the far side of a build, which put the break out of
-	-- range and left the nuker stuck on a target it could never start on.
-	local function pickEntry(exposed, maxRange)
-		local origin = entitylib.isAlive and entitylib.character.RootPart.Position
-		local pos, cost = nil, math.huge
+	-- per call rather than baked into the cache. Picking purely on cost was wrong twice
+	-- over: the cheapest opening could sit on the far side of a build, out of range, and
+	-- the walls of a box are usually the same thickness anyway - so with every opening
+	-- tied the winner came down to whichever the hash table happened to yield first, and
+	-- it would just as soon mine the far wall as the one you are standing at.
+	local NEAR_COST_TOLERANCE = 2
+	local NEAR_COST_MARGIN = 2
 
-		for node, dist in exposed do
-			if dist < cost and (not maxRange or not origin or (node - origin).Magnitude <= maxRange) then
-				pos, cost = node, dist
+	-- score lets the caller decide which opening to take - it is the block that actually
+	-- gets broken, so this is what a target mode has to steer. Without one, the near side
+	-- wins unless it would cost substantially more to get through, which is the
+	-- difference between reaching around a thin wall and mining through a thick one.
+	local function pickEntry(exposed, maxRange, score)
+		local origin = entitylib.isAlive and entitylib.character.RootPart.Position
+		local best, bestkey, bestcost = nil, math.huge, math.huge
+		local near, nearreach, nearcost = nil, math.huge, math.huge
+		local cheap, cheapcost = nil, math.huge
+
+		for node, cost in exposed do
+			local reach = origin and (node - origin).Magnitude or 0
+			if maxRange and origin and reach > maxRange then continue end
+
+			if score then
+				local key = score(node, cost, reach)
+				if key and key < bestkey then
+					best, bestkey, bestcost = node, key, cost
+				end
+			else
+				if cost < cheapcost then
+					cheap, cheapcost = node, cost
+				end
+				if reach < nearreach then
+					near, nearreach, nearcost = node, reach, cost
+				end
 			end
 		end
 
-		return pos, cost
+		if score then
+			return best, bestcost, bestkey
+		end
+		if near and nearcost <= (cheapcost * NEAR_COST_TOLERANCE) + NEAR_COST_MARGIN then
+			return near, nearcost, nearcost
+		end
+		return cheap, cheapcost, cheapcost
 	end
 
 	-- avoidOwn routes the tunnel around blocks you placed yourself. The path is what
@@ -1059,13 +1089,13 @@ run(function()
 	-- directly - so a Self Break check on the target alone never prevented your own
 	-- blocks being destroyed on the way there. The flag is part of the cache entry
 	-- because the same target has two different cheapest routes depending on it.
-	local function calculatePath(target, blockpos, avoidOwn, maxRange)
+	local function calculatePath(target, blockpos, avoidOwn, maxRange, score)
 		avoidOwn = avoidOwn == true
 		local cached = cache[blockpos]
 		if cached and cached[4] == avoidOwn then
-			local pos, cost = pickEntry(cached[5], maxRange)
+			local pos, cost, key = pickEntry(cached[5], maxRange, score)
 			if pos then
-				return pos, cost, cached[3]
+				return pos, cost, cached[3], key
 			end
 			return
 		end
@@ -1119,9 +1149,9 @@ run(function()
 			exposed
 		}
 
-		local pos, cost = pickEntry(exposed, maxRange)
+		local pos, cost, key = pickEntry(exposed, maxRange, score)
 		if pos then
-			return pos, cost, path
+			return pos, cost, path, key
 		end
 	end
 
@@ -1138,33 +1168,58 @@ run(function()
 		return handler and handler:getContainedPositions(block) or {block.Position / 3}
 	end
 
-	-- Total hits needed to tunnel to a block, block strength included. Backs Nuker's
-	-- Shortest target mode; the result comes out of the same cache the break itself
-	-- uses, so asking for it costs nothing once the route has been walked.
-	bedwars.getBlockPathCost = function(block, avoidOwn, maxRange)
-		local cost = math.huge
-		for _, v in containedPositions(block) do
-			local dpos, dcost = calculatePath(block, v * 3, avoidOwn, maxRange)
-			if dpos and dcost < cost then
-				cost = dcost
+	bedwars.getBlockHealth = getBlockHealth
+	bedwars.getPlacedBlock = getPlacedBlock
+	bedwars.getBlockHits = getBlockHits
+
+	-- Mirrors what the AutoTool module does for a manual break: select the hotbar slot
+	-- holding the best tool for this block so it is genuinely held, rather than only
+	-- swapping the hand underneath the UI.
+	local function equipBreakTool(block)
+		local blockmeta = bedwars.ItemMeta[block.Name]
+		local breaktype = blockmeta and blockmeta.block and blockmeta.block.breakType
+		local tool = breaktype and store.tools[breaktype]
+		if not tool then return end
+
+		for i, v in store.inventory.hotbar do
+			if v.item and v.item.itemType == tool.itemType then
+				if store.inventory.hotbarSlot ~= i - 1 then
+					-- Dispatched without waiting on the inventory event, unlike the module's
+					-- own switch - this runs inside the break loop and cannot afford to
+					-- block it on an event that may never arrive.
+					pcall(function()
+						bedwars.Store:dispatch({type = 'InventorySelectHotbarSlot', slot = i - 1})
+					end)
+				end
+				break
 			end
 		end
-		return cost
+
+		-- An inventory item only carries a tool instance while it is materialised, and
+		-- switchItem indexes it either way. The best tool for a block is often one sitting
+		-- in the inventory without one, so this threw and took the whole break down with
+		-- it - which is why turning Auto Tool on stopped the nuker breaking anything.
+		if tool.tool then
+			switchItem(tool.tool)
+		end
 	end
-	bedwars.getBlockHealth = getBlockHealth
-	bedwars.getBlockHits = getBlockHits
 
 	-- autoTool: nil keeps the old behaviour of only swapping while no sword swing is in
 	-- flight, true always swaps to the right tool, false leaves your hand alone.
-	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn, autoTool, maxRange)
+	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn, autoTool, maxRange, entryScore)
 		if lplr:GetAttribute('DenyBlockBreak') or not entitylib.isAlive or InfiniteFly.Enabled then return end
 		maxRange = math.min(maxRange or 30, 30)
 		local cost, pos, target, path = math.huge
+		-- A bed covers several block positions, each with its own way in. They are
+		-- compared on whatever the target mode is ranking by, so the mode's pick is not
+		-- quietly overridden by a cheaper tunnel into the bed's other half.
+		local bestkey = math.huge
 
 		for _, v in containedPositions(block) do
-			local dpos, dcost, dpath = calculatePath(block, v * 3, avoidOwn, maxRange)
-			if dpos and dcost < cost then
-				cost, pos, target, path = dcost, dpos, v * 3, dpath
+			local dpos, dcost, dpath, dkey = calculatePath(block, v * 3, avoidOwn, maxRange, entryScore)
+			dkey = dkey or dcost
+			if dpos and dkey < bestkey then
+				bestkey, cost, pos, target, path = dkey, dcost, dpos, v * 3, dpath
 			end
 		end
 
@@ -1177,12 +1232,7 @@ run(function()
 			if avoidOwn and dblock:GetAttribute('PlacedByUserId') == lplr.UserId then return end
 
 			if autoTool ~= false and (autoTool or (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4) then
-				local toolmeta = bedwars.ItemMeta[dblock.Name]
-				local breaktype = toolmeta and toolmeta.block and toolmeta.block.breakType
-				local tool = breaktype and store.tools[breaktype]
-				if tool then
-					switchItem(tool.tool)
-				end
+				equipBreakTool(dblock)
 			end
 
 			if blockhealthbar.blockHealth == -1 or dpos ~= blockhealthbar.breakingBlockPosition then
