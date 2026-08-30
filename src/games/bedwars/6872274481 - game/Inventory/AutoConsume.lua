@@ -10,6 +10,7 @@ local GoldenApple
 local ShieldPotion
 local potions
 local consuming = false
+local lastHealth
 
 --[[
 	Blatant sends the consume straight off without the item ever being in your hand.
@@ -106,6 +107,19 @@ local function hasEffect(effect)
 	return lplr.Character and lplr.Character:GetAttribute('StatusEffect_'..effect)
 end
 
+-- Food is for when your health is going the wrong way. Health ticking back up is still a
+-- change and still under the threshold, so answering it meant eating another apple part
+-- way through the one already working, and a golden apple's regen would eat the lot.
+-- Holding steady still counts: that is being hurt and not recovering.
+local function notRecovering()
+	local current = lplr.Character and lplr.Character:GetAttribute('Health')
+	if not current then return false end
+
+	local previous = lastHealth
+	lastHealth = current
+	return previous == nil or current <= previous
+end
+
 local function consumeCheck(attribute)
 	if not entitylib.isAlive then return end
 
@@ -122,7 +136,7 @@ local function consumeCheck(attribute)
 		end
 	end
 
-	if Apple.Enabled and (not attribute or attribute:find('Health')) then
+	if Apple.Enabled and (not attribute or attribute:find('Health')) and notRecovering() then
 		if (lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) <= (Health.Value / 100) then
 			-- Golden apples come before plain ones, and only while their buff is not
 			-- already running - eating a second one on top of the first is wasted.
@@ -156,6 +170,7 @@ AutoConsume = vain.Categories.Inventory:CreateModule({
 			consumeCheck()
 		else
 			consuming = false
+			lastHealth = nil
 		end
 	end,
 	Tooltip = 'Automatically heals for you when health or shield is under threshold.'
