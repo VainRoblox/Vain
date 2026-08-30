@@ -18,9 +18,9 @@ local LimitItem
 local AutoTool
 local customlist, parts, candidates = {}, {}, {}
 
--- The block one step further in for each thing being dug towards, so a started hole is
--- carried on through rather than abandoned for whatever the mode ranks best on the
--- outer face. Reused rather than rebuilt so breakBlock is handed the same table.
+-- The route into each thing being dug towards, nearest end first, so a started hole is
+-- carried on down rather than abandoned for whatever the mode ranks best on the outer
+-- face. One table per target, handed straight to breakBlock and refilled by it.
 local tunnel = {}
 local breakOptions = {}
 
@@ -344,17 +344,22 @@ local function attemptBreak()
 			-- Self Break has to reach the dig route, not just the target: breakBlock
 			-- tunnels towards a block rather than hitting it directly, so with the check
 			-- on the target alone every block on the way there got broken regardless.
+			local route = tunnel[v]
+			if not route then
+				route = {}
+				tunnel[v] = route
+			end
+
 			breakOptions.Range = Range.Value
 			breakOptions.Score = entryScorers[TargetMode.Value]
-			breakOptions.Prefer = tunnel[v]
+			-- Read on the way in and refilled on the way out, so the route carries from
+			-- one hit to the next. A break that never went out leaves it untouched.
+			breakOptions.Prefer = route
+			breakOptions.Route = route
 
 			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, breakOptions)
 			if not target then return end
 			broke = true
-			-- path maps each block to the one nearer the target, so this is the next step
-			-- inwards. It is only reachable once the block being hit is gone, which is
-			-- exactly when it should be taken.
-			tunnel[v] = path and path[target] or nil
 
 			if Effect.Enabled and path then
 				local currentnode = target
