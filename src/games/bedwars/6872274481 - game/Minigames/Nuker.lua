@@ -257,6 +257,13 @@ end
 -- answers are held for the length of one pass and dropped with the candidates.
 local hitsCache = {}
 
+-- Where the last block to come down anywhere was, so a dig can follow the damage.
+local lastBreak = nil
+
+local function cursorPosition()
+	return inputService.TouchEnabled and gameCamera.ViewportSize / 2 or inputService:GetMouseLocation()
+end
+
 local function blockHitsAt(node)
 	local cached = hitsCache[node]
 	if cached then return cached end
@@ -300,6 +307,17 @@ local entryScorers = {
 	end,
 	Random = function(node)
 		return randomKey(node)
+	end,
+	Cursor = function(node)
+		local screen, visible = gameCamera:WorldToViewportPoint(node)
+		if not visible then return math.huge end
+		return (cursorPosition() - Vector2.new(screen.X, screen.Y)).Magnitude
+	end,
+	-- Falls back to whatever is nearest until something has actually broken, so the mode
+	-- does nothing surprising at the start of a round.
+	['Recently Hit'] = function(node, _, reach)
+		if not lastBreak then return reach end
+		return (node - lastBreak).Magnitude
 	end
 }
 
@@ -406,6 +424,10 @@ Nuker = vain.Categories.Minigames:CreateModule({
 				table.insert(parts, part)
 			end
 
+			Nuker:Clean(vainEvents.BreakBlockEvent.Event:Connect(function(data)
+				lastBreak = data.blockRef.blockPosition * 3
+			end))
+
 			local beds = collection('bed', Nuker)
 			-- Teslas carry a real tag, so they are collected rather than name matched.
 			-- 'tesla' and 'tesla_trap' are ItemType values, not tags.
@@ -450,6 +472,7 @@ Nuker = vain.Categories.Minigames:CreateModule({
 				end
 			until not Nuker.Enabled
 		else
+			lastBreak = nil
 			clearHealthbar()
 			table.clear(candidates)
 			table.clear(hitsCache)
@@ -469,10 +492,12 @@ TargetMode = Nuker:CreateDropdown({
 	Function = function()
 		table.clear(tunnel)
 	end,
-	List = {'Smart', 'Nearest', 'Farthest', 'Health', 'Shortest', 'Lowest', 'Highest', 'Random'},
+	List = {'Smart', 'Nearest', 'Cursor', 'Recently Hit', 'Farthest', 'Health', 'Shortest', 'Lowest', 'Highest', 'Random'},
 	Tooltips = {
 		Smart = 'Nearest side in, unless it is much thicker',
 		Nearest = 'Closest block to you',
+		Cursor = 'Whatever is under your cursor',
+		['Recently Hit'] = 'Closest to the last block broken',
 		Farthest = 'Furthest block still in range',
 		Health = 'Weakest block, your tool counted',
 		Shortest = 'Fewest blocks through to the bed',
