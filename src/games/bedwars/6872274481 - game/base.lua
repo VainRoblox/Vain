@@ -47,6 +47,8 @@ for old, new in {
 	['Break speed'] = 'Break Speed',
 	['Update rate'] = 'Update Rate',
 	['Limit to items'] = 'Limit to Items',
+	Quantity = 'Show Amount',
+	['Full Layers'] = 'Highlight Full Layers',
 	Camera = 'View Mode',
 	['Camera Mode'] = 'View Mode'
 } do

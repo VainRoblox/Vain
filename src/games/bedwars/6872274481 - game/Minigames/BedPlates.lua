@@ -270,14 +270,14 @@ UpdateRate = BedPlates:CreateSlider({
 	Suffix = 'hz'
 })
 Quantity = BedPlates:CreateToggle({
-	Name = 'Quantity',
+	Name = 'Show Amount',
 	Tooltip = 'Shows how many of each block there are',
 	Function = refreshAll,
 	Default = true
 })
 FullLayers = BedPlates:CreateToggle({
-	Name = 'Full Layers',
-	Tooltip = 'Highlights blocks that cover a whole layer on their own',
+	Name = 'Highlight Full Layers',
+	Tooltip = 'Marks blocks that cover a whole layer on their own',
 	Function = function(callback)
 		if FullColor.Object then
 			FullColor.Object.Visible = callback
