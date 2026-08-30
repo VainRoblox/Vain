@@ -4,6 +4,8 @@ local BreakSpeed
 local UpdateRate
 local Angle
 local SkipPockets
+local HitChance
+local Chance = {}
 local TargetMode
 local ViewMode
 local Custom
@@ -373,6 +375,13 @@ local function attemptBreak()
 		-- used to read as a successful hit, so the pass stopped here and the same
 		-- unreachable block was picked again every time. Only a returned block counts.
 		local broke = false
+		-- A miss is a swing that went out and did not land, so it costs the same time as a
+		-- hit would rather than being retried on the next block straight away.
+		if HitChance.Enabled and math.random(100) > Chance.Value then
+			task.wait(BreakSpeed.Value)
+			return true
+		end
+
 		local ok2 = pcall(function()
 			-- Self Break has to reach the dig route, not just the target: breakBlock
 			-- tunnels towards a block rather than hitting it directly, so with the check
@@ -635,6 +644,25 @@ CustomHealth = Nuker:CreateToggle({
 Animation = Nuker:CreateToggle({Name = 'Animation', Tooltip = 'Plays the break animation'})
 SelfBreak = Nuker:CreateToggle({Name = 'Self Break', Tooltip = 'Also breaks blocks you placed yourself'})
 InstantBreak = Nuker:CreateToggle({Name = 'Instant Break', Tooltip = 'Breaks blocks in a single hit'})
+HitChance = Nuker:CreateToggle({
+	Name = 'Hit Chance',
+	Tooltip = 'Misses some swings on purpose',
+	Function = function(callback)
+		if Chance.Object then
+			Chance.Object.Visible = callback
+		end
+	end
+})
+Chance = Nuker:CreateSlider({
+	Name = 'Chance',
+	Tooltip = 'Percent of swings that land',
+	Min = 1,
+	Max = 100,
+	Default = 90,
+	Suffix = '%',
+	Visible = false,
+	Darker = true
+})
 SkipPockets = Nuker:CreateToggle({
 	Name = 'Ignore Air Pockets',
 	Tooltip = 'Never start a dig inside a sealed gap',
