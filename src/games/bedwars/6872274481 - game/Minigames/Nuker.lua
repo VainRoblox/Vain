@@ -15,6 +15,7 @@ local Animation
 local SelfBreak
 local InstantBreak
 local LimitItem
+local AutoTool
 local customlist, parts, candidates = {}, {}, {}
 
 -- Ranks used by the Priority target mode, in the order the categories were tried
@@ -28,6 +29,17 @@ local RANK_TESLA = 5
 -- Walking a dig route is the only expensive thing in here, so Shortest only asks for
 -- one from the closest few candidates; the rest sort behind them on distance.
 local PATH_LIMIT = 12
+
+-- Random has to stay put once it has chosen, or every pass reshuffles and the nuker
+-- hops between blocks without ever finishing one. Hashing the position gives an order
+-- that is arbitrary but stable, and the salt makes it a different one each time the
+-- module is switched on.
+local randomSalt = 0
+
+local function randomKey(pos)
+	local n = math.sin((pos.X * 12.9898) + (pos.Y * 78.233) + (pos.Z * 37.719) + randomSalt) * 43758.5453
+	return n - math.floor(n)
+end
 
 local function blockMeta(name)
 	local meta = bedwars.ItemMeta[name]
@@ -251,7 +263,7 @@ local function blockHits(entry)
 end
 
 local function pathCost(entry)
-	local ok, cost = pcall(bedwars.getBlockPathCost, entry.Block, not SelfBreak.Enabled)
+	local ok, cost = pcall(bedwars.getBlockPathCost, entry.Block, not SelfBreak.Enabled, Range.Value)
 	return (ok and cost) or math.huge
 end
 
@@ -277,7 +289,7 @@ local function rankCandidates()
 	elseif mode == 'Highest' then
 		for _, entry in candidates do entry.Key = -entry.Position.Y end
 	elseif mode == 'Random' then
-		for _, entry in candidates do entry.Key = math.random() end
+		for _, entry in candidates do entry.Key = randomKey(entry.Position) end
 	elseif mode == 'Shortest' then
 		table.sort(candidates, byDistance)
 		for i, entry in candidates do
@@ -310,12 +322,20 @@ local function attemptBreak()
 			if not (held and held.breakBlock) then continue end
 		end
 
+		-- pcall succeeding only means nothing threw. breakBlock returns quietly when the
+		-- target is out of reach, has no route left, or is one of your own - all of which
+		-- used to read as a successful hit, so the pass stopped here and the same
+		-- unreachable block was picked again every time. Only a returned block counts.
+		local broke = false
 		local ok2 = pcall(function()
 			-- Self Break has to reach the dig route, not just the target: breakBlock
 			-- tunnels towards a block rather than hitting it directly, so with the check
 			-- on the target alone every block on the way there got broken regardless.
-			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled)
-			if path then
+			local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, not SelfBreak.Enabled, AutoTool.Enabled, Range.Value)
+			if not target then return end
+			broke = true
+
+			if Effect.Enabled and path then
 				local currentnode = target
 				for _, part in parts do
 					part.Position = currentnode or Vector3.zero
@@ -326,7 +346,7 @@ local function attemptBreak()
 				end
 			end
 		end)
-		if ok2 then
+		if ok2 and broke then
 			task.wait(InstantBreak.Enabled and (store.damageBlockFail > tick() and 4.5 or 0) or BreakSpeed.Value)
 			return true
 		end
@@ -339,6 +359,8 @@ Nuker = vain.Categories.Minigames:CreateModule({
 	Name = 'Nuker',
 	Function = function(callback)
 		if callback then
+			randomSalt = math.random() * 1000
+
 			for _ = 1, 30 do
 				local part = Instance.new('Part')
 				part.Anchored = true
@@ -514,6 +536,11 @@ CustomHealth = Nuker:CreateToggle({
 Animation = Nuker:CreateToggle({Name = 'Animation', Tooltip = 'Plays the break animation'})
 SelfBreak = Nuker:CreateToggle({Name = 'Self Break', Tooltip = 'Also breaks blocks you placed yourself'})
 InstantBreak = Nuker:CreateToggle({Name = 'Instant Break', Tooltip = 'Breaks blocks in a single hit'})
+AutoTool = Nuker:CreateToggle({
+	Name = 'Auto Tool',
+	Tooltip = 'Swaps to the best tool for each block',
+	Default = true
+})
 LimitItem = Nuker:CreateToggle({
 	Name = 'Limit to Items',
 	Tooltip = 'Only breaks when tools are held'

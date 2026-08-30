@@ -1037,16 +1037,37 @@ run(function()
 		Pathfinding using a luau version of dijkstra's algorithm
 		Source: https://stackoverflow.com/questions/39355587/speeding-up-dijkstras-algorithm-to-solve-a-3d-maze
 	]]
+	-- Which opening you can actually reach depends on where you stand, so it is chosen
+	-- per call rather than baked into the cache. The globally cheapest one used to win
+	-- outright even when it sat on the far side of a build, which put the break out of
+	-- range and left the nuker stuck on a target it could never start on.
+	local function pickEntry(exposed, maxRange)
+		local origin = entitylib.isAlive and entitylib.character.RootPart.Position
+		local pos, cost = nil, math.huge
+
+		for node, dist in exposed do
+			if dist < cost and (not maxRange or not origin or (node - origin).Magnitude <= maxRange) then
+				pos, cost = node, dist
+			end
+		end
+
+		return pos, cost
+	end
+
 	-- avoidOwn routes the tunnel around blocks you placed yourself. The path is what
 	-- actually gets broken - breakBlock digs along it rather than hitting the target
 	-- directly - so a Self Break check on the target alone never prevented your own
 	-- blocks being destroyed on the way there. The flag is part of the cache entry
 	-- because the same target has two different cheapest routes depending on it.
-	local function calculatePath(target, blockpos, avoidOwn)
+	local function calculatePath(target, blockpos, avoidOwn, maxRange)
 		avoidOwn = avoidOwn == true
 		local cached = cache[blockpos]
 		if cached and cached[4] == avoidOwn then
-			return cached[1], cached[2], cached[3]
+			local pos, cost = pickEntry(cached[5], maxRange)
+			if pos then
+				return pos, cost, cached[3]
+			end
+			return
 		end
 		local visited, unvisited, distances, air, path = {}, {{0, blockpos}}, {[blockpos] = 0}, {}, {}
 
@@ -1078,20 +1099,28 @@ run(function()
 			end
 		end
 
-		local pos, cost = nil, math.huge
+		-- Only the openings are kept, not the whole distance map, so a cached route
+		-- stays small enough to hold one per target.
+		local exposed = {}
 		for node in air do
-			if distances[node] < cost then
-				pos, cost = node, distances[node]
-			end
+			exposed[node] = distances[node]
 		end
+		if not next(exposed) then return end
 
+		-- Cached even when nothing is reachable from where you stand right now, keyed on
+		-- the target's own position for invalidation. Walking the route again on every
+		-- pass just to rediscover that it is still out of reach costs far more than
+		-- holding on to it until a block nearby actually changes.
+		cache[blockpos] = {
+			blockpos,
+			0,
+			path,
+			avoidOwn,
+			exposed
+		}
+
+		local pos, cost = pickEntry(exposed, maxRange)
 		if pos then
-			cache[blockpos] = {
-				pos,
-				cost,
-				path,
-				avoidOwn
-			}
 			return pos, cost, path
 		end
 	end
@@ -1112,10 +1141,10 @@ run(function()
 	-- Total hits needed to tunnel to a block, block strength included. Backs Nuker's
 	-- Shortest target mode; the result comes out of the same cache the break itself
 	-- uses, so asking for it costs nothing once the route has been walked.
-	bedwars.getBlockPathCost = function(block, avoidOwn)
+	bedwars.getBlockPathCost = function(block, avoidOwn, maxRange)
 		local cost = math.huge
 		for _, v in containedPositions(block) do
-			local dpos, dcost = calculatePath(block, v * 3, avoidOwn)
+			local dpos, dcost = calculatePath(block, v * 3, avoidOwn, maxRange)
 			if dpos and dcost < cost then
 				cost = dcost
 			end
@@ -1125,28 +1154,32 @@ run(function()
 	bedwars.getBlockHealth = getBlockHealth
 	bedwars.getBlockHits = getBlockHits
 
-	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn)
+	-- autoTool: nil keeps the old behaviour of only swapping while no sword swing is in
+	-- flight, true always swaps to the right tool, false leaves your hand alone.
+	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn, autoTool, maxRange)
 		if lplr:GetAttribute('DenyBlockBreak') or not entitylib.isAlive or InfiniteFly.Enabled then return end
+		maxRange = math.min(maxRange or 30, 30)
 		local cost, pos, target, path = math.huge
 
 		for _, v in containedPositions(block) do
-			local dpos, dcost, dpath = calculatePath(block, v * 3, avoidOwn)
+			local dpos, dcost, dpath = calculatePath(block, v * 3, avoidOwn, maxRange)
 			if dpos and dcost < cost then
 				cost, pos, target, path = dcost, dpos, v * 3, dpath
 			end
 		end
 
 		if pos then
-			if (entitylib.character.RootPart.Position - pos).Magnitude > 30 then return end
+			if (entitylib.character.RootPart.Position - pos).Magnitude > maxRange then return end
 			local dblock, dpos = getPlacedBlock(pos)
 			if not dblock then return end
 			-- The route is meant to avoid these already; this catches the case where the
 			-- target itself is one of your own blocks.
 			if avoidOwn and dblock:GetAttribute('PlacedByUserId') == lplr.UserId then return end
 
-			if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4 then
-				local breaktype = bedwars.ItemMeta[dblock.Name].block.breakType
-				local tool = store.tools[breaktype]
+			if autoTool ~= false and (autoTool or (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4) then
+				local toolmeta = bedwars.ItemMeta[dblock.Name]
+				local breaktype = toolmeta and toolmeta.block and toolmeta.block.breakType
+				local tool = breaktype and store.tools[breaktype]
 				if tool then
 					switchItem(tool.tool)
 				end
@@ -1211,9 +1244,10 @@ run(function()
 				end
 			end)
 
-			if effects then
-				return pos, path, target
-			end
+			-- Returned whether or not effects are on. Without this a target that could not
+			-- be reached was indistinguishable from a hit that landed, so the caller kept
+			-- picking the same unreachable block instead of moving to the next one.
+			return pos, path, target
 		end
 	end
 
