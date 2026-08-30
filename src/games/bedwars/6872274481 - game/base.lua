@@ -1119,7 +1119,13 @@ run(function()
 		-- not enough: while that one is being broken the one after it is still buried, so
 		-- there was nothing to prefer and the scoring below picked whatever sat closest on
 		-- the outer face - which is never the block at the back of the hole.
-		if prefer then
+		--
+		-- None of that applies until the route's first block has actually come down. While
+		-- it is still standing nothing has been committed to yet, so the mode gets to pick
+		-- again every pass and walking round a build moves the dig to whatever is nearest
+		-- from where you now are. Past that point the route has to be seen through, or the
+		-- tunnel would keep restarting at the surface and never reach the bed.
+		if prefer and prefer[1] and not exposed[prefer[1]] then
 			for _, node in prefer do
 				if exposed[node] and allowed(node, origin and (node - origin).Magnitude or 0) then
 					return node, exposed[node], -math.huge
@@ -1424,15 +1430,16 @@ run(function()
 				end
 			end)
 
-			-- Only replaced when this is a fresh dig, which is what bestkey being anything
-			-- other than the value pickEntry returns for a carried-on route tells us.
-			-- Refilling it on every hit let it drift: routes of the same length tie all the
-			-- time, each recompute can hand back a different one of them, and a dig that
-			-- started straight would bend partway through for no reason anyone could see.
+			-- Replaced only when the dig moves to a different first block. Following an
+			-- established route leaves it alone, and so does hitting the same block again:
+			-- routes of the same length tie all the time and each recompute can hand back a
+			-- different one of them, so rebuilding on every hit made a straight dig bend
+			-- partway through for no reason anyone could see.
 			--
 			-- Built here rather than by the caller because breakBlock yields above, and by
 			-- the time it returns the route may have been dropped from the cache.
-			if options.Route and bestkey ~= -math.huge then
+			local followed = bestkey == -math.huge
+			if options.Route and not followed and options.Route[1] ~= pos then
 				routeFrom(pos, path, options.Route)
 			end
 

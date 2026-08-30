@@ -39,7 +39,7 @@ local IGNORED = {
 	layer either, it just is not part of anybody's defence.
 ]]
 local function scanBed(bed)
-	local names, counts, layers, open = {}, {}, {}, {}
+	local names, counts, layers, open, mixed = {}, {}, {}, {}, {}
 	local seen, frontier, visited = {}, {}, 0
 
 	-- Straight off the block handler rather than assuming which way the bed lies, so a
@@ -70,7 +70,11 @@ local function scanBed(bed)
 
 				-- Still stepped through, so a wrap with ore embedded in it is followed all
 				-- the way round, and still solid, so it does not read as a hole either.
-				if not IGNORED[block.Name] then
+				if IGNORED[block.Name] then
+					-- It does stop the layer being a full layer of anything though. A spot
+					-- taken by a generator is a spot nobody wrapped, whatever is around it.
+					mixed[depth] = true
+				else
 					if not table.find(names, block.Name) then
 						table.insert(names, block.Name)
 					end
@@ -89,7 +93,7 @@ local function scanBed(bed)
 
 	local full = {}
 	for depth, types in layers do
-		if open[depth] then continue end
+		if open[depth] or mixed[depth] then continue end
 
 		local only, kinds = nil, 0
 		for name in types do
