@@ -3,6 +3,7 @@ local Range
 local BreakSpeed
 local UpdateRate
 local Angle
+local SkipPockets
 local TargetMode
 local ViewMode
 local Custom
@@ -384,6 +385,7 @@ local function attemptBreak()
 
 			breakOptions.Range = Range.Value
 			breakOptions.Angle = Angle.Value
+			breakOptions.SkipPockets = SkipPockets.Enabled
 			breakOptions.Score = entryScorers[TargetMode.Value]
 			-- Read on the way in and refilled on the way out, so the route carries from
 			-- one hit to the next. A break that never went out leaves it untouched.
@@ -633,6 +635,11 @@ CustomHealth = Nuker:CreateToggle({
 Animation = Nuker:CreateToggle({Name = 'Animation', Tooltip = 'Plays the break animation'})
 SelfBreak = Nuker:CreateToggle({Name = 'Self Break', Tooltip = 'Also breaks blocks you placed yourself'})
 InstantBreak = Nuker:CreateToggle({Name = 'Instant Break', Tooltip = 'Breaks blocks in a single hit'})
+SkipPockets = Nuker:CreateToggle({
+	Name = 'Ignore Air Pockets',
+	Tooltip = 'Never start a dig inside a sealed gap',
+	Default = true
+})
 AutoTool = Nuker:CreateToggle({
 	Name = 'Auto Tool',
 	Tooltip = 'Swaps to the best tool for each block',
