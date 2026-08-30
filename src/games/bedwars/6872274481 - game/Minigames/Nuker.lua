@@ -508,10 +508,10 @@ BreakSpeed = Nuker:CreateSlider({
 })
 Angle = Nuker:CreateSlider({
 	Name = 'Angle',
-	Tooltip = 'How far from where you are looking a block may be\n180 breaks behind you too',
+	Tooltip = 'How wide a cone in front of you blocks break in\n360 breaks behind you too',
 	Min = 1,
-	Max = 180,
-	Default = 180,
+	Max = 360,
+	Default = 90,
 	Suffix = 'degrees'
 })
 UpdateRate = Nuker:CreateSlider({
