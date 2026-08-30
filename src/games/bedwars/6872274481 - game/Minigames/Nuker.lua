@@ -96,11 +96,7 @@ end
 -- which matches what you see on screen.
 local function viewAllowed()
 	if not ViewMode or ViewMode.Value == 'Both' then return true end
-	local head = entitylib.character and entitylib.character.Head
-	if not head then return true end
-
-	local firstperson = (gameCamera.CFrame.Position - head.Position).Magnitude <= 1
-	return firstperson == (ViewMode.Value == 'First Person')
+	return bedwars.isFirstPerson() == (ViewMode.Value == 'First Person')
 end
 
 --[[
