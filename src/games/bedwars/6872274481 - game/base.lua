@@ -1214,6 +1214,7 @@ run(function()
 
 	bedwars.getBlockHealth = getBlockHealth
 	bedwars.getPlacedBlock = getPlacedBlock
+	bedwars.getContainedPositions = containedPositions
 
 	-- First person puts the camera inside your own head. The head is looked up live and
 	-- the gap is given a little room: a cached head goes stale across a respawn and then
