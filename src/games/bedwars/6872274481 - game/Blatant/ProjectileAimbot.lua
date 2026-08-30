@@ -6,7 +6,7 @@ local FOV
 local Range
 local HitChance
 local OtherProjectiles
-local Camera
+local ViewMode
 local InstantCharge
 local ChargeSpeed
 local SilentBeam
@@ -40,13 +40,13 @@ end
 -- First person puts the camera inside your own head, so the gap between the camera and
 -- the head is what separates the two views. Shiftlock still counts as third person here,
 -- which matches what you see on screen.
-local function cameraAllowed()
-	if Camera.Value == 'Both' then return true end
+local function viewAllowed()
+	if ViewMode.Value == 'Both' then return true end
 	local head = entitylib.character and entitylib.character.Head
 	if not head then return true end
 
 	local firstperson = (gameCamera.CFrame.Position - head.Position).Magnitude <= 1
-	return firstperson == (Camera.Value == 'First Person')
+	return firstperson == (ViewMode.Value == 'First Person')
 end
 
 -- Whichever of the two is closer to your cursor right now.
@@ -122,7 +122,7 @@ local function solve(self, projmeta, worldmeta, origin, shootpos)
 	-- projectile that actually leaves. Handing the arc straight back leaves it pointing
 	-- wherever your crosshair points, so only the shot itself is corrected.
 	if SilentBeam.Enabled and worldmeta then return nil end
-	if not cameraAllowed() then return nil end
+	if not viewAllowed() then return nil end
 
 	if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
 		return nil
@@ -301,14 +301,14 @@ for _, v in extramethods do
 	table.insert(methods, v)
 end
 
-Camera = ProjectileAimbot:CreateDropdown({
-	Name = 'Camera',
+ViewMode = ProjectileAimbot:CreateDropdown({
+	Name = 'View Mode',
 	Tooltip = 'Which camera view this aims in',
 	List = {'Both', 'First Person', 'Third Person'},
 	Tooltips = {
 		Both = 'Aims in either view',
-		['First Person'] = 'Only aims while the camera is in your head',
-		['Third Person'] = 'Only aims while the camera is behind you'
+		['First Person'] = 'Only while the camera is in your head',
+		['Third Person'] = 'Only while the camera is behind you'
 	}
 })
 Sort = ProjectileAimbot:CreateDropdown({

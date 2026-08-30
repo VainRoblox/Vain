@@ -1442,13 +1442,13 @@ local lplr = playersService.LocalPlayer
 
 	ViewMode = AimAssist:CreateDropdown({
 		Name = 'View Mode',
-		List = {'First Person', 'Third Person', 'Both'},
+		List = {'Both', 'First Person', 'Third Person'},
 		Default = 'Both',
-		Tooltip = 'Only aim in first person, third person, or always',
-		ItemTooltips = {
-			['First Person'] = 'Assist only activates in first-person camera mode',
-			['Third Person'] = 'Assist only activates in third-person camera mode',
-			Both = 'Assist activates in both camera modes',
+		Tooltip = 'Which camera view this aims in',
+		Tooltips = {
+			Both = 'Aims in either view',
+			['First Person'] = 'Only while the camera is in your head',
+			['Third Person'] = 'Only while the camera is behind you'
 		},
 	})
 
@@ -8573,16 +8573,16 @@ kitRun(function()
     })
     
     SwitchMode = Gingerbread:CreateDropdown({
-        Name = 'Camera Mode',
+        Name = 'View Mode',
         List = {'Both', 'First Person', 'Third Person'},
         Default = 'Both',
         Visible = false,
-        ItemTooltips = {
-            Both = 'Module works in both first-person and third-person camera modes',
-            ['First Person'] = 'Module only activates in first-person camera mode',
-            ['Third Person'] = 'Module only activates in third-person camera mode',
+        Tooltips = {
+            Both = 'Works in either view',
+            ['First Person'] = 'Only while the camera is in your head',
+            ['Third Person'] = 'Only while the camera is behind you'
         },
-        Tooltip = 'Which camera mode to work in'
+        Tooltip = 'Which camera view this works in'
     })
 end)
 

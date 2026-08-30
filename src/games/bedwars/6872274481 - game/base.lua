@@ -32,6 +32,27 @@ local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
 local vain = shared.vain
+
+-- Profiles key everything by name, so a rename would otherwise silently reset whatever
+-- was saved under the old one. These are consulted only when the saved name matches
+-- nothing, so a name still in use by another game is never redirected.
+vain.Renames = vain.Renames or {Modules = {}, Options = {}}
+for old, new in {
+	Breaker = 'Nuker'
+} do
+	vain.Renames.Modules[old] = new
+end
+for old, new in {
+	['Break range'] = 'Break Range',
+	['Break speed'] = 'Break Speed',
+	['Update rate'] = 'Update Rate',
+	['Limit to items'] = 'Limit to Items',
+	Camera = 'View Mode',
+	['Camera Mode'] = 'View Mode'
+} do
+	vain.Renames.Options[old] = new
+end
+
 local entitylib = vain.Libraries.entity
 local targetinfo = vain.Libraries.targetinfo
 local sessioninfo = vain.Libraries.sessioninfo
@@ -1016,9 +1037,16 @@ run(function()
 		Pathfinding using a luau version of dijkstra's algorithm
 		Source: https://stackoverflow.com/questions/39355587/speeding-up-dijkstras-algorithm-to-solve-a-3d-maze
 	]]
-	local function calculatePath(target, blockpos)
-		if cache[blockpos] then
-			return unpack(cache[blockpos])
+	-- avoidOwn routes the tunnel around blocks you placed yourself. The path is what
+	-- actually gets broken - breakBlock digs along it rather than hitting the target
+	-- directly - so a Self Break check on the target alone never prevented your own
+	-- blocks being destroyed on the way there. The flag is part of the cache entry
+	-- because the same target has two different cheapest routes depending on it.
+	local function calculatePath(target, blockpos, avoidOwn)
+		avoidOwn = avoidOwn == true
+		local cached = cache[blockpos]
+		if cached and cached[4] == avoidOwn then
+			return cached[1], cached[2], cached[3]
 		end
 		local visited, unvisited, distances, air, path = {}, {{0, blockpos}}, {[blockpos] = 0}, {}, {}
 
@@ -1033,7 +1061,8 @@ run(function()
 				if visited[side] then continue end
 
 				local block = getPlacedBlock(side)
-				if not block or block:GetAttribute('NoBreak') or block == target then
+				if not block or block:GetAttribute('NoBreak') or block == target
+					or (avoidOwn and block:GetAttribute('PlacedByUserId') == lplr.UserId) then
 					if not block then
 						air[node[2]] = true
 					end
@@ -1060,7 +1089,8 @@ run(function()
 			cache[blockpos] = {
 				pos,
 				cost,
-				path
+				path,
+				avoidOwn
 			}
 			return pos, cost, path
 		end
@@ -1073,13 +1103,34 @@ run(function()
 		end
 	end
 
-	bedwars.breakBlock = function(block, effects, anim, customHealthbar)
-		if lplr:GetAttribute('DenyBlockBreak') or not entitylib.isAlive or InfiniteFly.Enabled then return end
+	-- Every position a block occupies, so multi-part blocks are pathed to correctly.
+	local function containedPositions(block)
 		local handler = bedwars.BlockController:getHandlerRegistry():getHandler(block.Name)
+		return handler and handler:getContainedPositions(block) or {block.Position / 3}
+	end
+
+	-- Total hits needed to tunnel to a block, block strength included. Backs Nuker's
+	-- Shortest target mode; the result comes out of the same cache the break itself
+	-- uses, so asking for it costs nothing once the route has been walked.
+	bedwars.getBlockPathCost = function(block, avoidOwn)
+		local cost = math.huge
+		for _, v in containedPositions(block) do
+			local dpos, dcost = calculatePath(block, v * 3, avoidOwn)
+			if dpos and dcost < cost then
+				cost = dcost
+			end
+		end
+		return cost
+	end
+	bedwars.getBlockHealth = getBlockHealth
+	bedwars.getBlockHits = getBlockHits
+
+	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn)
+		if lplr:GetAttribute('DenyBlockBreak') or not entitylib.isAlive or InfiniteFly.Enabled then return end
 		local cost, pos, target, path = math.huge
 
-		for _, v in (handler and handler:getContainedPositions(block) or {block.Position / 3}) do
-			local dpos, dcost, dpath = calculatePath(block, v * 3)
+		for _, v in containedPositions(block) do
+			local dpos, dcost, dpath = calculatePath(block, v * 3, avoidOwn)
 			if dpos and dcost < cost then
 				cost, pos, target, path = dcost, dpos, v * 3, dpath
 			end
@@ -1089,6 +1140,9 @@ run(function()
 			if (entitylib.character.RootPart.Position - pos).Magnitude > 30 then return end
 			local dblock, dpos = getPlacedBlock(pos)
 			if not dblock then return end
+			-- The route is meant to avoid these already; this catches the case where the
+			-- target itself is one of your own blocks.
+			if avoidOwn and dblock:GetAttribute('PlacedByUserId') == lplr.UserId then return end
 
 			if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4 then
 				local breaktype = bedwars.ItemMeta[dblock.Name].block.breakType
@@ -1115,21 +1169,35 @@ run(function()
 					end
 
 					if effects then
-						local blockdmg = (blockhealthbar.blockHealth - (result == 'destroyed' and 0 or getBlockHealth(dblock, dpos)))
-						customHealthbar = customHealthbar or bedwars.BlockBreaker.updateHealthbar
-						customHealthbar(bedwars.BlockBreaker, {blockPosition = dpos}, blockhealthbar.blockHealth, dblock:GetAttribute('MaxHealth'), blockdmg, dblock)
-						blockhealthbar.blockHealth = math.max(blockhealthbar.blockHealth - blockdmg, 0)
+						-- BlockBreakController builds a fresh blockBreaker (and with it the
+						-- BlockHealthbar that actually draws the bar) when it re-enables, so
+						-- the reference captured at load goes stale and the game's own
+						-- healthbar quietly stops appearing. Resolve it live instead.
+						local breaker = bedwars.Knit.Controllers.BlockBreakController.blockBreaker or bedwars.BlockBreaker
+						local meta = bedwars.ItemMeta[dblock.Name]
+						-- BlockHealthbar:show compares maxHealth against 0, so a nil one
+						-- throws inside the promise and takes the whole break down with it.
+						local maxhealth = dblock:GetAttribute('MaxHealth') or (meta and meta.block and meta.block.health) or 10
+						local prehealth = blockhealthbar.blockHealth or maxhealth
+						local blockdmg = prehealth - (result == 'destroyed' and 0 or (getBlockHealth(dblock, dpos) or 0))
+						pcall(customHealthbar or breaker.updateHealthbar, breaker, {blockPosition = dpos}, prehealth, maxhealth, blockdmg, dblock)
+						blockhealthbar.blockHealth = math.max(prehealth - blockdmg, 0)
 
 						if blockhealthbar.blockHealth <= 0 then
-							bedwars.BlockBreaker.breakEffect:playBreak(dblock.Name, dpos, lplr)
-							-- healthbarMaid is gone from BlockBreaker in current builds, and
-							-- throwing here rejects the DamageBlock promise and aborts the break.
-							if bedwars.BlockBreaker.healthbarMaid then
-								bedwars.BlockBreaker.healthbarMaid:DoCleaning()
-							end
+							breaker.breakEffect:playBreak(dblock.Name, dpos, lplr)
+							-- The maid moved onto the BlockHealthbar object; destroy() is what
+							-- cleans it there. Throwing here rejects the DamageBlock promise
+							-- and aborts the break, so both routes are guarded.
+							pcall(function()
+								if breaker.blockHealthbar then
+									breaker.blockHealthbar:destroy()
+								elseif breaker.healthbarMaid then
+									breaker.healthbarMaid:DoCleaning()
+								end
+							end)
 							blockhealthbar.breakingBlockPosition = Vector3.zero
 						else
-							bedwars.BlockBreaker.breakEffect:playHit(dblock.Name, dpos, lplr)
+							breaker.breakEffect:playHit(dblock.Name, dpos, lplr)
 						end
 					end
 

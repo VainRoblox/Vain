@@ -385,6 +385,12 @@ slider.MouseLeave:Connect(function()
 	})
 end)
 slider:GetPropertyChangedSignal('Visible'):Connect(function()
+	-- Restoring a saved config flips these from a deferred thread that never carried the
+	-- executor identity, so every Instance touched here threw 'lacking capability
+	-- Plugin' until the identity was raised first, the same as Targets does.
+	if mainapi.ThreadFix then
+		setthreadidentity(8)
+	end
 	satSlider.Visible = expand.Rotation == 180 and slider.Visible
 	vibSlider.Visible = satSlider.Visible
 	opSlider.Visible = satSlider.Visible

@@ -3,7 +3,7 @@ local Targets
 local Range
 local List
 local OtherProjectiles
-local Camera
+local ViewMode
 local rayCheck = RaycastParams.new()
 rayCheck.FilterType = Enum.RaycastFilterType.Include
 local mapfolder
@@ -39,13 +39,13 @@ end
 -- First person puts the camera inside your own head, so the gap between the camera and
 -- the head is what separates the two views. Shiftlock still counts as third person here,
 -- which matches what you see on screen.
-local function cameraAllowed()
-	if Camera.Value == 'Both' then return true end
+local function viewAllowed()
+	if ViewMode.Value == 'Both' then return true end
 	local head = entitylib.character and entitylib.character.Head
 	if not head then return true end
 
 	local firstperson = (gameCamera.CFrame.Position - head.Position).Magnitude <= 1
-	return firstperson == (Camera.Value == 'First Person')
+	return firstperson == (ViewMode.Value == 'First Person')
 end
 
 local function getAmmo(check)
@@ -87,7 +87,7 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 				-- coroutine outright, leaving the module switched on but permanently dead.
 				-- The wait stays outside so a repeating error cannot spin the CPU.
 				local ok = pcall(function()
-					if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.5 and cameraAllowed() then
+					if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.5 and viewAllowed() then
 						local ent = entitylib.EntityPosition({
 							Part = 'RootPart',
 							Range = Range.Value,
@@ -161,14 +161,14 @@ Targets = ProjectileAura:CreateTargets({
 	Walls = true,
 	Tooltip = 'Which entities this module is allowed to target'
 })
-Camera = ProjectileAura:CreateDropdown({
-	Name = 'Camera',
+ViewMode = ProjectileAura:CreateDropdown({
+	Name = 'View Mode',
 	Tooltip = 'Which camera view this shoots in',
 	List = {'Both', 'First Person', 'Third Person'},
 	Tooltips = {
 		Both = 'Shoots in either view',
-		['First Person'] = 'Only shoots while the camera is in your head',
-		['Third Person'] = 'Only shoots while the camera is behind you'
+		['First Person'] = 'Only while the camera is in your head',
+		['Third Person'] = 'Only while the camera is behind you'
 	}
 })
 List = ProjectileAura:CreateTextList({

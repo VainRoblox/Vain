@@ -48,6 +48,9 @@ fontbox = components.TextBox({
 }, children, api)
 
 fontdropdown.Object:GetPropertyChangedSignal('Visible'):Connect(function()
+	if mainapi.ThreadFix then
+		setthreadidentity(8)
+	end
 	fontbox.Object.Visible = fontdropdown.Object.Visible and fontdropdown.Value == 'Custom'
 end)
 
