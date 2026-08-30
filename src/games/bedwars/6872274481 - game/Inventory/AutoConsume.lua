@@ -14,14 +14,35 @@ local consuming = false
 --[[
 	Blatant sends the consume straight off without the item ever being in your hand.
 
-	Legit does what the game does: the item is equipped, held for exactly as long as that
-	item takes to consume, and only then does the consume go out. Nothing about the timing
-	is skipped, and whatever you were holding comes back afterwards.
+	Legit hands the job back to the game. Equipping a consumable turns on that item's own
+	handler, which binds an action called 'consume-item' - the one your mouse button runs.
+	Calling that same bound function is what plays the animation, starts the hold, and
+	consumes when the hold finishes, cooldown checks and all. Nothing here reimplements
+	any of it, and no consume is sent by hand, so nothing can be double-consumed either.
+
+	Equipping only through switchItem was why this looked broken before: that sets the
+	held item without the hotbar following, so the game never turned the item's handler
+	on, there was no animation, and all that happened was a flicker before something else
+	took the hand back.
 ]]
 local function consumeTime(item)
 	local meta = bedwars.ItemMeta[item.itemType]
 	local consumable = meta and meta.consumable
 	return (consumable and consumable.consumeTime) or 1
+end
+
+local function hotbarSlot(itemType)
+	for i, v in store.inventory.hotbar do
+		if v.item and v.item.itemType == itemType then
+			return i - 1
+		end
+	end
+end
+
+local function boundConsume()
+	local binder = bedwars.ActionBinder
+	local action = binder and binder.registeredActions and binder.registeredActions['consume-item']
+	return action and action.boundFunction or nil
 end
 
 local function legitConsume(item)
@@ -31,13 +52,27 @@ local function legitConsume(item)
 	task.spawn(function()
 		local previous = store.hand.tool
 		pcall(function()
-			switchItem(item.tool)
-			task.wait(consumeTime(item))
-			-- Checked again on the far side of the wait: a second is long enough to die,
-			-- drop the item, or no longer need it.
-			if entitylib.isAlive and item.tool and item.tool.Parent then
-				bedwars.Client:Get(remotes.ConsumeItem):CallServer({item = item.tool})
+			local slot = hotbarSlot(item.itemType)
+			if slot then
+				hotbarSwitch(slot)
 			end
+			switchItem(item.tool)
+
+			-- The handler binds itself once the item is actually in hand, so wait for it
+			-- rather than assuming it is already there.
+			local run
+			for _ = 1, 20 do
+				run = boundConsume()
+				if run then break end
+				task.wait()
+			end
+			if not run then return end
+
+			run('consume-item', Enum.UserInputState.Begin, newproxy(true))
+			-- The hold finishes on its own and consumes; this only releases afterwards,
+			-- the same as letting go of the button.
+			task.wait(consumeTime(item) + 0.1)
+			run('consume-item', Enum.UserInputState.End, newproxy(true))
 		end)
 
 		if previous and previous.Parent then
