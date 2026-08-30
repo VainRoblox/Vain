@@ -2,6 +2,7 @@ local Nuker
 local Range
 local BreakSpeed
 local UpdateRate
+local Angle
 local TargetMode
 local ViewMode
 local Custom
@@ -347,6 +348,7 @@ local function attemptBreak()
 			end
 
 			breakOptions.Range = Range.Value
+			breakOptions.Angle = Angle.Value
 			breakOptions.Score = entryScorers[TargetMode.Value]
 			-- Read on the way in and refilled on the way out, so the route carries from
 			-- one hit to the next. A break that never went out leaves it untouched.
@@ -503,6 +505,14 @@ BreakSpeed = Nuker:CreateSlider({
 	Default = 0.25,
 	Decimal = 100,
 	Suffix = 'seconds'
+})
+Angle = Nuker:CreateSlider({
+	Name = 'Angle',
+	Tooltip = 'How far from where you are looking a block may be\n180 breaks behind you too',
+	Min = 1,
+	Max = 180,
+	Default = 180,
+	Suffix = 'degrees'
 })
 UpdateRate = Nuker:CreateSlider({
 	Name = 'Update Rate',
