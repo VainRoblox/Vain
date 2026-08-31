@@ -3,7 +3,6 @@ local List
 local Background
 local Color = {}
 local ShowAmount
-local UpdateRate
 
 -- The things worth knowing an enemy has. Seeded straight into the item list, so they can
 -- be switched off or removed there like anything else rather than being nine settings of
@@ -98,24 +97,6 @@ local function refreshAdornee(billboard, plr)
 	local frame = billboard:FindFirstChild('Frame')
 	if not frame then return end
 
-	--[[
-		The cache is refreshed here rather than read straight out of.
-
-		store.inventories is only rebuilt when a player swaps their held item or changes
-		armor - those four things are all that is watched for it - so a count moving on
-		its own, picking iron up or spending emeralds, never reached it and the numbers
-		sat at whatever they were the last time the target switched items.
-
-		A fresh read that comes back with nothing in it is dropped instead of used. It
-		returns an empty inventory rather than an error when it cannot see the target, and
-		taking that at face value blanked every icon the moment one read came back empty -
-		which is why doing this the obvious way showed nothing at all.
-	]]
-	local fresh = bedwars.getInventory and bedwars.getInventory(plr)
-	if fresh and (fresh.hand or next(fresh.items or {})) then
-		store.inventories[plr] = fresh
-	end
-
 	local inventory = store.inventories[plr]
 	if not inventory then
 		billboard.Enabled = false
@@ -174,10 +155,7 @@ end
 local function refreshAll()
 	for ent, entry in Entries do
 		if entry.Billboard.Parent and entry.Player and entry.Player.Parent then
-			-- Guarded one at a time. A throw part way through used to abort the whole
-			-- pass, and since icons are cleared before they are redrawn, everybody after
-			-- the one that failed was left blank.
-			pcall(refreshAdornee, entry.Billboard, entry.Player)
+			refreshAdornee(entry.Billboard, entry.Player)
 		else
 			entry.Billboard:Destroy()
 			Entries[ent] = nil
@@ -242,10 +220,7 @@ InventoryESP = vain.Categories.Render:CreateModule({
 			task.spawn(function()
 				repeat
 					local ok = pcall(refreshAll)
-					-- The slider may not exist yet if a saved config switched this on while
-					-- the file was still running.
-					local rate = UpdateRate and (1 / UpdateRate.Value) or 0.2
-					task.wait(ok and rate or 0.5)
+					task.wait(ok and 0.2 or 0.5)
 				until not InventoryESP.Enabled
 			end)
 		else
@@ -296,14 +271,6 @@ Color = InventoryESP:CreateColorSlider({
 		end
 	end,
 	Darker = true
-})
-UpdateRate = InventoryESP:CreateSlider({
-	Name = 'Update Rate',
-	Tooltip = 'How often inventories are re-read\nDefault is 5hz',
-	Min = 1,
-	Max = 20,
-	Default = 5,
-	Suffix = 'hz'
 })
 ShowAmount = InventoryESP:CreateToggle({
 	Name = 'Show Amount',
