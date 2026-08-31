@@ -38,7 +38,8 @@ local vain = shared.vain
 -- nothing, so a name still in use by another game is never redirected.
 vain.Renames = vain.Renames or {Modules = {}, Options = {}}
 for old, new in {
-	Breaker = 'Nuker'
+	Breaker = 'Nuker',
+	['Better Spectating'] = 'BetterSpectating'
 } do
 	vain.Renames.Modules[old] = new
 end

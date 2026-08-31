@@ -447,13 +447,13 @@ local lplr = playersService.LocalPlayer
 		end
 
 		AdvancedSpectate = vain.Categories.Utility:CreateModule({
-			Name = 'Better Spectating',
+			Name = 'BetterSpectating',
 			Tooltip = 'Spectate anyone, not just your team (forces spectate to ALL). Enable Fixed Spectate + pick a player to lock the view.',
 			Function = function(callback)
 				local ctrl = getSpec()
 				if callback then
 					if not ctrl then
-						notif('Better Spectating', 'Spectate controller not found in this place.', 6, 'warning')
+						notif('BetterSpectating', 'Spectate controller not found in this place.', 6, 'warning')
 						AdvancedSpectate:Toggle()
 						return
 					end
