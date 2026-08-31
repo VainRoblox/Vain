@@ -1,4 +1,5 @@
 local RavenTP
+local Legit
 local Speed
 local Hold
 
@@ -34,6 +35,51 @@ local function steer(raven, target)
 	return distance
 end
 
+--[[
+	Spawns the raven the way the game does, and hands back the model it made.
+
+	Blatant asks the SpawnRaven remote itself. The game never does that - it fires the
+	RAVEN_SPAWN ability and lets its own controller make the call, which is what plays the
+	throw animation and what the server is expecting to see. Asking the remote on its own
+	is refused for reasons this module can only report as a cooldown.
+
+	The controller's handleRaven is borrowed to catch the model on its way past, and
+	deliberately not run: it owns a RenderStepped loop that writes the raven's velocity
+	from your camera every frame, which would fight the steering below for control of the
+	same property. Skipping it means none of the state it sets up exists to clean, so the
+	only thing left to put back is the flag that stops you spawning another raven.
+]]
+local function legitSpawn()
+	local controller = bedwars.RavenController
+	local caught, old = nil, controller.handleRaven
+
+	controller.handleRaven = function(_, model)
+		caught = model
+	end
+
+	local ok = pcall(function()
+		bedwars.AbilityController:useAbility(bedwars.AbilityId.RAVEN_SPAWN)
+	end)
+
+	if ok then
+		for _ = 1, 120 do
+			if caught then break end
+			task.wait()
+		end
+	end
+
+	controller.handleRaven = old
+	if not caught and controller.activeRaven then
+		-- The ability set this on the way in and nothing is going to clear it now.
+		controller.activeRaven.Value = false
+	end
+	return caught
+end
+
+local function blatantSpawn()
+	return bedwars.RuntimeLib.await(bedwars.Client:Get(remotes.SpawnRaven):CallServerAsync())
+end
+
 RavenTP = vain.Categories.Utility:CreateModule({
 	Name = 'RavenTP',
 	Function = function(callback)
@@ -55,7 +101,7 @@ RavenTP = vain.Categories.Utility:CreateModule({
 			return
 		end
 
-		local raven = bedwars.RuntimeLib.await(bedwars.Client:Get(remotes.SpawnRaven):CallServerAsync())
+		local raven = Legit.Enabled and legitSpawn() or blatantSpawn()
 		if not raven then
 			notif('RavenTP', 'Raven on cooldown', 3)
 			return
@@ -97,6 +143,14 @@ RavenTP = vain.Categories.Utility:CreateModule({
 		until tick() > holding
 
 		bedwars.RavenController:detonateRaven()
+
+		-- Nothing else is going to clear this, since the controller's own cleanup was
+		-- never set up, and leaving it set refuses every raven after this one.
+		if Legit.Enabled and bedwars.RavenController.activeRaven then
+			task.delay(1, function()
+				bedwars.RavenController.activeRaven.Value = false
+			end)
+		end
 	end,
 	Tooltip = 'Spawns a raven, flies it to the player under your mouse and detonates it'
 })
@@ -104,9 +158,13 @@ Speed = RavenTP:CreateSlider({
 	Name = 'Speed',
 	Tooltip = 'How fast it flies in\nDefault is 150',
 	Min = 20,
-	Max = 500,
-	Default = 150,
+	Max = 108,
+	Default = 108,
 	Suffix = 'studs/s'
+})
+Legit = RavenTP:CreateToggle({
+	Name = 'Legit',
+	Tooltip = 'Throws the raven the way the game does'
 })
 Hold = RavenTP:CreateSlider({
 	Name = 'Hold',

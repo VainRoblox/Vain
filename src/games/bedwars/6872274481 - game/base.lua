@@ -836,6 +836,7 @@ run(function()
 		-- a module can call the same function a keypress would, rather than reimplementing
 		-- what the game does behind it.
 		ActionBinder = Flamework.resolveDependency('@easy-games/game-core:client/controllers/keybind/action-binder-controller@ActionBinderController'),
+		AbilityId = require(replicatedStorage.TS.ability['ability-id']).AbilityId,
 		AudioCategory = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).AudioCategory,
 		AudioManager = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).AudioManager,
 		AnimationType = require(replicatedStorage.TS.animation['animation-type']).AnimationType,
