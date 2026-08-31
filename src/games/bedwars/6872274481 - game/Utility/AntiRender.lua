@@ -1,10 +1,8 @@
 local AntiRender
-local Restore
-local previous
 
--- The game's own match states. Post is the scoreboard at the end of a round, which is
--- the moment the next lobby is being set up and a kit change still takes.
-local RUNNING, POST = 1, 2
+-- The game's own match state for the end-of-round scoreboard, which is the moment the
+-- next lobby is being set up and a kit change still takes.
+local POST = 2
 local NONE = 'none'
 
 --[[
@@ -13,8 +11,7 @@ local NONE = 'none'
 
 	This is the same call the kit shop's Equip button makes, not a display trick: the
 	server is told, and it is the server that tells everyone else what you are running.
-	Which also means you really are on no kit afterwards, abilities included - turn on
-	Restore if you want your own kit put back once the next round starts.
+	Which also means you really are on no kit afterwards, abilities included.
 ]]
 local function activate(kit)
 	local ok, result = pcall(function()
@@ -26,10 +23,7 @@ end
 AntiRender = vain.Categories.Utility:CreateModule({
 	Name = 'AntiRender',
 	Function = function(callback)
-		if not callback then
-			previous = nil
-			return
-		end
+		if not callback then return end
 
 		-- Deliberately nil rather than the current state, so switching this on while a
 		-- round is already over acts straight away instead of waiting for the one after.
@@ -43,22 +37,14 @@ AntiRender = vain.Categories.Utility:CreateModule({
 					-- changed away from. Empty means you were already on none.
 					local worn = store.equippedKit
 					if worn ~= '' then
-						previous = worn
 						if activate(NONE) then
 							notif('AntiRender', 'Unequipped '..worn, 3)
 						else
 							-- Worth saying out loud rather than failing quietly: the round
 							-- you join next would still be showing your kit.
 							notif('AntiRender', 'Could not unequip '..worn, 3)
-							previous = nil
 						end
 					end
-				elseif state == RUNNING and Restore.Enabled and previous then
-					-- Whether the server lets a kit be equipped once a round is under way
-					-- is its call, not something that can be checked from here, so both
-					-- outcomes are reported rather than assumed.
-					notif('AntiRender', (activate(previous) and 'Restored ' or 'Could not restore ')..previous, 3)
-					previous = nil
 				end
 
 				last = state
@@ -68,8 +54,4 @@ AntiRender = vain.Categories.Utility:CreateModule({
 		until not AntiRender.Enabled
 	end,
 	Tooltip = 'Unequips your kit when a round ends'
-})
-Restore = AntiRender:CreateToggle({
-	Name = 'Restore',
-	Tooltip = 'Puts your kit back once the next round starts'
 })
