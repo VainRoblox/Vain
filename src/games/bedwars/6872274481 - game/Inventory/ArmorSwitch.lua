@@ -2,6 +2,7 @@ local ArmorSwitch
 local Mode
 local Targets
 local Range
+local Speed
 
 ArmorSwitch = vain.Categories.Inventory:CreateModule({
 	Name = 'ArmorSwitch',
@@ -25,6 +26,11 @@ ArmorSwitch = vain.Categories.Inventory:CreateModule({
 								armorSlot = i
 							})
 							vainEvents.InventoryChanged.Event:Wait()
+							-- A piece at a time. All three landing in the same frame is not
+							-- something anyone could do by hand.
+							if Speed.Value > 0 then
+								task.wait(Speed.Value)
+							end
 						end
 					end
 					task.wait(0.1)
@@ -38,6 +44,9 @@ ArmorSwitch = vain.Categories.Inventory:CreateModule({
 						armorSlot = i
 					})
 					vainEvents.InventoryChanged.Event:Wait()
+					if Speed.Value > 0 then
+						task.wait(Speed.Value)
+					end
 				end
 			end
 		end
@@ -53,6 +62,15 @@ Targets = ArmorSwitch:CreateTargets({
 	Players = true,
 	NPCs = true,
 	Tooltip = 'Which entities this module is allowed to target'
+})
+Speed = ArmorSwitch:CreateSlider({
+	Name = 'Speed',
+	Tooltip = 'Delay between each piece, lower is faster',
+	Min = 0,
+	Max = 1,
+	Default = 0.1,
+	Decimal = 100,
+	Suffix = 'seconds'
 })
 Range = ArmorSwitch:CreateSlider({
 	Name = 'Range',
