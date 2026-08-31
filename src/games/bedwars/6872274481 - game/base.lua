@@ -800,6 +800,35 @@ run(function()
 	local Client = require(replicatedStorage.TS.remotes).default.Client
 	local OldGet, OldBreak = Client.Get
 
+	-- Which team upgrades are on offer, at what cost, for the queue you are actually in -
+	-- mine wars, survival and hyper gen each run a different set.
+	--
+	-- Asked of the module's own export rather than read out of a fixed upvalue slot. Slot
+	-- 6 is getQueueMeta on the current client - a function, not the meta table - so
+	-- iterating it threw, and that took out every AutoBuy setting declared after the
+	-- upgrade toggles and left Buy Upgrades with nothing at all to buy. The upvalue route
+	-- is kept as a fallback for older clients, but it looks for a table that is shaped
+	-- like the meta instead of trusting an index that has already moved once.
+	local upgrademeta = require(replicatedStorage.TS.games.bedwars['team-upgrade']['team-upgrade-meta'])
+
+	local function isUpgradeMeta(tab)
+		if type(tab) ~= 'table' then return false end
+		local _, entry = next(tab)
+		return type(entry) == 'table' and type(entry.tiers) == 'table'
+	end
+
+	local function teamUpgradeMeta()
+		local ok, queuemeta = pcall(upgrademeta.getTeamUpgradeMetaForQueue)
+		if ok and isUpgradeMeta(queuemeta) then return queuemeta end
+
+		for i = 1, 16 do
+			local found, value = pcall(debug.getupvalue, upgrademeta.getTeamUpgradeMetaForQueue, i)
+			if found and isUpgradeMeta(value) then return value end
+		end
+
+		return {}
+	end
+
 	bedwars = setmetatable({
 		AbilityController = Flamework.resolveDependency('@easy-games/game-core:client/controllers/ability/ability-controller@AbilityController'),
 		-- Holds registeredActions, keyed by the id an action was bound under. That is how
@@ -864,7 +893,7 @@ run(function()
 		SoundList = require(replicatedStorage.TS.sound['game-sound']).GameSound,
 		SoundManager = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).SoundManager,
 		Store = require(lplr.PlayerScripts.TS.ui.store).ClientStore,
-		TeamUpgradeMeta = debug.getupvalue(require(replicatedStorage.TS.games.bedwars['team-upgrade']['team-upgrade-meta']).getTeamUpgradeMetaForQueue, 6),
+		TeamUpgradeMeta = teamUpgradeMeta(),
 		UILayers = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).UILayers,
 		VisualizerUtils = require(lplr.PlayerScripts.TS.lib.visualizer['visualizer-utils']).VisualizerUtils,
 		WeldTable = require(replicatedStorage.TS.util['weld-util']).WeldUtil,
@@ -896,6 +925,11 @@ run(function()
 			end
 		})
 	end
+
+	-- The settings list is built once at load, but which upgrades exist and what they cost
+	-- follows the queue, so the buying side asks again each time rather than trusting what
+	-- was true when the menu was drawn.
+	rawset(bedwars, 'getTeamUpgradeMeta', teamUpgradeMeta)
 
 	local remoteNames = {
 		AfkStatus = debug.getproto(Knit.Controllers.AfkController.KnitStart, 1),

@@ -1,6 +1,7 @@
 local BedPlates
 local Background
 local Color = {}
+local ShowOwn
 local Quantity
 local FullLayers
 local FullColor = {}
@@ -143,6 +144,14 @@ local function signature(order, counts, full)
 	return table.concat(parts, '|')
 end
 
+-- A bed carries a NoBreak attribute for the team it belongs to, which is how the game
+-- stops you breaking your own. Asked live rather than cached, since your team is not
+-- settled the moment the plates are first drawn. No team at all - spectating - matches
+-- nothing, so every plate stays up.
+local function isOwnBed(bed)
+	return bed:GetAttribute('Team' .. (lplr:GetAttribute('Team') or -1) .. 'NoBreak') ~= nil
+end
+
 local function refreshAdornee(v)
 	if not v.Adornee then return end
 
@@ -156,7 +165,9 @@ local function refreshAdornee(v)
 	table.sort(order, function(a, b)
 		return health(a) > health(b)
 	end)
-	v.Enabled = #order > 0
+	-- Set before the signature check below, so flicking the setting takes effect even
+	-- when nothing about the wrap itself has changed.
+	v.Enabled = #order > 0 and (not ShowOwn or ShowOwn.Enabled or not isOwnBed(v.Adornee))
 
 	local sig = signature(order, counts, full)
 	if Signature[v] == sig then return end
@@ -309,6 +320,12 @@ UpdateRate = BedPlates:CreateSlider({
 	Max = 60,
 	Default = 10,
 	Suffix = 'hz'
+})
+ShowOwn = BedPlates:CreateToggle({
+	Name = 'Show Own',
+	Tooltip = 'Also plates your own bed',
+	Function = refreshAll,
+	Default = true
 })
 Quantity = BedPlates:CreateToggle({
 	Name = 'Show Amount',
