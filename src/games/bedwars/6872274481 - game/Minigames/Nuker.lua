@@ -3,7 +3,6 @@ local Range
 local BreakSpeed
 local UpdateRate
 local Angle
-local SkipPockets
 local HitChance
 local Chance = {}
 local TargetMode
@@ -394,7 +393,6 @@ local function attemptBreak()
 
 			breakOptions.Range = Range.Value
 			breakOptions.Angle = Angle.Value
-			breakOptions.SkipPockets = SkipPockets.Enabled
 			breakOptions.Score = entryScorers[TargetMode.Value]
 			-- Read on the way in and refilled on the way out, so the route carries from
 			-- one hit to the next. A break that never went out leaves it untouched.
@@ -662,11 +660,6 @@ Chance = Nuker:CreateSlider({
 	Suffix = '%',
 	Visible = false,
 	Darker = true
-})
-SkipPockets = Nuker:CreateToggle({
-	Name = 'Ignore Air Pockets',
-	Tooltip = 'Never start a dig inside a sealed gap',
-	Default = true
 })
 AutoTool = Nuker:CreateToggle({
 	Name = 'Auto Tool',

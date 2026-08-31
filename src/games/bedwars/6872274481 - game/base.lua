@@ -1062,10 +1062,13 @@ run(function()
 	-- enough that a route can never turn into a longer one to avoid a corner.
 	local TURN_COST = 0.01
 
-	-- How many blocks longer than the shortest way in the automatic mode may choose, on
-	-- whole blocks, since the weights below put a fraction on top of every route and no
-	-- two are ever exactly equal.
-	local ENTRY_TOLERANCE = 2
+	-- How many blocks longer than the shortest way in a target mode may still choose.
+	-- Zero, so the dig is always as short as it can be and the mode decides between the
+	-- ways in that are equally short - a way in that is even one block worse is one whose
+	-- route has to bend to get there, which is what makes a dig step up and over for no
+	-- visible reason. Compared on whole blocks, since the weights below put a fraction on
+	-- top of every route and no two are ever exactly equal.
+	local ENTRY_TOLERANCE = 0
 
 	local function enqueue(queue, dist, node)
 		local low, high = 1, #queue + 1
@@ -1092,45 +1095,7 @@ run(function()
 	-- gets broken, so this is what a target mode has to steer. Without one, the near side
 	-- wins unless it would cost substantially more to get through, which is the
 	-- difference between reaching around a thin wall and mining through a thick one.
-	-- How much open air is enough to call a gap part of the world rather than a pocket
-	-- sealed inside a build. A pocket is a handful of cells; anything that keeps going
-	-- this far has escaped.
-	local POCKET_LIMIT = 30
-
-	local function escapesToOpenAir(start, memo)
-		local cached = memo[start]
-		if cached ~= nil then return cached end
-
-		local seen, frontier, count, escaped = {[start] = true}, {start}, 1, false
-
-		while #frontier > 0 and not escaped do
-			local nextfrontier = {}
-			for _, pos in frontier do
-				for _, side in sides do
-					local at = pos + side
-					if seen[at] or getPlacedBlock(at) then continue end
-					seen[at] = true
-
-					count += 1
-					if count >= POCKET_LIMIT then
-						escaped = true
-						break
-					end
-					table.insert(nextfrontier, at)
-				end
-				if escaped then break end
-			end
-			frontier = nextfrontier
-		end
-
-		-- Every cell reached shares the verdict; they are all the same body of air.
-		for pos in seen do
-			memo[pos] = escaped
-		end
-		return escaped
-	end
-
-	local function pickEntry(exposed, maxRange, score, prefer, maxAngle, skipPockets)
+	local function pickEntry(exposed, maxRange, score, prefer, maxAngle)
 		local origin = entitylib.isAlive and entitylib.character.RootPart.Position
 		-- The setting is the width of the cone, so half of it is the most a block may sit
 		-- off the way you are looking. A full turn takes in everything and is not worth
@@ -1138,27 +1103,10 @@ run(function()
 		local halfAngle = maxAngle and (maxAngle / 2)
 		local camera = halfAngle and halfAngle < 180 and workspace.CurrentCamera or nil
 
-		-- Air that cannot be escaped from is a gap sealed inside the build. Breaking into
-		-- one opens nothing - the outer layers are still standing, so it is not a way in
-		-- at all, it just looks like blocks going missing out of the middle of a wall.
-		local pockets = skipPockets and {} or nil
-
-		local function opensOutwards(node)
-			if not pockets then return true end
-			for _, side in sides do
-				local at = node + side
-				if not getPlacedBlock(at) and escapesToOpenAir(at, pockets) then
-					return true
-				end
-			end
-			return false
-		end
-
-		-- Every limit on where a dig may start: how far you can reach, how far off the way
-		-- you are looking it is allowed to be, and whether it is a way in at all.
+		-- Both limits on where a dig may start: how far you can reach, and how far off
+		-- the way you are looking it is allowed to be.
 		local function allowed(node, reach)
 			if maxRange and origin and reach > maxRange then return false end
-			if not opensOutwards(node) then return false end
 			if camera then
 				local dir = node - camera.CFrame.Position
 				if dir.Magnitude > 0 then
@@ -1189,22 +1137,19 @@ run(function()
 			end
 		end
 
-		-- Cost here is how far a way in sits from the bed, so holding every mode to the
-		-- cheapest ones was backwards: it picks the way in nearest the bed, which is the
-		-- opposite of the outer layer, and leaves a mode asking for the block nearest you
-		-- unable to answer with it. Only the automatic mode is held to the shortest ways
-		-- in - a mode chosen on purpose is the one deciding, and a block further from the
-		-- bed is a legitimate answer.
-		local costlimit = math.huge
-		if not score then
-			local mincost = math.huge
-			for node, cost in exposed do
-				if cost < mincost and allowed(node, origin and (node - origin).Magnitude or 0) then
-					mincost = cost
-				end
+		-- A target mode chooses where on the outer defence layer to start, so that is all
+		-- it may choose from. The flood reaches every opening in whatever the bed happens
+		-- to be attached to, and on a large build the one nearest you can sit eight blocks
+		-- of tunnelling from the bed while another is one block away - picking that is how
+		-- a dig ended up running the length of a wall to get anywhere. Only the ways in
+		-- that are about as short as the shortest are offered up.
+		local mincost = math.huge
+		for node, cost in exposed do
+			if cost < mincost and allowed(node, origin and (node - origin).Magnitude or 0) then
+				mincost = cost
 			end
-			costlimit = math.floor(mincost) + ENTRY_TOLERANCE
 		end
+		local costlimit = math.floor(mincost) + ENTRY_TOLERANCE
 
 		local best, bestkey, bestcost = nil, math.huge, math.huge
 		local near, nearreach, nearcost = nil, math.huge, math.huge
@@ -1243,11 +1188,11 @@ run(function()
 	-- directly - so a Self Break check on the target alone never prevented your own
 	-- blocks being destroyed on the way there. The flag is part of the cache entry
 	-- because the same target has two different cheapest routes depending on it.
-	local function calculatePath(target, blockpos, avoidOwn, maxRange, score, prefer, maxAngle, skipPockets)
+	local function calculatePath(target, blockpos, avoidOwn, maxRange, score, prefer, maxAngle)
 		avoidOwn = avoidOwn == true
 		local cached = cache[blockpos]
 		if cached and cached[4] == avoidOwn then
-			local pos, cost, key = pickEntry(cached[5], maxRange, score, prefer, maxAngle, skipPockets)
+			local pos, cost, key = pickEntry(cached[5], maxRange, score, prefer, maxAngle)
 			if pos then
 				return pos, cost, cached[3], key
 			end
@@ -1311,7 +1256,7 @@ run(function()
 			exposed
 		}
 
-		local pos, cost, key = pickEntry(exposed, maxRange, score, prefer, maxAngle, skipPockets)
+		local pos, cost, key = pickEntry(exposed, maxRange, score, prefer, maxAngle)
 		if pos then
 			return pos, cost, path, key
 		end
@@ -1397,15 +1342,13 @@ run(function()
 	end
 
 	-- options: Range caps how far the block being broken may be, Angle how far off your
-	-- view it may sit, SkipPockets refuses gaps sealed inside the build, Score ranks the
-	-- ways in, Prefer is a route to carry on down, and Route is filled in with the one
-	-- taken.
+	-- view it may sit, Score ranks the ways in, Prefer is a route to carry on down, and
+	-- Route is filled in with the one taken.
 	bedwars.breakBlock = function(block, effects, anim, customHealthbar, avoidOwn, autoTool, options)
 		if lplr:GetAttribute('DenyBlockBreak') or not entitylib.isAlive or InfiniteFly.Enabled then return end
 		options = options or {}
 		local maxRange = math.min(options.Range or 30, 30)
 		local entryScore, prefer, maxAngle = options.Score, options.Prefer, options.Angle
-		local skipPockets = options.SkipPockets
 		local cost, pos, target, path = math.huge
 		-- A bed covers several block positions, each with its own way in. They are
 		-- compared on whatever the target mode is ranking by, so the mode's pick is not
@@ -1413,7 +1356,7 @@ run(function()
 		local bestkey = math.huge
 
 		for _, v in containedPositions(block) do
-			local dpos, dcost, dpath, dkey = calculatePath(block, v * 3, avoidOwn, maxRange, entryScore, prefer, maxAngle, skipPockets)
+			local dpos, dcost, dpath, dkey = calculatePath(block, v * 3, avoidOwn, maxRange, entryScore, prefer, maxAngle)
 			dkey = dkey or dcost
 			if dpos and dkey < bestkey then
 				bestkey, cost, pos, target, path = dkey, dcost, dpos, v * 3, dpath
