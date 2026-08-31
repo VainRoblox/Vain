@@ -18,6 +18,16 @@ local SCAN_LIMIT = 1200
 -- Ore is part of the map that happens to be sitting against somebody's wrap, not
 -- something they built to defend it. It is walked past rather than counted, so a bed
 -- that touches a generator does not pick up a stray icon reading 1.
+-- Terrain the map is made of rather than anything anybody placed. Snow is not on sale
+-- in the shop at all - it is what a winter map's ground is covered in - so a bed sitting
+-- on it picked up a plate counting the field it stands in, and the walk spread out
+-- across that field instead of following the wrap round. Stepped over exactly the way
+-- the island underneath is: not counted, not walked through, and not a hole in the layer
+-- either, since it is solid.
+local TERRAIN = {
+	snow = true
+}
+
 local IGNORED = {
 	iron_ore = true,
 	iron_ore_mesh_block = true,
@@ -70,7 +80,7 @@ local function scanBed(bed)
 
 				if seen[at] then continue end
 				seen[at] = true
-				if block == bed or block:GetAttribute('NoBreak') then continue end
+				if block == bed or block:GetAttribute('NoBreak') or TERRAIN[block.Name] then continue end
 
 				-- Still stepped through, so a wrap with ore embedded in it is followed all
 				-- the way round, and still solid, so it does not read as a hole either.
