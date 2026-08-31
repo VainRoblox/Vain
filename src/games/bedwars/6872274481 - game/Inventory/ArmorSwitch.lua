@@ -65,7 +65,7 @@ Targets = ArmorSwitch:CreateTargets({
 })
 Speed = ArmorSwitch:CreateSlider({
 	Name = 'Speed',
-	Tooltip = 'Delay between each piece, lower is faster',
+	Tooltip = 'Delay between each piece, lower is faster\nDefault is 0.1',
 	Min = 0,
 	Max = 1,
 	Default = 0.1,
@@ -74,7 +74,7 @@ Speed = ArmorSwitch:CreateSlider({
 })
 Range = ArmorSwitch:CreateSlider({
 	Name = 'Range',
-	Tooltip = 'How far this reaches, in studs',
+	Tooltip = 'How far this reaches, in studs\nDefault is 30',
 	Min = 1,
 	Max = 30,
 	Default = 30,

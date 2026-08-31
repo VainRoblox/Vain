@@ -259,7 +259,7 @@ Range = AutoBank:CreateSlider({
 })
 Delay = AutoBank:CreateSlider({
 	Name = 'Delay',
-	Tooltip = 'Wait between each item going in',
+	Tooltip = 'Wait between each item going in\nDefault is 0.25',
 	Min = 0,
 	Max = 3,
 	Default = 0.25,
@@ -268,7 +268,7 @@ Delay = AutoBank:CreateSlider({
 })
 UpdateRate = AutoBank:CreateSlider({
 	Name = 'Update Rate',
-	Tooltip = 'How often it banks\nLower costs less performance',
+	Tooltip = 'How often it banks\nDefault is 4hz',
 	Min = 1,
 	Max = 20,
 	Default = 4,
