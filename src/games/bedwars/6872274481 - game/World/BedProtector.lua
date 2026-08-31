@@ -49,12 +49,25 @@ local function itemTypeFor(name)
 	end
 end
 
+--[[
+	TNT counts as a placeable block as far as the metadata goes, and a soft one at that,
+	so it would be reached for first by the weakest-first choice and fallen back to by the
+	strongest-first choice once everything else ran out - either way stacking explosives
+	against the bed this is supposed to be protecting.
+
+	Matched on the name rather than a list of item types, so the siege and balloon variants
+	are covered by the same rule.
+]]
+local function explosive(itemType)
+	return itemType:find('tnt') ~= nil
+end
+
 -- Everything placeable you are carrying, toughest first.
 local function heldBlocks()
 	local blocks = {}
 	for _, item in store.inventory.inventory.items do
 		local meta = bedwars.ItemMeta[item.itemType]
-		if meta and meta.block then
+		if meta and meta.block and not explosive(item.itemType) then
 			table.insert(blocks, {Item = item, Health = meta.block.health or 0})
 		end
 	end
