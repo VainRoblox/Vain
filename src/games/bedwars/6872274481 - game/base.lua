@@ -1082,6 +1082,69 @@ run(function()
 		end
 		table.insert(queue, low, {dist, node})
 	end
+
+	-- Air only counts as a way in when it leads back out of the build. Air walled in on
+	-- every side is a pocket: breaking into one opens nothing, because the layers around
+	-- it are all still standing, so it just looks like blocks going missing out of the
+	-- middle of a wall.
+	--
+	-- Outside is the structure's own extent rather than a number of cells. The flood
+	-- below has already touched every block hanging off the bed, so air that gets past
+	-- the edge of that has left the build by definition. Counting cells could never say
+	-- that: a pocket sitting against the tunnel being dug joins air that does reach out,
+	-- so past a few cells the count says "escaped" about a pocket and the test quietly
+	-- stops meaning anything.
+	--
+	-- The cap is only there so a hopeless case cannot stall the break loop, and it fails
+	-- open - refusing every opening would leave the nuker doing nothing at all.
+	local POCKET_LIMIT = 4096
+
+	local function reachesOutside(start, memo, low, high)
+		local cached = memo[start]
+		if cached ~= nil then return cached end
+
+		local seen, frontier, count, escaped = {[start] = true}, {start}, 1, false
+
+		while #frontier > 0 and not escaped do
+			local nextfrontier = {}
+			for _, pos in frontier do
+				if pos.X < low.X or pos.Y < low.Y or pos.Z < low.Z
+					or pos.X > high.X or pos.Y > high.Y or pos.Z > high.Z then
+					escaped = true
+					break
+				end
+
+				for _, side in sides do
+					local at = pos + side
+					if seen[at] or getPlacedBlock(at) then continue end
+					-- Running into air already known to get out settles this body too,
+					-- rather than walking the whole of the outside again for every face
+					-- of every opening along it.
+					if memo[at] then
+						escaped = true
+						break
+					end
+					seen[at] = true
+
+					count += 1
+					if count >= POCKET_LIMIT then
+						escaped = true
+						break
+					end
+					table.insert(nextfrontier, at)
+				end
+				if escaped then break end
+			end
+			frontier = nextfrontier
+		end
+
+		-- One verdict for the whole body of air, since every cell reached is part of it.
+		for pos in seen do
+			memo[pos] = escaped
+		end
+		return escaped
+	end
+
 	-- Which opening you can actually reach depends on where you stand, so it is chosen
 	-- per call rather than baked into the cache. Picking purely on cost was wrong twice
 	-- over: the cheapest opening could sit on the far side of a build, out of range, and
@@ -1201,6 +1264,9 @@ run(function()
 		local visited, unvisited, distances, air, path = {}, {{0, blockpos}}, {[blockpos] = 0}, {}, {}
 		-- Which way each block was reached from, so carrying on that way can be preferred.
 		local heading = {}
+		-- The corners of everything the flood touches, which is what air is measured
+		-- against afterwards to tell a way out from a sealed pocket.
+		local low, high = blockpos, blockpos
 
 		for _ = 1, 10000 do
 			local node = unvisited[1]
@@ -1210,6 +1276,7 @@ run(function()
 			-- come up twice; the first time is the cheap one.
 			if visited[node[2]] then continue end
 			visited[node[2]] = true
+			low, high = low:Min(node[2]), high:Max(node[2])
 
 			for _, side in sides do
 				side = node[2] + side
@@ -1238,9 +1305,16 @@ run(function()
 
 		-- Only the openings are kept, not the whole distance map, so a cached route
 		-- stays small enough to hold one per target.
+		local pockets = {}
 		local exposed = {}
 		for node in air do
-			exposed[node] = distances[node]
+			for _, side in sides do
+				local at = node + side
+				if not getPlacedBlock(at) and reachesOutside(at, pockets, low, high) then
+					exposed[node] = distances[node]
+					break
+				end
+			end
 		end
 		if not next(exposed) then return end
 
