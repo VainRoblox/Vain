@@ -48,9 +48,30 @@ local function checkAdjacent(pos)
 	return false
 end
 
+--[[
+	How many of an item you are actually carrying, right now.
+
+	store.hand.amount is a snapshot, rebuilt only when the held item itself changes - so
+	it read whatever you had at the moment you equipped and then sat there while you built
+	the number away. Counted off the inventory instead, which is replaced on every change,
+	so it follows blocks being used.
+
+	Every stack of the type is counted rather than just the one in hand, since what is
+	wanted is how many are left, and the next stack is as much left as this one.
+]]
+local function blocksLeft(itemType)
+	local amount = 0
+	for _, item in store.inventory.inventory.items do
+		if item.itemType == itemType then
+			amount += item.amount or 0
+		end
+	end
+	return amount
+end
+
 local function getScaffoldBlock()
 	if store.hand.toolType == 'block' then
-		return store.hand.tool.Name, store.hand.amount
+		return store.hand.tool.Name, blocksLeft(store.hand.tool.Name)
 	elseif (not LimitItem.Enabled) then
 		local wool, amount = getWool()
 		if wool then
@@ -88,7 +109,9 @@ Scaffold = vain.Categories.Utility:CreateModule({
 					if label then
 						amount = amount or 0
 						label.Text = amount..' <font color="rgb(170, 170, 170)">(Scaffold)</font>'
-						label.TextColor3 = Color3.fromHSV((amount / 128) / 2.8, 0.86, 1)
+						-- Clamped, because counting every stack can now go past the single
+						-- stack this was scaled for and the hue would wrap back round to red.
+						label.TextColor3 = Color3.fromHSV(math.clamp((amount / 128) / 2.8, 0, 1), 0.86, 1)
 					end
 
 					if wool then
