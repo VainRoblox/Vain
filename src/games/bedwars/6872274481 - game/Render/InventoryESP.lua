@@ -3,6 +3,7 @@ local List
 local Background
 local Color = {}
 local ShowAmount
+local AllItems
 
 -- The things worth knowing an enemy has. Seeded straight into the item list, so they can
 -- be switched off or removed there like anything else rather than being nine settings of
@@ -38,13 +39,17 @@ end
 -- than however the inventory happened to be arranged.
 local function listed(itemType)
 	if not itemType then return nil end
-	if not (List and List.ListEnabled) then return nil end
 
-	for i, v in List.ListEnabled do
-		if itemType == v or itemType:find(v) then
-			return i
+	if List and List.ListEnabled then
+		for i, v in List.ListEnabled do
+			if itemType == v or itemType:find(v) then
+				return i
+			end
 		end
 	end
+
+	-- Everything the list did not name, sorted after everything it did.
+	if on(AllItems) then return math.huge end
 	return nil
 end
 
@@ -275,6 +280,13 @@ Color = InventoryESP:CreateColorSlider({
 		end
 	end,
 	Darker = true
+})
+AllItems = InventoryESP:CreateToggle({
+	Name = 'All Items',
+	Tooltip = 'Shows everything they carry, not just the list',
+	Function = function()
+		task.spawn(refreshAll)
+	end
 })
 ShowAmount = InventoryESP:CreateToggle({
 	Name = 'Show Amount',
