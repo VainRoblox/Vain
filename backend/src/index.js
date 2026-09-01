@@ -28,6 +28,10 @@ export default {
 					DISCORD_PUBLIC_KEY: Boolean(env.DISCORD_PUBLIC_KEY),
 					DISCORD_BOT_TOKEN: Boolean(env.DISCORD_BOT_TOKEN),
 					DISCORD_APP_ID: Boolean(env.DISCORD_APP_ID),
+					// Without this /whitelist edit still links the account and still says
+					// something reassuring, it just never writes the file the game reads -
+					// the one failure here with no visible symptom.
+					GITHUB_TOKEN: Boolean(env.GITHUB_TOKEN),
 				},
 				// Present only on a build that includes interaction deferral.
 				defersInteractions: true,
