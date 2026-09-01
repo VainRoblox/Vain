@@ -3,6 +3,8 @@ local List
 local Background
 local Color = {}
 local ShowAmount
+local Size
+local Height
 
 -- The things worth knowing an enemy has. Seeded straight into the item list, so they can
 -- be switched off or removed there like anything else rather than being nine settings of
@@ -30,6 +32,20 @@ Folder.Parent = vain.gui
 -- straight off them throw once per entity, every frame.
 local function on(setting)
 	return setting ~= nil and setting.Enabled
+end
+
+-- Icons are drawn at 32 and the strip around them at 36; everything below is those two
+-- multiplied, so one slider moves the whole thing together.
+local function scale()
+	return (Size and Size.Value or 100) / 100
+end
+
+local function iconSize()
+	return math.round(32 * scale())
+end
+
+local function stripSize()
+	return math.round(36 * scale())
 end
 
 -- Which entry of the list an item matches, or nil for one that matches nothing. The
@@ -104,7 +120,7 @@ end
 
 local function addIcon(frame, itemType, amount)
 	local image = Instance.new('ImageLabel')
-	image.Size = UDim2.fromOffset(32, 32)
+	image.Size = UDim2.fromOffset(iconSize(), iconSize())
 	image.BackgroundTransparency = 1
 	image.Image = bedwars.getIcon({itemType = itemType}, true)
 	image.Parent = frame
@@ -238,8 +254,10 @@ local function Added(ent)
 	local billboard = Instance.new('BillboardGui')
 	billboard.Parent = Folder
 	billboard.Name = 'inventory'
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
-	billboard.Size = UDim2.fromOffset(36, 36)
+	-- Below the name, not through it. NameTags draws at the character's hip height plus
+	-- one, roughly 3.6 studs up, and this sat at 4 - just above it, so the two overlapped.
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, Height and Height.Value or 2.8, 0)
+	billboard.Size = UDim2.fromOffset(stripSize(), stripSize())
 	billboard.AlwaysOnTop = true
 	billboard.ClipsDescendants = false
 	billboard.Adornee = ent.RootPart
@@ -257,7 +275,7 @@ local function Added(ent)
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-		billboard.Size = UDim2.fromOffset(math.max(layout.AbsoluteContentSize.X + 4, 36), 36)
+		billboard.Size = UDim2.fromOffset(math.max(layout.AbsoluteContentSize.X + 4, stripSize()), stripSize())
 	end)
 	layout.Parent = frame
 	local corner = Instance.new('UICorner')
@@ -340,6 +358,31 @@ Color = InventoryESP:CreateColorSlider({
 		end
 	end,
 	Darker = true
+})
+Size = InventoryESP:CreateSlider({
+	Name = 'Size',
+	Tooltip = 'How big the icons are\nDefault is 100',
+	Min = 50,
+	Max = 250,
+	Default = 100,
+	Suffix = '%',
+	Function = function()
+		task.spawn(refreshAll)
+	end
+})
+Height = InventoryESP:CreateSlider({
+	Name = 'Height',
+	Tooltip = 'How far above the player it sits\nDefault is 2.8',
+	Min = 0,
+	Max = 8,
+	Default = 2.8,
+	Decimal = 10,
+	Suffix = 'studs',
+	Function = function(value)
+		for _, entry in Entries do
+			entry.Billboard.StudsOffsetWorldSpace = Vector3.new(0, value, 0)
+		end
+	end
 })
 ShowAmount = InventoryESP:CreateToggle({
 	Name = 'Show Amount',
