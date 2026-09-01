@@ -162,23 +162,40 @@ local function refreshAdornee(entry, plr)
 		totals[item.itemType] += tonumber(item.amount) or 1
 	end
 
+	--[[
+		Gear is not loot.
+
+		Armour, swords and pickaxes are worn or held rather than stocked, so counting them
+		alongside blocks and resources says nothing useful and pushes the things that do
+		matter off the end of the strip. The item's own metadata names all three.
+	]]
+	local function isGear(itemType)
+		local meta = bedwars.ItemMeta[itemType]
+		return meta ~= nil and (meta.armor ~= nil or meta.sword ~= nil or meta.breakBlock ~= nil)
+	end
+
 	-- Live first. The snapshot is only used when the folder cannot be reached, so the
 	-- display falls back to being stale rather than to being empty.
 	local folder = inventoryFolder(plr)
 	if folder then
 		for _, child in folder:GetChildren() do
-			count({itemType = child.Name, amount = child:GetAttribute('Amount')})
+			-- Worn armour is in this folder too, carrying the slot it sits in.
+			if child:GetAttribute('ArmorSlot') == nil and not isGear(child.Name) then
+				count({itemType = child.Name, amount = child:GetAttribute('Amount')})
+			end
 		end
 	elseif type(inventory.items) == 'table' then
 		for _, item in inventory.items do
-			count(item)
+			if not isGear(item.itemType) then
+				count(item)
+			end
 		end
 	end
 
 	-- Their hand is normally part of the list above already; this is only for the case
 	-- where it is not.
 	local hand = inventory.hand
-	if type(hand) == 'table' and hand.itemType and not totals[hand.itemType] then
+	if type(hand) == 'table' and hand.itemType and not totals[hand.itemType] and not isGear(hand.itemType) then
 		count(hand)
 	end
 
