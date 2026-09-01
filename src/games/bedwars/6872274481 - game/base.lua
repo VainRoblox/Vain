@@ -769,16 +769,31 @@ run(function()
 		return tab
 	end
 
+	--[[
+		Bedwars differs from everywhere else: rank only shields somebody you are against.
+
+		A player who outranks you and is on your own team is treated as any other
+		teammate, so nothing about being ranked gets in the way of a game you are playing
+		together. On any other team they are untouchable - no aim, no aura, no esp, and
+		none of their base either, see isBlockBreakable below.
+
+		Every other game applies the plain rule from the universal base, where team makes
+		no difference at all.
+	]]
+	local function sameTeam(plr)
+		local mine = lplr:GetAttribute('Team')
+		return mine ~= nil and mine == plr:GetAttribute('Team')
+	end
+	bedwars.sameTeam = sameTeam
+
+	entitylib.protectionCheck = function(ent)
+		if not ent.Player or sameTeam(ent.Player) then return true end
+		return select(2, whitelist:get(ent.Player))
+	end
+
 	entitylib.targetCheck = function(ent)
 		if ent.NPC then return true end
 		if isFriend(ent.Player) then return false end
-
-		-- Before the team logic, not after. Every entity in this game is given a
-		-- TeamCheck, and returning on it first meant the rank check below was never
-		-- reached - so protection did nothing here at all, in the one game it is most
-		-- wanted.
-		if ent.Player and not select(2, whitelist:get(ent.Player)) then return false end
-
 		if ent.TeamCheck then
 			return ent:TeamCheck()
 		end
@@ -1051,18 +1066,58 @@ run(function()
 		return call
 	end
 
-	bedwars.BlockController.isBlockBreakable = function(self, breakTable, plr)
+	--[[
+		Whether a team is one you must leave alone: somebody on it outranks you, and it is
+		not your own.
+
+		Answered by walking the players rather than by team id alone, since a team is only
+		worth shielding while a protected player is actually on it.
+	]]
+	local function protectedTeam(teamId)
+		if teamId == nil then return false end
+		if lplr:GetAttribute('Team') == teamId then return false end
+
+		for _, other in playersService:GetPlayers() do
+			if other:GetAttribute('Team') == teamId and not select(2, whitelist:get(other)) then
+				return true
+			end
+		end
+		return false
+	end
+	bedwars.protectedTeam = protectedTeam
+
+	--[[
+		Their base is part of them.
+
+		Protecting the player and leaving their bed open would miss the point entirely -
+		the bed is the thing worth attacking. Two ways a block can belong to a shielded
+		team: a bed carries a NoBreak attribute naming the team it belongs to, and any
+		block somebody placed carries the id of whoever placed it, which is what covers
+		the defence stacked around it.
+	]]
+	bedwars.BlockController.isBlockBreakable = function(self, breakTable, breaker)
 		local obj = bedwars.BlockController:getStore():getBlockAt(breakTable.blockPosition)
 
-		if obj and obj.Name == 'bed' then
-			for _, plr in playersService:GetPlayers() do
-				if obj:GetAttribute('Team'..(plr:GetAttribute('Team') or 0)..'NoBreak') and not select(2, whitelist:get(plr)) then
+		if obj then
+			if obj.Name == 'bed' then
+				for _, other in playersService:GetPlayers() do
+					local teamId = other:GetAttribute('Team')
+					if teamId and obj:GetAttribute('Team'..teamId..'NoBreak') and protectedTeam(teamId) then
+						return false
+					end
+				end
+			end
+
+			local placer = obj:GetAttribute('PlacedByUserId')
+			if placer and placer ~= 0 then
+				local owner = playersService:GetPlayerByUserId(placer)
+				if owner and not sameTeam(owner) and not select(2, whitelist:get(owner)) then
 					return false
 				end
 			end
 		end
 
-		return OldBreak(self, breakTable, plr)
+		return OldBreak(self, breakTable, breaker)
 	end
 
 	local cache, blockhealthbar = {}, {blockHealth = -1, breakingBlockPosition = Vector3.zero}

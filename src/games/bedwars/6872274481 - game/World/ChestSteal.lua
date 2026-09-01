@@ -51,6 +51,21 @@ local function teamOf(inst)
 	return team ~= nil and tostring(team) or nil
 end
 
+-- A crate belonging to a team you are not allowed to touch. Separate from Skip Own,
+-- which is a preference - this one is not optional, the same way their bed is not.
+local function shieldedChest(block)
+	if not block or not bedwars.protectedTeam then return false end
+
+	local node = block
+	for _ = 1, 3 do
+		if not node then break end
+		local team = node:GetAttribute('Team') or node:GetAttribute('GeneratorTeam')
+		if team ~= nil and bedwars.protectedTeam(team) then return true end
+		node = node.Parent
+	end
+	return false
+end
+
 local function teamChest(block)
 	local mine = lplr:GetAttribute('Team')
 	if mine == nil or not block then return false end
@@ -186,8 +201,10 @@ ChestSteal = vain.Categories.World:CreateModule({
 									local folder = select(2, observedValue())
 									-- Judged the same as any other chest, so opening your own
 									-- by hand is not a way round the checks below.
+									local block = blockFor(chests, folder)
 									if not ownChest(folder)
-										and not (SkipOwn.Enabled and teamChest(blockFor(chests, folder))) then
+										and not shieldedChest(block)
+										and not (SkipOwn.Enabled and teamChest(block)) then
 										lootChest(folder)
 									end
 								end
@@ -199,6 +216,7 @@ ChestSteal = vain.Categories.World:CreateModule({
 									local folder = value and value.Value
 									if folder and inRange(v)
 										and not ownChest(folder)
+										and not shieldedChest(v)
 										and not (SkipOwn.Enabled and teamChest(v)) then
 										lootChest(folder, v)
 									end
