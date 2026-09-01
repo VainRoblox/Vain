@@ -6,6 +6,8 @@ local Quantity
 local FullLayers
 local FullColor = {}
 local UpdateRate
+local Warn
+local Warned = {}
 local Reference = {}
 local Signature = {}
 local Folder = Instance.new('Folder')
@@ -128,7 +130,7 @@ local function scanBed(bed)
 		end
 	end
 
-	return names, counts, full
+	return names, counts, full, layers
 end
 
 -- What the plate would look like, as a string. Re-checking is cheap but tearing down
@@ -155,7 +157,7 @@ end
 local function refreshAdornee(v)
 	if not v.Adornee then return end
 
-	local order, counts, full = scanBed(v.Adornee)
+	local order, counts, full, layers = scanBed(v.Adornee)
 	-- Toughest first. A block the metadata has never heard of sorts last rather than
 	-- throwing, which would take every plate down with it.
 	local function health(name)
@@ -167,6 +169,24 @@ local function refreshAdornee(v)
 	end)
 	-- Set before the signature check below, so flicking the setting takes effect even
 	-- when nothing about the wrap itself has changed.
+	--[[
+		Obsidian going onto the ring touching the bed, said once as it happens.
+
+		Edge triggered on purpose: the plates are re-scanned several times a second, so
+		reporting the state rather than the change would repeat the same warning forever.
+		The flag clears when the obsidian is gone, so a bed being re-plated later warns
+		again rather than staying silent because it once had some.
+	]]
+	if Warn and Warn.Enabled then
+		local bed = v.Adornee
+		local plated = (layers[1] and layers[1].obsidian) ~= nil
+
+		if plated and not Warned[bed] then
+			notif('BedPlates', isOwnBed(bed) and 'Obsidian is going on your bed!' or 'Someone is putting obsidian on a bed!', 8, 'alert')
+		end
+		Warned[bed] = plated or nil
+	end
+
 	v.Enabled = #order > 0 and (not ShowOwn or ShowOwn.Enabled or not isOwnBed(v.Adornee))
 
 	local sig = signature(order, counts, full)
@@ -306,12 +326,17 @@ BedPlates = vain.Categories.Minigames:CreateModule({
 				until not BedPlates.Enabled
 			end)
 		else
+			table.clear(Warned)
 			table.clear(Reference)
 			table.clear(Signature)
 			Folder:ClearAllChildren()
 		end
 	end,
 	Tooltip = 'Displays blocks over the bed'
+})
+Warn = BedPlates:CreateToggle({
+	Name = 'Obsidian Warning',
+	Tooltip = 'Warns when obsidian reaches a bed'
 })
 UpdateRate = BedPlates:CreateSlider({
 	Name = 'Update Rate',
