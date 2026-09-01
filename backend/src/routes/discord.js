@@ -10,7 +10,6 @@ import {
 	setTargetMessage,
 } from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
-import { issueCommand } from '../lib/commands.js';
 import { upsertWhitelistEntry, removeWhitelistEntry } from '../lib/whitelist.js';
 import {
 	upsertAccount,
@@ -77,7 +76,7 @@ async function handleWhitelistEdit(env, interaction, discordId, username) {
 		return replyMessage(`Couldn't find a Roblox user named "${username}".`);
 	}
 
-	const secret = await upsertBinding(env.DB, {
+	await upsertBinding(env.DB, {
 		discordId,
 		robloxUserId: lookup.userId,
 		robloxUsername: lookup.username,
@@ -110,12 +109,7 @@ async function handleWhitelistEdit(env, interaction, discordId, username) {
 		status = `\n\nRank **${RANKS[level]}** is live. Clients pick it up within about ten seconds.`;
 	}
 
-	return replyMessage(
-		`Linked! Your Discord account is now bound to Roblox user "${lookup.username}".${status}\n\n` +
-			`Your personal Vain key (needed to issue commands - keep this private, don't share it):\n` +
-			`\`${secret}\`\n\n` +
-			`Paste it in-game with: \`;rank key ${secret}\` (or Settings → General → Rank key in the GUI)`
-	);
+	return replyMessage(`Linked! Your Discord account is now bound to Roblox user "${lookup.username}".${status}`);
 }
 
 async function handleWhitelistUnlink(env, discordId) {
@@ -130,36 +124,6 @@ async function handleWhitelistUnlink(env, discordId) {
 	return replyMessage('Unlinked. Your Roblox account no longer has a rank.');
 }
 
-async function handleCommandInteraction(env, interaction, action, targetUsername) {
-	const target = await lookupUserId(targetUsername);
-	if (!target) {
-		return replyMessage(`Couldn't find a Roblox user named "${targetUsername}".`);
-	}
-
-	const roleIds = interaction.member?.roles ?? [];
-	const rankConfigRows = await getRankConfig(env.DB, interaction.guild_id);
-	const issuerRank = rankFromRoles(roleIds, rankConfigRows);
-
-	const result = await issueCommand(env, {
-		issuerDiscordId: interaction.member?.user?.id,
-		issuerRankOverride: issuerRank,
-		targetRobloxUserId: target.userId,
-		command: action,
-		args: [],
-	});
-
-	if (!result.ok) {
-		return replyMessage(`Couldn't run that: ${result.error}`);
-	}
-	return replyMessage(`Queued "${action}" on ${target.username}.`);
-}
-
-// Re-renders the roster embed from the current DB state into the one tracked
-// message, editing it in place. If that message was deleted (or none exists yet),
-// posts a fresh one into the fixed roster channel and remembers its ID.
-// Returns true/false rather than swallowing failures - a bad channel permission (or
-// any other post/edit failure) needs to actually surface in the command reply, not
-// look like a silent success while the embed never updates.
 async function syncRosterEmbed(env) {
 	const accounts = await listAccounts(env.DB);
 	const embed = buildRosterEmbed(accounts);
@@ -496,12 +460,6 @@ async function runCommand(request, env, ctx, interaction) {
 		if (sub?.name === 'unlink') {
 			return await handleWhitelistUnlink(env, discordId);
 		}
-	}
-
-	if (name === 'command') {
-		const action = getOption(interaction.data.options, 'action');
-		const target = getOption(interaction.data.options, 'target');
-		return await handleCommandInteraction(env, interaction, action, target);
 	}
 
 	if (name === 'add') {

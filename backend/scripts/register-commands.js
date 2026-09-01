@@ -44,18 +44,6 @@ const commands = [
 			},
 		],
 	},
-	{
-		name: 'command',
-		description: 'Run a command on a lower-ranked Roblox user',
-		// Administrator-only by default. Server owners can still loosen this per-command
-		// in Server Settings > Integrations if they want other ranked members to use it
-		// from Discord too - this only sets the out-of-the-box default.
-		default_member_permissions: String(1 << 3), // ADMINISTRATOR permission bit (0x8)
-		options: [
-			{ type: 3, name: 'action', description: 'Command name (e.g. kick)', required: true },
-			{ type: 3, name: 'target', description: 'Target Roblox username', required: true },
-		],
-	},
 	// Account roster. Visible to everyone (Discord has no native per-role gating for
 	// custom roles), but actually restricted to ROSTER_ROLE_ID in routes/discord.js -
 	// anyone else gets an ephemeral "you don't have permission" reply.
