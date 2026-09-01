@@ -11,6 +11,7 @@ import {
 } from '../lib/db.js';
 import { rankFromRoles } from '../lib/ranks.js';
 import { issueCommand } from '../lib/commands.js';
+import { upsertWhitelistEntry, removeWhitelistEntry } from '../lib/whitelist.js';
 import {
 	upsertAccount,
 	removeAccount,
@@ -64,7 +65,13 @@ function normalizeRank(rank) {
 // someone types in a Roblox username that isn't really theirs: their own already-real
 // rank ends up attributed to the wrong roblox_userid in logs - it can't grant anyone a
 // rank they don't actually hold on Discord.
-async function handleWhitelistEdit(env, discordId, username) {
+// Links a Discord account to a Roblox one, and writes that account into the whitelist
+// file the game clients read.
+//
+// The rank is taken from the caller's own Discord roles, never from anything they type,
+// so the only way to a higher level is to actually hold the role. Someone with no mapped
+// role links fine and simply gets no whitelist entry - that is what Free means.
+async function handleWhitelistEdit(env, interaction, discordId, username) {
 	const lookup = await lookupUserId(username);
 	if (!lookup) {
 		return replyMessage(`Couldn't find a Roblox user named "${username}".`);
@@ -77,8 +84,34 @@ async function handleWhitelistEdit(env, discordId, username) {
 		rankLevel: 0, // resolved live from Discord roles on first rank check, not needed here
 	});
 
+	const roleIds = interaction.member?.roles ?? [];
+	const rankConfigRows = await getRankConfig(env.DB, interaction.guild_id ?? env.DISCORD_GUILD_ID);
+	const level = rankFromRoles(roleIds, rankConfigRows);
+
+	// Written under the canonical username Roblox reports rather than the typed one: the
+	// game hashes plr.Name, so the wrong casing produces an entry that silently matches
+	// nobody.
+	const result = await upsertWhitelistEntry(env, {
+		discordId,
+		robloxUsername: lookup.username,
+		robloxUserId: lookup.userId,
+		level,
+	});
+
+	const RANKS = { 0: 'Free', 1: 'Premium', 2: 'Privileged', 3: 'Owner' };
+	let status;
+	if (!result.ok) {
+		// Say so plainly. A silent failure here looks identical to success until the
+		// player loads in and finds they have no rank.
+		status = `\n\n**The whitelist file could not be updated (${result.error}), so this rank is not live yet.** Tell an owner.`;
+	} else if (level < 1) {
+		status = `\n\nYou have no ranked role, so you are **Free** - linked, but not whitelisted.`;
+	} else {
+		status = `\n\nRank **${RANKS[level]}** is live. Clients pick it up within about ten seconds.`;
+	}
+
 	return replyMessage(
-		`Linked! Your Discord account is now bound to Roblox user "${lookup.username}".\n\n` +
+		`Linked! Your Discord account is now bound to Roblox user "${lookup.username}".${status}\n\n` +
 			`Your personal Vain key (needed to issue commands - keep this private, don't share it):\n` +
 			`\`${secret}\`\n\n` +
 			`Paste it in-game with: \`;rank key ${secret}\` (or Settings → General → Rank key in the GUI)`
@@ -87,6 +120,13 @@ async function handleWhitelistEdit(env, discordId, username) {
 
 async function handleWhitelistUnlink(env, discordId) {
 	await deleteBindingByDiscordId(env.DB, discordId);
+
+	// Take them out of the whitelist too, or unlinking would leave the rank live and the
+	// binding gone - the worst of both.
+	const result = await removeWhitelistEntry(env, discordId);
+	if (!result.ok) {
+		return replyMessage(`Unlinked, but the whitelist file could not be updated (${result.error}) - your rank may still be live. Tell an owner.`);
+	}
 	return replyMessage('Unlinked. Your Roblox account no longer has a rank.');
 }
 
@@ -451,7 +491,7 @@ async function runCommand(request, env, ctx, interaction) {
 		const sub = interaction.data.options?.[0];
 		if (sub?.name === 'edit') {
 			const username = getOption(sub.options, 'roblox');
-			return await handleWhitelistEdit(env, discordId, username);
+			return await handleWhitelistEdit(env, interaction, discordId, username);
 		}
 		if (sub?.name === 'unlink') {
 			return await handleWhitelistUnlink(env, discordId);
