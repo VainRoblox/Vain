@@ -2241,6 +2241,7 @@ kitRun(function()
     local DepositRange
     local DepositDelay
     local BeeLimit
+    local Legit
     local HiveESP
     local ShowAmount
     local ShowOwn
@@ -2323,18 +2324,6 @@ kitRun(function()
         end
         return true
     end
-
-    --[[
-        How much a single deposit actually adds.
-
-        It is not always one: the server can take several bees off the stack in one go, so
-        a hive sitting two below the limit could jump past it in a single deposit and the
-        limit would be a suggestion rather than a ceiling.
-
-        Learned from what the last deposit did rather than assumed, since it is not stated
-        anywhere, and starts at one so the first deposit is never held back.
-    ]]
-    local depositStep = 1
 
     local function ownHive(hive)
         return hive:GetAttribute('PlacedByUserId') == lplr.UserId
@@ -2455,9 +2444,7 @@ kitRun(function()
 
         for _, hive in collectionService:GetTagged('beehive') do
             if not ownHive(hive) then continue end
-            -- Room for a whole deposit, not just room for one bee.
-            local level = hive:GetAttribute('Level') or 0
-            if level >= limit or level + depositStep > limit then continue end
+            if (hive:GetAttribute('Level') or 0) >= limit then continue end
 
             local part = partOf(hive)
             if not part then continue end
@@ -2473,54 +2460,24 @@ kitRun(function()
         if not prompt then return end
 
         --[[
-            What is watched to know a deposit landed.
+            Legit holds the prompt for as long as the game asks, which is what a player
+            doing this by hand produces. It starts the moment the hive is in range - there
+            is nothing to wait for before reaching for a prompt that is already there.
 
-            The count in hand was the wrong thing to watch: it is written from a store
-            subscription that lags well behind the server, so the wait kept falling through
-            early and fired the prompt again, and again - four of them landing at once and
-            the count only catching up afterwards. That is the bursts.
-
-            The hive's own Level is set by the server and replicates straight away, so it
-            says exactly when one bee has gone in and no more than one.
+            Otherwise the prompt is simply fired, which is instant.
         ]]
-        local before = best:GetAttribute('Level') or 0
-
-        --[[
-            Held for as long as the prompt itself asks for, rather than fired through.
-
-            That duration is the game's own pacing for the interaction, so honouring it is
-            both what a player does and what the server sees from one.
-        ]]
-        local hold = prompt.HoldDuration or 0
-        if hold > 0 then
+        if on(Legit) then
             prompt:InputHoldBegin()
-            task.wait(hold)
+            local hold = prompt.HoldDuration or 0
+            if hold > 0 then
+                task.wait(hold)
+            end
             prompt:InputHoldEnd()
         elseif fireproximityprompt then
             fireproximityprompt(prompt)
         else
             prompt:InputHoldBegin()
             prompt:InputHoldEnd()
-        end
-
-        --[[
-            One bee per trip, waited out here.
-
-            Bounded, so a deposit the server turns down does not wedge the loop - but long
-            enough that a slow round trip is not mistaken for a refusal and fired at again.
-            Running out of bees ends the wait too, since no level is coming.
-        ]]
-        local deadline = os.clock() + 2
-        repeat
-            task.wait(0.05)
-        until os.clock() >= deadline
-            or (best:GetAttribute('Level') or 0) > before
-            or not best.Parent
-            or not entitylib.isAlive
-
-        local after = best:GetAttribute('Level') or before
-        if after > before then
-            depositStep = after - before
         end
 
         local delay = value(DepositDelay, 0.1)
@@ -2698,6 +2655,7 @@ kitRun(function()
             if DepositRange and DepositRange.Object then DepositRange.Object.Visible = callback end
             if DepositDelay and DepositDelay.Object then DepositDelay.Object.Visible = callback end
             if BeeLimit and BeeLimit.Object then BeeLimit.Object.Visible = callback end
+            if Legit and Legit.Object then Legit.Object.Visible = callback end
         end,
         Default = true
     })
@@ -2718,6 +2676,11 @@ kitRun(function()
         Default = 0.1,
         Decimal = 100,
         Suffix = 'sec',
+        Darker = true
+    })
+    Legit = Beekeeper:CreateToggle({
+        Name = 'Legit',
+        Tooltip = 'Holds the prompt the way the game intends',
         Darker = true
     })
     BeeLimit = Beekeeper:CreateSlider({
@@ -2753,6 +2716,7 @@ kitRun(function()
     ShowOwn = Beekeeper:CreateToggle({
         Name = 'Show Own',
         Tooltip = 'Includes hives you placed yourself',
+        Default = true,
         Function = function()
             if Beekeeper.Enabled then
                 Beekeeper:Toggle()
