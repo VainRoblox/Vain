@@ -1,6 +1,7 @@
 import { verifyDiscordRequest, replyMessage, postMessage, editMessage, followUpOriginal } from '../lib/discord.js';
 import { lookupUserId, lookupUserIds, getAvatarThumbnails } from '../lib/roblox.js';
 import {
+	getBindingByRobloxId,
 	upsertBinding,
 	deleteBindingByDiscordId,
 	getRankConfig,
@@ -74,6 +75,24 @@ async function handleWhitelistEdit(env, interaction, discordId, username) {
 	const lookup = await lookupUserId(username);
 	if (!lookup) {
 		return replyMessage(`Couldn't find a Roblox user named "${username}".`);
+	}
+
+	// Nobody may take an account that already belongs to someone else.
+	//
+	// Nothing here proves you own the Roblox account you name, and upsertBinding will
+	// happily delete an existing binding to make room. Together those let any ranked
+	// member claim somebody else's account: it would strip their binding and write a
+	// second whitelist entry for their player at the claimer's - lower - rank. The
+	// client now takes the highest of several matching entries rather than the first,
+	// so that can no longer demote anyone, but the bind itself still has to be refused.
+	//
+	// Re-linking your own account is unaffected, since the holder is you.
+	const held = await getBindingByRobloxId(env.DB, lookup.userId);
+	if (held && held.discord_id !== discordId) {
+		return replyMessage(
+			`"${lookup.username}" is already linked to another Discord account. ` +
+				`If it is yours, have them run \`/whitelist unlink\` first, or ask an owner.`
+		);
 	}
 
 	await upsertBinding(env.DB, {

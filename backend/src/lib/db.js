@@ -7,6 +7,13 @@ function generateSecret() {
 
 // Returns the fresh binding_secret so the caller can show it to the user once - it's
 // never retrievable again after this (only a fresh relink generates a new one).
+// Who currently holds a Roblox account, if anyone. Needed before binding it: without
+// this check upsertBinding below happily takes an account off whoever had it, which is
+// the whole hijack.
+async function getBindingByRobloxId(db, robloxUserId) {
+	return await db.prepare('SELECT * FROM bindings WHERE roblox_userid = ?').bind(robloxUserId).first();
+}
+
 async function upsertBinding(db, { discordId, robloxUserId, robloxUsername, rankLevel }) {
 	const now = Math.floor(Date.now() / 1000);
 	const bindingSecret = generateSecret();
@@ -83,6 +90,7 @@ async function setUsageAlertDate(db, date) {
 }
 
 export {
+	getBindingByRobloxId,
 	upsertBinding,
 	deleteBindingByDiscordId,
 	getRankConfig,

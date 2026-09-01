@@ -12,6 +12,10 @@
 // entry again to update or delete it - so it is hashed too rather than left as a
 // plaintext Discord id the way Vape's file does it.
 
+import { getGuildMemberRoles } from './discord.js';
+import { getRankConfig } from './db.js';
+import { rankFromRoles } from './ranks.js';
+
 const REPO = 'VainRoblox/whitelist';
 const PATH = 'PlayerWhitelist.json';
 const SALT = 'SelfReport';
@@ -90,9 +94,19 @@ async function upsertWhitelistEntry(env, { discordId, robloxUsername, robloxUser
 	if (!file) return { ok: false, error: 'read_failed' };
 
 	const key = await entryKey(discordId);
+	const hash = await playerHash(robloxUsername, robloxUserId);
 	file.data.WhitelistedUsers = file.data.WhitelistedUsers || {};
+
+	// One entry per player, whoever wrote it. Two entries sharing a hash is a state the
+	// client should never have to reason about, so stale ones for this player are cleared
+	// rather than left to accumulate - e.g. an account that was linked under a different
+	// Discord id before.
+	for (const [existingKey, entry] of Object.entries(file.data.WhitelistedUsers)) {
+		if (entry?.hash === hash && existingKey !== key) delete file.data.WhitelistedUsers[existingKey];
+	}
+
 	file.data.WhitelistedUsers[key] = {
-		hash: await playerHash(robloxUsername, robloxUserId),
+		hash,
 		level,
 		attackable: false,
 		tags: TAGS[level] ? [TAGS[level]] : [],
@@ -116,4 +130,65 @@ async function removeWhitelistEntry(env, discordId) {
 	return ok ? { ok: true, level: 0 } : { ok: false, error: 'write_failed' };
 }
 
-export { upsertWhitelistEntry, removeWhitelistEntry, playerHash, entryKey, TAGS };
+/*
+	Rewrites the whole file from what Discord currently says, on a schedule.
+
+	A rank is otherwise only written when somebody runs /whitelist edit, which means
+	losing a role revokes nothing: the entry sits there at the old level indefinitely and
+	the only way to take it back is to ask the person to unlink themselves. Demotions and
+	people leaving the server have to take effect on their own.
+
+	Every binding is re-resolved and the file written once at the end, so a run costs one
+	commit rather than one per member. A member Discord will not answer about is left
+	exactly as they are - a rate limit or an outage is not evidence that anybody lost a
+	role, and treating it as such would wipe the whitelist over a hiccup.
+*/
+async function syncWhitelist(env) {
+	if (!env.GITHUB_TOKEN || !env.DISCORD_BOT_TOKEN) return;
+
+	const bindings = await env.DB.prepare('SELECT discord_id, roblox_username, roblox_userid FROM bindings').all();
+	const rows = bindings?.results ?? [];
+	if (!rows.length) return;
+
+	const file = await readWhitelist(env);
+	if (!file) return;
+
+	const rankConfigRows = await getRankConfig(env.DB, env.DISCORD_GUILD_ID);
+	const users = file.data.WhitelistedUsers || {};
+	let changed = 0;
+
+	for (const row of rows) {
+		const roleIds = await getGuildMemberRoles(env.DISCORD_GUILD_ID, row.discord_id, env.DISCORD_BOT_TOKEN);
+		if (roleIds === null) continue; // could not ask - leave them alone
+
+		const level = roleIds === 'not_member' ? 0 : rankFromRoles(roleIds, rankConfigRows);
+		const key = await entryKey(row.discord_id);
+		const current = users[key];
+
+		if (level < 1) {
+			if (current) {
+				delete users[key];
+				changed++;
+			}
+			continue;
+		}
+
+		if (current?.level === level) continue;
+
+		users[key] = {
+			hash: await playerHash(row.roblox_username, row.roblox_userid),
+			level,
+			attackable: false,
+			tags: TAGS[level] ? [TAGS[level]] : [],
+		};
+		changed++;
+	}
+
+	if (!changed) return;
+
+	file.data.WhitelistedUsers = users;
+	await writeWhitelist(env, file.data, file.sha, `Sync ${changed} whitelist ${changed === 1 ? 'entry' : 'entries'} with Discord roles`);
+}
+
+
+export { upsertWhitelistEntry, removeWhitelistEntry, syncWhitelist, playerHash, entryKey, TAGS };

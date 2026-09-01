@@ -1,5 +1,6 @@
 import { handleDiscordInteraction } from './routes/discord.js';
 import { checkStaleCheckouts, checkUsageBudget } from './lib/reminders.js';
+import { syncWhitelist } from './lib/whitelist.js';
 
 export default {
 	async fetch(request, env, ctx) {
@@ -47,5 +48,7 @@ export default {
 	async scheduled(event, env, ctx) {
 		ctx.waitUntil(checkStaleCheckouts(env));
 		ctx.waitUntil(checkUsageBudget(env));
+		// Demotions and departures only take effect here - see syncWhitelist.
+		ctx.waitUntil(syncWhitelist(env));
 	},
 };
