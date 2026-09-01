@@ -16,15 +16,27 @@ Cloudflare Worker backend for the rank/command system. See `/home/vain/.claude/p
    npx wrangler secret put DISCORD_PUBLIC_KEY
    npx wrangler secret put DISCORD_BOT_TOKEN
    npx wrangler secret put DISCORD_APP_ID
+   npx wrangler secret put GITHUB_TOKEN
    ```
+   `GITHUB_TOKEN` is a fine-grained GitHub PAT scoped to **`VainRoblox/whitelist` only**,
+   with `Contents: Read and write`. It is what `/whitelist edit` uses to commit the
+   player whitelist that every game client reads — without it the command still links the
+   account but reports that the rank is not live.
    There's no shared API secret to set up — see "How auth works" below for why.
 6. **Fill in `wrangler.toml`**: `DISCORD_GUILD_ID` = your Discord server's ID
 7. **Deploy**: `npm run deploy`
 8. Go back to the Discord app's Interactions Endpoint URL field, paste your deployed Worker URL + `/discord/interactions`, save
 9. **Register the slash commands** (one-time, or again whenever you change them):
    ```
-   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_GUILD_ID=... npm run register-commands
+   npm run register-commands
    ```
+   It reads `backend/.dev.vars` — gitignored, one `KEY=value` per line:
+   ```
+   DISCORD_APP_ID=...
+   DISCORD_BOT_TOKEN=...
+   ```
+   The guild id comes from `wrangler.toml`, so it does not need repeating. Real env vars
+   still win if you prefer to pass them inline.
 10. **Map Discord roles to ranks** — no admin UI yet (v1), insert rows directly:
     ```
     npx wrangler d1 execute vain-api --remote --command \

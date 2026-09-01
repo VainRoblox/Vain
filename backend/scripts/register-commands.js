@@ -1,13 +1,56 @@
-// One-time setup: registers the slash commands with Discord.
-// Run with: DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_GUILD_ID=... node scripts/register-commands.js
-// Guild-scoped commands (vs global) show up instantly, which is what you want while testing.
+// One-time setup: registers the slash commands with Discord. Run it again whenever the
+// list below changes - Discord keeps offering whatever was registered last, including
+// commands the Worker no longer answers.
+//
+// Guild-scoped commands (vs global) show up instantly, which is what you want while
+// testing.
+//
+// Config comes from, in order of preference: real env vars, then .dev.vars (wrangler's
+// own local-secrets file, already gitignored), then wrangler.toml for the guild id since
+// that one is a plain var rather than a secret. So `npm run register-commands` works on
+// its own once .dev.vars exists, instead of needing three variables typed in front of it
+// every time - which is how a bot token ends up in your shell history.
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-const appId = process.env.DISCORD_APP_ID;
-const botToken = process.env.DISCORD_BOT_TOKEN;
-const guildId = process.env.DISCORD_GUILD_ID;
+const here = dirname(fileURLToPath(import.meta.url));
+
+function readIfPresent(path) {
+	try {
+		return readFileSync(path, 'utf8');
+	} catch {
+		return '';
+	}
+}
+
+// KEY=value per line, # comments and blanks ignored. Values are used verbatim apart from
+// one optional layer of surrounding quotes.
+function parseVars(text) {
+	const out = {};
+	for (const line of text.split('\n')) {
+		const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+		if (match) out[match[1]] = match[2].trim().replace(/^["']|["']$/g, '');
+	}
+	return out;
+}
+
+const devVars = parseVars(readIfPresent(join(here, '..', '.dev.vars')));
+const tomlVars = parseVars(readIfPresent(join(here, '..', 'wrangler.toml')));
+
+const appId = process.env.DISCORD_APP_ID || devVars.DISCORD_APP_ID;
+const botToken = process.env.DISCORD_BOT_TOKEN || devVars.DISCORD_BOT_TOKEN;
+const guildId = process.env.DISCORD_GUILD_ID || devVars.DISCORD_GUILD_ID || tomlVars.DISCORD_GUILD_ID;
 
 if (!appId || !botToken || !guildId) {
-	console.error('Set DISCORD_APP_ID, DISCORD_BOT_TOKEN, and DISCORD_GUILD_ID env vars first.');
+	const missing = [
+		!appId && 'DISCORD_APP_ID',
+		!botToken && 'DISCORD_BOT_TOKEN',
+		!guildId && 'DISCORD_GUILD_ID',
+	].filter(Boolean);
+
+	console.error(`Missing: ${missing.join(', ')}`);
+	console.error('Put them in backend/.dev.vars (gitignored), one KEY=value per line, then re-run.');
 	process.exit(1);
 }
 
