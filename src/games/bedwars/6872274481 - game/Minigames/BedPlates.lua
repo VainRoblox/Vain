@@ -154,6 +154,26 @@ local function isOwnBed(bed)
 	return bed:GetAttribute('Team' .. (lplr:GetAttribute('Team') or -1) .. 'NoBreak') ~= nil
 end
 
+-- Which team a bed belongs to, read off the same no-break attribute isOwnBed matches
+-- on: the team barred from breaking a bed is the team that owns it. Lowest id wins so
+-- a bed carrying more than one stays on one answer instead of flipping between them,
+-- since GetAttributes is not ordered. Falls back to the raw number when the queue has
+-- no display name, and to nothing when the bed carries no such attribute at all.
+local function bedTeamName(bed)
+	local id
+	for name in bed:GetAttributes() do
+		local found = tonumber(name:match('^Team(%d+)NoBreak$'))
+		if found and (not id or found < id) then
+			id = found
+		end
+	end
+	if not id then return end
+
+	local queue = bedwars.QueueMeta[store.queueType]
+	local team = queue and queue.teams and queue.teams[id]
+	return (team and team.displayName) or ('Team ' .. id)
+end
+
 local function refreshAdornee(v)
 	if not v.Adornee then return end
 
@@ -182,7 +202,12 @@ local function refreshAdornee(v)
 		local plated = (layers[1] and layers[1].obsidian) ~= nil
 
 		if plated and not Warned[bed] then
-			notif('BedPlates', isOwnBed(bed) and 'Obsidian is going on your bed!' or 'Someone is putting obsidian on a bed!', 8, 'alert')
+			if isOwnBed(bed) then
+				notif('BedPlates', 'Obsidian is going on your bed!', 8, 'alert')
+			else
+				local team = bedTeamName(bed)
+				notif('BedPlates', team and ('Obsidian is going on the ' .. team .. ' bed!') or 'Someone is putting obsidian on a bed!', 8, 'alert')
+			end
 		end
 		Warned[bed] = plated or nil
 	end
