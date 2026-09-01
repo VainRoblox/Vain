@@ -19,7 +19,6 @@ local PRESETS = {
 	'tnt',
 	'tesla_trap',
 	'snap_trap',
-	'gloop',
 	'golden_apple'
 }
 -- ent -> {Billboard = BillboardGui, Player = Player}
