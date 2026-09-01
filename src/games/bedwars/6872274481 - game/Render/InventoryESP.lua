@@ -6,6 +6,7 @@ local ShowAmount
 local Size
 local Gap
 local ShowAll
+local Teammates
 
 -- The things worth knowing an enemy has. Seeded straight into the item list, so they can
 -- be switched off or removed there like anything else rather than being nine settings of
@@ -219,7 +220,9 @@ local function refreshAll()
 			-- Someone who outranks you is not read either. Knowing what they carry is as
 			-- much a use of them as aiming at them, so this follows the same rule the
 			-- other render modules do.
-			if ent.Protected then
+			-- Teammates share your stock rather than stand between you and it, so what
+			-- they carry is noise on the screen rather than anything to act on.
+			if ent.Protected or (on(Teammates) and bedwars.sameTeam(entry.Player)) then
 				entry.Shown = false
 			else
 				refreshAdornee(entry, entry.Player)
@@ -392,6 +395,14 @@ Gap = InventoryESP:CreateSlider({
 	Name = 'Gap',
 	Tooltip = 'Pixels between the name and the icons\nDefault is 2',
 	Min = 0, Max = 40, Default = 2, Suffix = 'px'
+})
+Teammates = InventoryESP:CreateToggle({
+	Name = 'Ignore Teammates',
+	Tooltip = 'Hides what players on your own team are carrying',
+	Function = function()
+		task.spawn(refreshAll)
+	end,
+	Default = true
 })
 ShowAll = InventoryESP:CreateToggle({
 	Name = 'Show All',

@@ -39,7 +39,8 @@ local vain = shared.vain
 vain.Renames = vain.Renames or {Modules = {}, Options = {}}
 for old, new in {
 	Breaker = 'Nuker',
-	['Better Spectating'] = 'BetterSpectating'
+	['Better Spectating'] = 'BetterSpectating',
+	AutoAdetunde = 'Adetunde'
 } do
 	vain.Renames.Modules[old] = new
 end

@@ -7,6 +7,7 @@ local AutoAdetunde
 local Priority
 local Notify
 local KeepJump
+local KeepMoving
 
 -- How long after firing an upgrade to treat the player as "upgrading". The block is
 -- brief, and keeping the window tight matters: leaps and dashes legitimately zero
@@ -14,6 +15,7 @@ local KeepJump
 local JUMP_WINDOW = 2
 local upgradingUntil = 0
 local lastJumpHeight, lastJumpPower
+local lastWalkSpeed
 
 -- Level costs are the same for all three tracks: 2, 5 then 12 frost crystals
 -- (FrostyHammerBalance.{ATTACK,SPEED,SHIELD}_LEVEL{1,2,3}_COST).
@@ -86,12 +88,13 @@ local function nextPurchase(enum)
 end
 
 AutoAdetunde = vain.Categories.Kit:CreateModule({
-	Name = 'AutoAdetunde',
+	Name = 'Adetunde',
 	Function = function(callback)
 		if callback then
 			upgradingUntil = 0
 			AutoAdetunde:Clean(runService.RenderStepped:Connect(function()
-				if not (KeepJump.Enabled and entitylib.isAlive) then return end
+				if not entitylib.isAlive then return end
+				if not (KeepJump.Enabled or KeepMoving.Enabled) then return end
 				local humanoid = entitylib.character.Humanoid
 
 				-- Remember the last non-zero values so there is something real to put
@@ -99,15 +102,37 @@ AutoAdetunde = vain.Categories.Kit:CreateModule({
 				-- both adjust these.
 				if humanoid.JumpHeight > 0 then lastJumpHeight = humanoid.JumpHeight end
 				if humanoid.JumpPower > 0 then lastJumpPower = humanoid.JumpPower end
+				if humanoid.WalkSpeed > 0 then lastWalkSpeed = humanoid.WalkSpeed end
 
-				-- Only inside the upgrade window, so abilities that zero jumping on
-				-- purpose are left alone.
+				-- Only inside the upgrade window, so abilities that zero jumping or
+				-- movement on purpose are left alone.
 				if tick() >= upgradingUntil then return end
-				if lastJumpHeight and humanoid.JumpHeight <= 0 then
-					humanoid.JumpHeight = lastJumpHeight
+
+				if KeepJump.Enabled then
+					if lastJumpHeight and humanoid.JumpHeight <= 0 then
+						humanoid.JumpHeight = lastJumpHeight
+					end
+					if lastJumpPower and humanoid.JumpPower <= 0 then
+						humanoid.JumpPower = lastJumpPower
+					end
 				end
-				if lastJumpPower and humanoid.JumpPower <= 0 then
-					humanoid.JumpPower = lastJumpPower
+
+				--[[
+					Buying an upgrade roots you in place for the moment it takes. Speed is
+					put back the same way jumping is, and the two flags that root a
+					character without touching speed are cleared alongside it - either one
+					of those on its own is enough to leave you standing still.
+				]]
+				if KeepMoving.Enabled then
+					if lastWalkSpeed and humanoid.WalkSpeed <= 0 then
+						humanoid.WalkSpeed = lastWalkSpeed
+					end
+					if not humanoid.AutoRotate then
+						humanoid.AutoRotate = true
+					end
+					if humanoid.PlatformStand then
+						humanoid.PlatformStand = false
+					end
 				end
 			end))
 
@@ -130,7 +155,7 @@ AutoAdetunde = vain.Categories.Kit:CreateModule({
 					upgradingUntil = tick() + JUMP_WINDOW
 					bedwars.Client:Get('UpgradeFrostyHammer'):CallServerAsync(upgrade):andThen(function(result)
 						if result ~= false and Notify.Enabled then
-							notif('AutoAdetunde', 'Upgraded '..tostring(upgrade):lower()..' to '..level, 3)
+							notif('Adetunde', 'Upgraded '..tostring(upgrade):lower()..' to '..level, 3)
 						end
 					end)
 				end)
@@ -157,6 +182,11 @@ Priority = AutoAdetunde:CreateDropdown({
 KeepJump = AutoAdetunde:CreateToggle({
 	Name = 'Keep Jump',
 	Tooltip = 'Restores your jump if buying an upgrade takes it away',
+	Default = true
+})
+KeepMoving = AutoAdetunde:CreateToggle({
+	Name = 'Keep Moving',
+	Tooltip = 'Lets you keep walking while an upgrade is bought',
 	Default = true
 })
 Notify = AutoAdetunde:CreateToggle({
