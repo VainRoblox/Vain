@@ -7373,6 +7373,7 @@ end)
 kitRun(function()
     local Fisherman
     local AutoMinigameToggle, CompleteDelaySlider, RandomizeToggle, RandomRange
+    local CatchSpeedSlider
     local PullAnimationToggle, MinigameAnimationToggle, LegitToggle
     local BlacklistOption, Blacklist
     local AutoCast, AutoCastDelay
@@ -7443,6 +7444,34 @@ kitRun(function()
         if animOld then
             bedwars.GameAnimationUtil.playAnimation = animOld
             animOld = nil
+        end
+    end
+
+    --[[
+        Filling the bar faster while you play it yourself.
+
+        The minigame's progress bar grows by FishermanUtil.fillAmount each step for as
+        long as the fish is inside the marker, and the game reads that number off the
+        shared table every time rather than holding its own copy - so raising it there
+        raises the fill rate, and nothing else reads it.
+
+        The original is kept so switching the module off puts the game back exactly as it
+        was, rather than leaving it a little quicker for the rest of the match.
+    ]]
+    local baseFill
+
+    local function applyCatchSpeed()
+        local util = bedwars and bedwars.FishermanUtil
+        if not (util and CatchSpeedSlider) then return end
+
+        baseFill = baseFill or util.fillAmount
+        util.fillAmount = baseFill * (1 + CatchSpeedSlider.Value / 100)
+    end
+
+    local function restoreCatchSpeed()
+        local util = bedwars and bedwars.FishermanUtil
+        if util and baseFill then
+            util.fillAmount = baseFill
         end
     end
 
@@ -7788,11 +7817,13 @@ kitRun(function()
         Function = function(callback)
             if callback then
                 setupAnimationControl()
+                applyCatchSpeed()
                 installHook()
                 setupAutoCast()
                 setupSpy()
             else
                 removeHook()
+                restoreCatchSpeed()
                 cleanupAnimationControl()
                 spyConn = nil
             end
@@ -7855,6 +7886,18 @@ kitRun(function()
         Visible = false,
         Darker = true,
         Tooltip = 'Plays the catch animation. Off suppresses the one the game plays itself'
+    })
+    CatchSpeedSlider = Fisherman:CreateSlider({
+        Name = 'Catch Speed',
+        Min = 0,
+        Max = 20,
+        Default = 0,
+        Decimal = 1,
+        Suffix = '%',
+        Tooltip = 'Fills the catch bar faster, including when you play the minigame yourself',
+        Function = function()
+            if Fisherman.Enabled then applyCatchSpeed() end
+        end
     })
     BlacklistOption = Fisherman:CreateToggle({
         Name = 'Blacklist',
