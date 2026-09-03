@@ -48,10 +48,11 @@ for old, new in {
 	['Auto Davey'] = 'PirateDavey',
 	['Pirate Davey'] = 'PirateDavey',
 	['Davey Aim'] = 'DaveyAim',
-	-- Fisherman Spy became a setting inside the fishing module, so a config saved while it
-	-- was standalone keeps its whitelist and notify choices instead of starting over.
-	['Auto Fisher'] = 'AutoFisher',
-	['Fisherman Spy'] = 'AutoFisher'
+	-- Fisherman Spy became a setting inside the fishing module, and the module itself was
+	-- renamed twice, so a config saved under any of those still loads.
+	['Auto Fisher'] = 'Fisherman',
+	['AutoFisher'] = 'Fisherman',
+	['Fisherman Spy'] = 'Fisherman'
 } do
 	vain.Renames.Modules[old] = new
 end
