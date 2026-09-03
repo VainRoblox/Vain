@@ -812,6 +812,11 @@ run(function()
 		return mine ~= nil and mine == plr:GetAttribute('Team')
 	end
 	bedwars.sameTeam = sameTeam
+	-- Published alongside sameTeam because the block protection below lives in a different
+	-- run block, and a local from this one is simply a nil global over there. That is what
+	-- was throwing straight through the block breaker: not the whitelist being unready, but
+	-- the functions not being reachable from where they were called at all.
+	bedwars.attackable = attackable
 
 	entitylib.protectionCheck = function(ent)
 		if not ent.Player or sameTeam(ent.Player) then return true end
@@ -1084,7 +1089,7 @@ run(function()
 					end
 
 					if suc and plr then
-						if not attackable(plr) then return end
+						if bedwars.attackable and not bedwars.attackable(plr) then return end
 					end
 
 					return call:SendToServer(attackTable, ...)
@@ -1109,7 +1114,7 @@ run(function()
 		if lplr:GetAttribute('Team') == teamId then return false end
 
 		for _, other in playersService:GetPlayers() do
-			if other:GetAttribute('Team') == teamId and not attackable(other) then
+			if other:GetAttribute('Team') == teamId and bedwars.attackable and not bedwars.attackable(other) then
 				return true
 			end
 		end
@@ -1142,7 +1147,8 @@ run(function()
 			local placer = obj:GetAttribute('PlacedByUserId')
 			if placer and placer ~= 0 then
 				local owner = playersService:GetPlayerByUserId(placer)
-				if owner and not sameTeam(owner) and not attackable(owner) then
+				if owner and bedwars.sameTeam and bedwars.attackable
+					and not bedwars.sameTeam(owner) and not bedwars.attackable(owner) then
 					return false
 				end
 			end

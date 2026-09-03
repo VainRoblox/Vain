@@ -3165,17 +3165,31 @@ kitRun(function()
     	if block.Name ~= 'cannon' or hooked[block] then return end
     	hooked[block] = true
 
-    	for _, prompt in block:GetDescendants() do
-    		if prompt:IsA('ProximityPrompt') then
-    			local function reach()
-    				if on(Switch) and on(Break) then
-    					pcall(equipBreakTool, block)
-    				end
-    			end
-    			PirateDavey:Clean(prompt.PromptButtonHoldBegan:Connect(reach))
-    			PirateDavey:Clean(prompt.Triggered:Connect(reach))
+    	local function reach()
+    		if on(Switch) and on(Break) then
+    			pcall(equipBreakTool, block)
     		end
     	end
+
+    	local function hook(prompt)
+    		if not prompt:IsA('ProximityPrompt') then return end
+    		PirateDavey:Clean(prompt.PromptButtonHoldBegan:Connect(reach))
+    		PirateDavey:Clean(prompt.Triggered:Connect(reach))
+    	end
+
+    	for _, child in block:GetDescendants() do
+    		hook(child)
+    	end
+
+    	--[[
+    		The prompts are not always there when the block is.
+
+    		A cannon is tagged as it is placed and its prompts are parented in afterwards, so
+    		looking once at the moment it appears finds nothing and hooks nothing - which is
+    		why the swap kept falling through to the launch instead. Watching for them to
+    		arrive catches the ones that were not there yet.
+    	]]
+    	PirateDavey:Clean(block.DescendantAdded:Connect(hook))
     end
 
     PirateDavey = vain.Categories.Kit:CreateModule({
