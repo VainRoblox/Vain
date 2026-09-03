@@ -40,7 +40,11 @@ vain.Renames = vain.Renames or {Modules = {}, Options = {}}
 for old, new in {
 	Breaker = 'Nuker',
 	['Better Spectating'] = 'BetterSpectating',
-	AutoAdetunde = 'Adetunde'
+	AutoAdetunde = 'Adetunde',
+	-- Davey Aim and Auto Davey were merged into one module, so a config saved under either
+	-- old name carries its settings across rather than resetting them.
+	['Auto Davey'] = 'Pirate Davey',
+	['Davey Aim'] = 'Pirate Davey'
 } do
 	vain.Renames.Modules[old] = new
 end
