@@ -39,7 +39,11 @@ local LongJumpMethods = {
 					switchItem(tool.tool)
 				end
 
-				bedwars.Client:Get(remotes.CannonAim):SendToServer({
+				-- Named rather than scraped. The scraper works a remote out by finding
+				-- 'Client' among a function's constants and taking the next one, which for
+				-- this call lands on 'Get' - so the aim went to a remote that does not
+				-- exist, and the scrape failing is what raised the notification about it.
+				bedwars.Client:Get('AimCannon'):SendToServer({
 					cannonBlockPos = blockpos,
 					lookVector = dir
 				})
