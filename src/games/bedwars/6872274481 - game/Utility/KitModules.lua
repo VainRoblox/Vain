@@ -7888,7 +7888,7 @@ kitRun(function()
         Tooltip = 'Plays the catch animation. Off suppresses the one the game plays itself'
     })
     CatchSpeedSlider = Fisherman:CreateSlider({
-        Name = 'Catch Speed',
+        Name = 'Catch Speed Increase',
         Min = 0,
         Max = 20,
         Default = 0,

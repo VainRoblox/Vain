@@ -64,7 +64,8 @@ for old, new in {
 	Quantity = 'Show Amount',
 	['Full Layers'] = 'Highlight Full Layers',
 	Camera = 'View Mode',
-	['Camera Mode'] = 'View Mode'
+	['Camera Mode'] = 'View Mode',
+	['Catch Speed'] = 'Catch Speed Increase'
 } do
 	vain.Renames.Options[old] = new
 end
