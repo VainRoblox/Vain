@@ -33,7 +33,10 @@ ChatSpammer = vain.Categories.Utility:CreateModule({
 
 			local index = 1
 			repeat
-				local message = 'vxpe on top'
+				-- Nothing at all when the list is empty. This used to fall back to a
+				-- hardcoded line advertising somebody else, so a module switched on with
+				-- nothing configured would announce them in chat on your behalf.
+				local message
 				if #Lines.ListEnabled > 0 then
 					if Mode.Value == 'Order' then
 						message = Lines.ListEnabled[index] or Lines.ListEnabled[1]
@@ -49,10 +52,12 @@ ChatSpammer = vain.Categories.Utility:CreateModule({
 					end
 				end
 
-				if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-					textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync(message)
-				else
-					replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, 'All')
+				if message then
+					if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync(message)
+					else
+						replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, 'All')
+					end
 				end
 
 				task.wait(Delay.Value)
