@@ -43,8 +43,9 @@ for old, new in {
 	AutoAdetunde = 'Adetunde',
 	-- Davey Aim and Auto Davey were merged into one module, so a config saved under either
 	-- old name carries its settings across rather than resetting them.
-	['Auto Davey'] = 'Pirate Davey',
-	['Davey Aim'] = 'Pirate Davey'
+	-- Auto Davey became Pirate Davey. Davey Aim still exists under its own name, so it
+	-- needs no migration.
+	['Auto Davey'] = 'Pirate Davey'
 } do
 	vain.Renames.Modules[old] = new
 end
