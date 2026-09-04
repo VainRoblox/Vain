@@ -1,7 +1,7 @@
 local PartyFinder
 local Mode, Player, Dungeons
 local Difficulty, Hardcore, WaveDefence, Players
-local IgnoreLevel, IncludeRaids, SweepDelay, Notify
+local IgnoreLevel, PartyLevel, IncludeRaids, SweepDelay, Notify
 
 --[[
 	Finding a party on another server.
@@ -61,6 +61,23 @@ local function levelOk(requirement)
 	return playerLevel() >= (tonumber(requirement) or 0)
 end
 
+--[[
+	Only parties carrying players of a level.
+
+	A global listing says nothing about who is in a party - no members, no levels, only
+	how many. The one piece of level information it does carry is minLevelReq, the bar
+	the host set on the party, and everyone inside had to clear it to get in. So a party
+	requiring the level asked for is a party whose players are all at least that level.
+
+	It reads one way only. A party that happens to contain a high level without demanding
+	one looks the same as an empty lobby from out here, so those are passed over rather
+	than joined on a guess.
+]]
+local function partyLevelOk(requirement)
+	if PartyLevel.Value <= 0 then return true end
+	return (tonumber(requirement) or 0) >= PartyLevel.Value
+end
+
 local function countOk(count)
 	count = tonumber(count) or 0
 	return count >= Players.ValueMin and count <= Players.ValueMax
@@ -70,6 +87,7 @@ local function wanted(party)
 	if party.private == true then return false end
 	if not countOk(party.playerCount) then return false end
 	if not levelOk(party.minLevelReq) then return false end
+	if not partyLevelOk(party.minLevelReq) then return false end
 
 	if Mode.Value == 'Player' then return named(party) end
 
@@ -246,6 +264,13 @@ IgnoreLevel = PartyFinder:CreateToggle({
 	Name = 'Ignore Level',
 	Default = false,
 	Tooltip = 'Also try parties above your level. The server still decides'
+})
+PartyLevel = PartyFinder:CreateSlider({
+	Name = 'Party Level',
+	Min = 0,
+	Max = 250,
+	Default = 0,
+	Tooltip = 'Only join parties requiring at least this level, so everyone in them is at least it. 0 is off'
 })
 IncludeRaids = PartyFinder:CreateToggle({
 	Name = 'Include Raids',
