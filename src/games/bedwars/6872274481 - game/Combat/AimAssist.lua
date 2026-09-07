@@ -20,7 +20,19 @@ local ProjectileSpeed
 -- map blocks the shot, players are not obstacles to aim around.
 local aimRayCheck = RaycastParams.new()
 aimRayCheck.FilterType = Enum.RaycastFilterType.Include
-aimRayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
+local mapfolder
+
+-- Resolved on use rather than once at load, which is what the sibling modules do and
+-- what the comment above always claimed this did. The map does not exist yet if you
+-- inject while the round is loading, and an Include filter holding nothing hits nothing -
+-- so the solve never saw the ground and never clamped a falling target to it.
+local function refreshMapFilter()
+	local map = workspace:FindFirstChild('Map')
+	if map ~= mapfolder then
+		mapfolder = map
+		aimRayCheck.FilterDescendantsInstances = map and {map} or {}
+	end
+end
 
 -- Remembered between frames so 'Lock on Target' can keep aiming at the same entity
 -- instead of re-picking the closest one every heartbeat.
@@ -83,6 +95,8 @@ local function projectileAimPos(ent, part)
 	local meta = heldItemMeta()
 	local source = meta and meta.projectileSource
 	if not source then return nil end
+
+	refreshMapFilter()
 
 	local ok, solved = pcall(function()
 		local ammo = source.ammoItemTypes and source.ammoItemTypes[1] or 'arrow'
