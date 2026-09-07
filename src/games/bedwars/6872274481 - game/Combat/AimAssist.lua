@@ -52,6 +52,9 @@ local locked
 -- toward a new one keeps the motion continuous.
 local humanizeoffset, humanizetarget, humanizenext = Vector2.zero, Vector2.zero, 0
 
+-- Named once so binding and unbinding cannot drift apart.
+local RENDER_BIND = 'VainAimAssist'
+
 local function heldItemMeta()
 	local hand = store.hand
 	local tool = hand and hand.tool
@@ -195,7 +198,19 @@ AimAssist = vain.Categories.Combat:CreateModule({
 	Name = 'AimAssist',
 	Function = function(callback)
 		if callback then
-			AimAssist:Clean(runService.Heartbeat:Connect(function(dt)
+			--[[
+				Bound to the render step above the camera, not to Heartbeat.
+
+				Roblox's camera script runs during the render step and builds the CFrame
+				from its own yaw and pitch - it never reads Camera.CFrame back. Heartbeat
+				fires after the frame is already rendered, so a write there survived only
+				until the next render step recomputed over the top of it, and the assist
+				moved the camera for no frame anyone ever saw.
+
+				Binding one priority above Camera puts this after that recompute in the
+				same frame, which is the only point a write to the camera holds.
+			]]
+			runService:BindToRenderStep(RENDER_BIND, Enum.RenderPriority.Camera.Value + 1, function(dt)
 				-- Guarded as a whole: this reads game state that can disappear between
 				-- frames (entities dying, the held item changing mid-swing). A throw here
 				-- would otherwise spam the console every single frame.
@@ -301,7 +316,11 @@ AimAssist = vain.Categories.Combat:CreateModule({
 
 					gameCamera.CFrame = newcframe
 				end)
-			end))
+			end)
+
+			AimAssist:Clean(function()
+				pcall(runService.UnbindFromRenderStep, runService, RENDER_BIND)
+			end)
 		else
 			locked = nil
 			humanizeoffset, humanizetarget, humanizenext = Vector2.zero, Vector2.zero, 0

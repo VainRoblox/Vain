@@ -28,6 +28,21 @@ local isnetworkowner = identifyexecutor and table.find({'AWP', 'Nihon'}, ({ident
 	return true
 end
 local gameCamera = workspace.CurrentCamera
+--[[
+	Kept current rather than captured once.
+
+	Roblox replaces the camera outright in some situations, and everything in this file
+	held the object it happened to find at load - a detached camera that is no longer the
+	one being rendered. Reads off it then give screen positions for a view nobody is
+	looking through, and writes to it move nothing at all.
+
+	The universal base already watches for this, but that updates its own local, not this
+	one. The workaround further down that reads workspace.CurrentCamera before falling
+	back to this is what having no such watch here looked like.
+]]
+workspace:GetPropertyChangedSignal('CurrentCamera'):Connect(function()
+	gameCamera = workspace.CurrentCamera or workspace:FindFirstChildWhichIsA('Camera') or gameCamera
+end)
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
