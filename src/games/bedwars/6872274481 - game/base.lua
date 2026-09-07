@@ -52,7 +52,10 @@ for old, new in {
 	-- renamed twice, so a config saved under any of those still loads.
 	['Auto Fisher'] = 'Fisherman',
 	['AutoFisher'] = 'Fisherman',
-	['Fisherman Spy'] = 'Fisherman'
+	['Fisherman Spy'] = 'Fisherman',
+	-- The two aim assists became one, so a config saved under the KitModules copy's name
+	-- lands on the module that remains.
+	['Aim Assist'] = 'AimAssist'
 } do
 	vain.Renames.Modules[old] = new
 end
@@ -65,7 +68,12 @@ for old, new in {
 	['Full Layers'] = 'Highlight Full Layers',
 	Camera = 'View Mode',
 	['Camera Mode'] = 'View Mode',
-	['Catch Speed'] = 'Catch Speed Increase'
+	['Catch Speed'] = 'Catch Speed Increase',
+	-- Settings the merged Aim Assist kept under the surviving module's spelling.
+	['Max Angle'] = 'Max angle',
+	['Work With Projectiles'] = 'Use Projectile',
+	['Smoothness Amount'] = 'Smoothness',
+	['Use Killaura Target'] = 'Use killaura target'
 } do
 	vain.Renames.Options[old] = new
 end
