@@ -15,6 +15,14 @@ local Falloff
 local Humanize
 local UseProjectile
 local ProjectileSpeed
+-- Brought over from the Aim Assist that used to live in KitModules, so the two could
+-- become one module rather than two with almost the same name.
+local ViewMode
+local MinDistance
+local ShopCheck
+local LimitToItem
+local HealthCheck
+local HealthThreshold
 
 -- Reused for the projectile trajectory solve, same as ProjectileAimbot does: only the
 -- map blocks the shot, players are not obstacles to aim around.
@@ -61,7 +69,45 @@ local function heldAllows()
 		local meta = heldItemMeta()
 		if meta and meta.projectileSource then return true, false end
 	end
+	-- Off, this assists with whatever is in hand rather than only a weapon. Nothing else
+	-- changes: without a projectile source there is no arc to solve, so it aims straight.
+	if LimitToItem ~= nil and not LimitToItem.Enabled then return true, false end
 	return false
+end
+
+-- A UI being open is the mouse being free, which is the same test the shop check in the
+-- module this was merged from used.
+local function uiOpen()
+	return inputService.MouseBehavior == Enum.MouseBehavior.Default
+end
+
+local function viewAllows()
+	if ViewMode == nil or ViewMode.Value == 'Both' then return true end
+	local first = bedwars.isFirstPerson and bedwars.isFirstPerson()
+	return (ViewMode.Value == 'First Person') == (first == true)
+end
+
+-- The target is close enough to matter and hurt enough to be worth it. Health is read off
+-- the entity, which mirrors the character's Health attribute - Humanoid.Health is pinned
+-- at 100 in this game and says nothing.
+local function targetAllows(ent)
+	if MinDistance ~= nil and MinDistance.Value > 0 and ent.RootPart and entitylib.character and entitylib.character.RootPart then
+		if (ent.RootPart.Position - entitylib.character.RootPart.Position).Magnitude < MinDistance.Value then
+			return false
+		end
+	end
+
+	if HealthCheck ~= nil and HealthCheck.Enabled then
+		local hp = ent.Health
+		if hp == nil and ent.Character then
+			hp = ent.Character:GetAttribute('Health')
+		end
+		if hp and hp > (HealthThreshold and HealthThreshold.Value or 100) then
+			return false
+		end
+	end
+
+	return true
 end
 
 local function angleTo(position)
@@ -159,6 +205,9 @@ AimAssist = vain.Categories.Combat:CreateModule({
 					local allowed, issword = heldAllows()
 					if not allowed then return end
 
+					if not viewAllows() then return end
+					if ShopCheck ~= nil and ShopCheck.Enabled and uiOpen() then return end
+
 					if ClickAim.Enabled then
 						if issword then
 							if (tick() - bedwars.SwordController.lastSwing) >= 0.4 then return end
@@ -171,6 +220,7 @@ AimAssist = vain.Categories.Combat:CreateModule({
 
 					local ent = pickTarget()
 					if not ent or not ent.RootPart then return end
+					if not targetAllows(ent) then return end
 
 					local part = aimPart(ent)
 					if not part then return end
@@ -373,3 +423,39 @@ KillauraTarget = AimAssist:CreateToggle({
 	Tooltip = 'Aims at whatever Killaura is currently attacking'
 })
 StrafeIncrease = AimAssist:CreateToggle({Name = 'Strafe increase', Tooltip = 'Speeds up while strafing'})
+ViewMode = AimAssist:CreateDropdown({
+	Name = 'View Mode',
+	Tooltip = 'Which camera view this aims in',
+	List = {'Both', 'First Person', 'Third Person'},
+	Default = 'Both'
+})
+MinDistance = AimAssist:CreateSlider({
+	Name = 'Min Distance',
+	Tooltip = 'Skips targets closer than this, where you do not need the help. 0 is off',
+	Min = 0, Max = 50, Default = 0, Suffix = 'm'
+})
+LimitToItem = AimAssist:CreateToggle({
+	Name = 'Limit to item',
+	Tooltip = 'Only assists while holding a weapon. Off assists with anything in hand',
+	Default = true
+})
+ShopCheck = AimAssist:CreateToggle({
+	Name = 'Shop Check',
+	Tooltip = 'Stops while the shop or any other menu is open'
+})
+HealthCheck = AimAssist:CreateToggle({
+	Name = 'Target HP Check',
+	Tooltip = 'Only assists once the target is hurt enough',
+	Function = function(callback)
+		if HealthThreshold and HealthThreshold.Object then
+			HealthThreshold.Object.Visible = callback
+		end
+	end
+})
+HealthThreshold = AimAssist:CreateSlider({
+	Name = 'Target Health',
+	Tooltip = 'The health at or below which a target is worth assisting on',
+	Min = 1, Max = 100, Default = 100, Suffix = 'hp',
+	Visible = false,
+	Darker = true
+})
