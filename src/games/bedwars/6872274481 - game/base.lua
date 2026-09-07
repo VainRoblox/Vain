@@ -1045,6 +1045,19 @@ run(function()
 		WarlockTarget = debug.getproto(Knit.Controllers.WarlockStaffController.KnitStart, 2)
 	}
 
+	--[[
+		The remote name out of a function's constants.
+
+		Every one of these is read from a call shaped like <something>.Client:Get('<name>'),
+		which compiles to the constants 'Client', 'Get' and then the name, in that order.
+		Taking the one straight after 'Client' therefore handed back the method name, so
+		these resolved to 'Get' rather than to a remote - Killaura swung, drew its boxes
+		and played its particles while every attack went to a remote that does not exist,
+		and the same silence covered every other entry here.
+
+		It reads past the method name to the first constant that is neither, so a call
+		whose constants do not carry 'Get' between the two is unaffected.
+	]]
 	local function dumpRemote(tab)
 		local ind
 		for i, v in tab do
@@ -1053,7 +1066,17 @@ run(function()
 				break
 			end
 		end
-		return ind and tab[ind + 1] or ''
+		if not ind then return '' end
+
+		local best, bestindex
+		for i, v in tab do
+			if i > ind and type(v) == 'string' and v ~= 'Client' and v ~= 'Get' then
+				if not bestindex or i < bestindex then
+					best, bestindex = v, i
+				end
+			end
+		end
+		return best or ''
 	end
 
 	for i, v in remoteNames do
