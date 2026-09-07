@@ -214,18 +214,53 @@ local function refreshAdornee(entry, plr)
 	entry.Shown = any
 end
 
+--[[
+	Whether this player's loot is somebody else's business.
+
+	Someone who outranks you is not read: knowing what they carry is as much a use of
+	them as aiming at them, so this follows the same rule the other render modules do.
+	Teammates share your stock rather than stand between you and it, so what they carry
+	is noise on the screen rather than anything to act on.
+
+	sameTeam is asked for rather than called outright. It is published on the bedwars
+	table from a different run block, and when that publication was being lost this
+	threw - which took down the whole pass, not just this player. Unanswerable is read as
+	"not a teammate", so the worst case is showing loot that could have been hidden
+	rather than hiding all of it.
+]]
+local function hidden(ent, plr)
+	if ent.Protected then return true end
+	if not on(Teammates) then return false end
+
+	local sameTeam = bedwars.sameTeam
+	return sameTeam ~= nil and sameTeam(plr) == true
+end
+
+-- Reported once rather than every pass, so a fault says so instead of looking like an
+-- empty inventory.
+local complained = false
+local function complain(err)
+	if complained then return end
+	complained = true
+	notif('InventoryESP', 'Failed to read an inventory: ' .. tostring(err), 6, 'alert')
+end
+
 local function refreshAll()
 	for ent, entry in Entries do
 		if entry.Billboard.Parent and entry.Player and entry.Player.Parent then
-			-- Someone who outranks you is not read either. Knowing what they carry is as
-			-- much a use of them as aiming at them, so this follows the same rule the
-			-- other render modules do.
-			-- Teammates share your stock rather than stand between you and it, so what
-			-- they carry is noise on the screen rather than anything to act on.
-			if ent.Protected or (on(Teammates) and bedwars.sameTeam(entry.Player)) then
+			-- Each player is read on its own. One that cannot be read used to abort the
+			-- pass where it failed, leaving everybody after it holding whatever they were
+			-- last drawn with - which is why the display could not recover.
+			local ok, err = pcall(function()
+				if hidden(ent, entry.Player) then
+					entry.Shown = false
+				else
+					refreshAdornee(entry, entry.Player)
+				end
+			end)
+			if not ok then
 				entry.Shown = false
-			else
-				refreshAdornee(entry, entry.Player)
+				complain(err)
 			end
 		else
 			entry.Billboard:Destroy()
