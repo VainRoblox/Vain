@@ -2180,10 +2180,15 @@ kitRun(function()
                         if target then
 							if getAccountTier(target.Player) >= 1 and getAccountTier(lplr) == 0 then continue end
                             local selfpos = entitylib.character.RootPart.Position
-                            local localFacing = (ViewMode.Value == 'Third Person' and gameCamera.CFrame.LookVector or entitylib.character.RootPart.CFrame.LookVector) * Vector3.new(1, 0, 1)
+                            -- The camera, rather than a ViewMode setting. This module
+                            -- never had one: the name read here belongs to Aim Assist's
+                            -- block, so out here it was a nil global and this threw on
+                            -- the first target that came into range. An FOV is a cone
+                            -- around where you are looking, which is the camera.
+                            local localFacing = gameCamera.CFrame.LookVector * Vector3.new(1, 0, 1)
                             local delta = (target.RootPart.Position - selfpos) * Vector3.new(1, 0, 1)
                             if delta.Magnitude > 0.001 then
-                                local angle = math.acos(math.clamp(localfacing:Dot(delta.Unit), -1, 1))
+                                local angle = math.acos(math.clamp(localFacing:Dot(delta.Unit), -1, 1))
                                 if angle <= math.rad(FOV.Value) / 2 then
                                     shootLasso(target)
                                 end
