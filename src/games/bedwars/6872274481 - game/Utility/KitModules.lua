@@ -1442,7 +1442,7 @@ kitRun(function()
     local ShowReward, HoverOnly, RightClickSelect
     local contractFolder = Instance.new('Folder')
     contractFolder.Parent = vain.gui
-    local contractMarks, contractScan, contractWarned = {}, 0, false
+    local contractMarks, contractScan = {}, 0
 
     --[[
         Which upgrades are the good ones, asked two ways.
@@ -1976,15 +1976,11 @@ kitRun(function()
 
                             refreshContracts reads the store and builds instances, and it
                             was called bare - so one error in it killed the loop it runs
-                            in, which is the same loop that picks contracts. The module
-                            stopped dead, mid-match, with nothing said about why. Now a
-                            bad pass costs that pass, and says so once.
+                            in, which is the same loop that picks contracts, and the module
+                            stopped dead mid-match. A bad pass costs that pass now and
+                            nothing else; the next one runs as normal.
                         ]]
-                        local drew, drawErr = pcall(refreshContracts)
-                        if not drew and not contractWarned then
-                            contractWarned = true
-                            notif('Caitlyn', 'Contract ESP: ' .. tostring(drawErr), 8, 'alert')
-                        end
+                        pcall(refreshContracts)
 
                         if entitylib.isAlive then
                             local method = MethodDropdown.Value
@@ -2008,9 +2004,6 @@ kitRun(function()
                 end
                 table.clear(connections)
                 clearContracts()
-                -- So a fresh run can report a fresh fault rather than staying quiet about
-                -- one it already mentioned in a previous match.
-                contractWarned = false
 
                 currentTarget = nil
                 lastHitTime = 0

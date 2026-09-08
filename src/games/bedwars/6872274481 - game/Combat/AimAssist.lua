@@ -118,8 +118,24 @@ local function angleTo(position)
 	return math.acos(math.clamp(gameCamera.CFrame.LookVector:Dot(delta.Unit), -1, 1)), delta
 end
 
+--[[
+	The middle of them you can see, not the part the physics hangs off.
+
+	RootPart is the HumanoidRootPart, and on an R15 rig that sits at the hips - so aiming
+	at it points at the waist and below, which is why the assist looked like it was aiming
+	at anything except the torso. The rig's own torso part is used when it has one, and
+	the root is kept as the fallback for anything shaped differently.
+]]
+local function torsoOf(ent)
+	local char = ent.Character
+	if not char then return ent.RootPart end
+	return char:FindFirstChild('UpperTorso')
+		or char:FindFirstChild('Torso')
+		or ent.RootPart
+end
+
 local function aimPart(ent)
-	local head, root = ent.Head, ent.RootPart
+	local head, root = ent.Head, torsoOf(ent)
 	local value = AimPart.Value
 	if value == 'Head' then return head or root end
 	if value == 'Nearest' then
@@ -364,7 +380,7 @@ AimPart = AimAssist:CreateDropdown({
 	Tooltip = 'Which part of the target to aim at',
 	List = {'RootPart', 'Head', 'Nearest'},
 	Tooltips = {
-		RootPart = 'Aims at the body',
+		RootPart = 'Aims at the middle of the body',
 		Head = 'Aims at the head',
 		Nearest = 'Aims at whichever of the two needs the smaller camera movement'
 	}
