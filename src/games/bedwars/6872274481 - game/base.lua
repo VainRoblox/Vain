@@ -70,7 +70,8 @@ for old, new in {
 	['Fisherman Spy'] = 'Fisherman',
 	-- The two aim assists became one, so a config saved under the KitModules copy's name
 	-- lands on the module that remains.
-	['Aim Assist'] = 'AimAssist'
+	['Aim Assist'] = 'AimAssist',
+	['Auto Caitlyn'] = 'Caitlyn'
 } do
 	vain.Renames.Modules[old] = new
 end
