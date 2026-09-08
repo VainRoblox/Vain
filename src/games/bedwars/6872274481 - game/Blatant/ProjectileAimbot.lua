@@ -17,7 +17,7 @@ local CircleObject
 local rayCheck = RaycastParams.new()
 rayCheck.FilterType = Enum.RaycastFilterType.Include
 local mapfolder
-local old
+local old, hook
 
 -- Resolved on use rather than once at load. The map does not exist yet if you inject
 -- while the round is still loading, and an Include filter holding nothing hits nothing -
@@ -249,7 +249,15 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 			end))
 
 			old = bedwars.ProjectileController.calculateImportantLaunchValues
-			bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+			--[[
+				Kept in a name, so putting it back can be conditional.
+
+				Fisherman's auto cast wraps this same method, so the two have to stack in
+				either order. Restoring blindly on the way out throws away whatever wrapped
+				after us, and clearing what our own wrapper calls leaves a nil call inside
+				the game's bow for anyone still holding it.
+			]]
+			hook = function(...)
 				-- Guarded because the game calls this, not us. Anything that throws in
 				-- here used to surface inside the game's own bow logic and take the bow
 				-- with it; now a failure just hands the shot back untouched. old() stays
@@ -260,8 +268,14 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 				end
 				return old(...)
 			end
+			bedwars.ProjectileController.calculateImportantLaunchValues = hook
 		else
-			bedwars.ProjectileController.calculateImportantLaunchValues = old
+			-- Only when ours is still the installed one, and old is left alone so a
+			-- wrapper that captured ours keeps working.
+			if hook and old and bedwars.ProjectileController.calculateImportantLaunchValues == hook then
+				bedwars.ProjectileController.calculateImportantLaunchValues = old
+			end
+			hook = nil
 		end
 	end,
 	Tooltip = 'Silently adjusts your aim towards the enemy'
