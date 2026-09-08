@@ -6869,11 +6869,26 @@ kitRun(function()
         local controller = bedwars and bedwars.ProjectileController
         if aimWrapper or not controller then return end
 
+        --[[
+            Each wrapper holds its own original, not a shared one.
+
+            A single upvalue between them is what put a nil back inside the game's bow:
+            the aimbot captures our wrapper as its original and keeps it forever, and the
+            next time this ran it pointed that one variable somewhere else. The wrapper
+            the aimbot was still calling then went through whatever the variable had
+            become - or through nothing at all.
+
+            Closed over per wrapper, an old one keeps calling exactly what it was built
+            with however many times this is switched on and off.
+        ]]
         local original = controller.calculateImportantLaunchValues
-        if not original then return end
+        if type(original) ~= 'function' then return end
         aimOriginal = original
 
-        aimWrapper = function(self, handler, ...)
+        local wrapper
+        wrapper = function(self, handler, ...)
+            if type(original) ~= 'function' then return end
+
             local held = store.hand and store.hand.tool
             local wanted = castTarget and held and held.Name == 'fishing_rod' and castTarget
 
@@ -6882,7 +6897,7 @@ kitRun(function()
                 handler.lockedAimPoint = nil
             end
 
-            local values = aimOriginal(self, handler, ...)
+            local values = original(self, handler, ...)
 
             if wanted and values and values.initialVelocity and values.positionFrom then
                 local heading = wanted - values.positionFrom
@@ -6894,7 +6909,8 @@ kitRun(function()
             return values
         end
 
-        controller.calculateImportantLaunchValues = aimWrapper
+        aimWrapper = wrapper
+        controller.calculateImportantLaunchValues = wrapper
     end
 
     local function cleanupAim()
@@ -6908,8 +6924,6 @@ kitRun(function()
             controller.calculateImportantLaunchValues = aimOriginal
         end
 
-        -- aimOriginal is deliberately kept. Anything holding our wrapper still calls
-        -- through it, and a nil here is a nil call inside the game.
         aimWrapper = nil
     end
 

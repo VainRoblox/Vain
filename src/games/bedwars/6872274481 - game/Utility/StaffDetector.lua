@@ -77,14 +77,31 @@ end
 local function checkJoin(plr, connection)
 	if not plr:GetAttribute('Team') and plr:GetAttribute('Spectator') and not bedwars.Store:getState().Game.customMatch then
 		connection:Disconnect()
-		local tab, pages = {}, playersService:GetFriendsAsync(plr.UserId)
-		for _ = 1, 4 do
-			for _, v in pages:GetCurrentPage() do
-				table.insert(tab, v.Id)
+
+		--[[
+			Roblox refuses this often enough that it cannot be treated as reliable.
+
+			GetFriendsAsync is a web request, and it answers 403 when the endpoint is rate
+			limited or the account's list is not public. Unguarded, every such refusal
+			threw out of here on somebody joining - which is a red stack in the console for
+			something that was only ever a nice-to-have check.
+
+			A refusal now means no friends were seen, and a spectator nobody can be
+			vouched for by is left alone rather than reported on a failed lookup.
+		]]
+		local tab = {}
+		local ok, pages = pcall(playersService.GetFriendsAsync, playersService, plr.UserId)
+		if not ok or not pages then return end
+
+		pcall(function()
+			for _ = 1, 4 do
+				for _, v in pages:GetCurrentPage() do
+					table.insert(tab, v.Id)
+				end
+				if pages.IsFinished then break end
+				pages:AdvanceToNextPageAsync()
 			end
-			if pages.IsFinished then break end
-			pages:AdvanceToNextPageAsync()
-		end
+		end)
 
 		local friend = checkFriends(tab)
 		if not friend then
