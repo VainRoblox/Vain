@@ -113,8 +113,30 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 									pcall(function()
 										latency = lplr:GetNetworkPing() * 2
 									end)
-									local aimAt = ent.RootPart.Position + (ent.RootPart.Velocity * math.clamp(latency, 0, 0.5))
-									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, aimAt, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck)
+									-- Differenced over a short window rather than read off the
+									-- part, whose velocity reads zero between replication
+									-- updates and spikes on knockback.
+									local motion = prediction.smoothVelocity(ent.RootPart, ent.RootPart.Velocity)
+									local aimAt = ent.RootPart.Position + (motion * math.clamp(latency, 0, 0.5))
+
+									-- Their own jump speed, however the humanoid describes it.
+									local jumpSpeed
+									if ent.Jumping then
+										local hum = ent.Humanoid
+										if hum then
+											if hum.UseJumpPower then
+												jumpSpeed = hum.JumpPower
+											elseif hum.JumpHeight and hum.JumpHeight > 0 then
+												jumpSpeed = math.sqrt(2 * math.max(workspace.Gravity, 1) * hum.JumpHeight)
+											end
+										end
+										jumpSpeed = jumpSpeed or 42.6
+									end
+
+									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, aimAt, motion, workspace.Gravity, ent.HipHeight, jumpSpeed, rayCheck, {
+										rootPosition = ent.RootPart.Position,
+										lifetime = meta.lifetimeSec,
+									})
 									if calc then
 										targetinfo.Targets[ent] = tick() + 1
 										local switched = switchItem(item.tool)
