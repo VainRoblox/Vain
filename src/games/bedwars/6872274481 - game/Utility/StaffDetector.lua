@@ -126,7 +126,9 @@ local function playerAdded(plr)
 		connection = plr:GetAttributeChangedSignal('Spectator'):Connect(function()
 			checkJoin(plr, connection)
 		end)
-		StaffDetector:Clean(connection)
+		-- Same reason as the guard at the bottom: a connection belonging to a copy that has
+		-- been replaced can still fire, and its module table is empty by then.
+		if StaffDetector.Clean then StaffDetector:Clean(connection) end
 		if checkJoin(plr, connection) then
 			return
 		end
@@ -146,7 +148,9 @@ StaffDetector = vain.Categories.Utility:CreateModule({
 	Name = 'StaffDetector',
 	Function = function(callback)
 		if callback then
-			StaffDetector:Clean(playersService.PlayerAdded:Connect(playerAdded))
+			if StaffDetector.Clean then
+				StaffDetector:Clean(playersService.PlayerAdded:Connect(playerAdded))
+			end
 			for _, v in playersService:GetPlayers() do
 				task.spawn(playerAdded, v)
 			end
@@ -188,8 +192,19 @@ Users = StaffDetector:CreateTextList({
 	Placeholder = 'player (userid)'
 })
 
+--[[
+	Switched on once the client has finished loading - and only if this copy is still the
+	one in use.
+
+	Creating a module removes any existing one of the same name, and removing it empties
+	that table. A reload therefore leaves this thread waiting on a module that no longer
+	exists, and a second later it enabled the dead copy: the first thing the module does is
+	register a connection with its own maid, so it threw 'missing method Clean' at load,
+	from the previous session's leftovers.
+]]
 task.spawn(function()
 	repeat task.wait(1) until vain.Loaded or vain.Loaded == nil
+	if type(StaffDetector) ~= 'table' or not StaffDetector.Toggle then return end
 	if vain.Loaded and not StaffDetector.Enabled then
 		StaffDetector:Toggle()
 	end
