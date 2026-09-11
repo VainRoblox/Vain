@@ -42,6 +42,30 @@ local httpService = cloneref(game:GetService('HttpService'))
 local lplr = playersService.LocalPlayer
 local vain = shared.vain
 
+--[[
+	The numbers the dodge is made of, in one place and reachable from outside.
+
+	Every one of these has been changed several times by editing this file, pushing it,
+	waiting for a build, re-injecting and walking back to the boss - minutes per attempt, on
+	a question like "is twenty-two studs too short a dodge". Held here instead, they can be
+	changed in the running game, and a bad guess costs seconds rather than a rebuild.
+]]
+local tuning = {
+	-- How much clear space a spot wants, before the search starts giving ground.
+	margin = 5,
+	-- The furthest an early dodge may walk: about a second at walking pace.
+	maxTravel = 22,
+	-- How far a dodge may take us from what we are fighting.
+	leash = 40,
+	-- Never stand closer than this to an enemy, whatever else is true.
+	keepClear = 9,
+	-- How long an attack part stays dangerous once it stops moving.
+	stale = 3,
+}
+
+-- What the farm is doing this instant, written out for diagnosis.
+local status = {}
+
 -- Guarded remote lookup so a missing/renamed remote can never error a module.
 local remotesFolder = replicatedStorage:FindFirstChild('remotes')
 if not remotesFolder then
@@ -1311,7 +1335,7 @@ run(function()
 		]]
 		table.insert(dangers, {
 			part = part,
-			expire = workspace:GetServerTimeNow() + 3,
+			expire = workspace:GetServerTimeNow() + (tuning.stale or 3),
 			born = os.clock(),
 			pos = part.Position,
 		})
@@ -1712,7 +1736,7 @@ run(function()
 			dangers = near
 		end
 
-		local margin = 5
+		local margin = tuning.margin or 5
 		if not anyDanger(pos, margin) then return nil end
 
 		refreshBarriers()
@@ -1879,7 +1903,7 @@ run(function()
 			end
 		end
 
-		local keepClear = math.max(KeepDistance ~= nil and KeepDistance.Value or 0, 9)
+		local keepClear = math.max(KeepDistance ~= nil and KeepDistance.Value or 0, tuning.keepClear or 9)
 
 		--[[
 			Forgotten quickly, and marked narrowly.
@@ -2129,7 +2153,7 @@ run(function()
 		]]
 		local spot
 		for _, m in { margin, 2 } do
-			local found, clean = search(respectRoom, m, 40, true, nil, nil, 22)
+			local found, clean = search(respectRoom, m, tuning.leash, true, nil, nil, tuning.maxTravel)
 			if clean then return found end
 			spot = spot or found
 		end
@@ -3637,6 +3661,13 @@ run(function()
 				if DodgeAttacks ~= nil and DodgeAttacks.Enabled then
 					local pos = hrp.Position
 
+					-- Cheap enough to keep current every frame, and the only record of what
+					-- the farm believed at the moment something went wrong.
+					status.dangers = #dangers
+					status.safeZones = #safeZones
+					status.health = math.floor(hum.Health)
+					status.dodge = dodgeGoal and math.floor((dodgeGoal - pos).Magnitude) or nil
+
 					--[[
 						Replanned only when the answer could have changed.
 
@@ -3924,6 +3955,10 @@ run(function()
 					-- Handed to the dodge, so it knows which way keeps the fight.
 					fightTarget = part
 
+					status.room = room and room.Name or nil
+					status.target = target and target.Name or nil
+					status.gap = dist and math.floor(dist) or nil
+
 					-- DODGE first: standing in an attack costs more than a turn spent
 					-- fighting, so a dodge in progress outranks everything below it. The
 					-- stepping itself belongs to the heartbeat above; this only keeps the
@@ -4169,6 +4204,109 @@ run(function()
 end)
 
 
+-- ── Live Patch ───────────────────────────────────────────────────────────────
+run(function()
+	local Patch, WriteState
+
+	--[[
+		Changing the farm without rebuilding it.
+
+		Every adjustment so far has cost an edit, a push, a build, a re-injection and a walk
+		back to the boss - minutes each, for questions that are often one number. The
+		executor can read and write files, so this watches one: write Lua into
+		vain/dq/patch.lua and it runs in the live session the moment it changes.
+
+		A patch is ordinary Lua with the farm's tuning table to hand, so most of them are a
+		line long:
+
+		    vain.Libraries.dungeonquest.tuning.maxTravel = 30
+
+		and anything larger - a replacement function, a probe that prints what the dodge can
+		see - works the same way.
+
+		Deliberately manual. It is off unless switched on, it never runs the same text twice,
+		and a patch that throws is reported and forgotten rather than retried.
+	]]
+	local FOLDER = 'vain/dq'
+	local PATCH = FOLDER .. '/patch.lua'
+	local STATE = FOLDER .. '/state.json'
+
+	local function ensureFolder()
+		pcall(function()
+			if makefolder and isfolder and not isfolder(FOLDER) then makefolder(FOLDER) end
+		end)
+	end
+
+	local function tell(text)
+		warn('[Live Patch] ' .. text)
+	end
+
+	Patch = vain.Categories.Utility:CreateModule({
+		Name = 'Live Patch',
+		Tooltip = 'Runs vain/dq/patch.lua whenever it changes, so behaviour can be altered in this session without rebuilding',
+		Function = function(callback)
+			if not callback then return end
+			ensureFolder()
+
+			local last
+			-- Read once on switch-on so an old patch left in the file does not fire.
+			pcall(function()
+				if isfile and isfile(PATCH) then last = readfile(PATCH) end
+			end)
+			tell('watching ' .. PATCH)
+
+			task.spawn(function()
+				repeat
+					pcall(function()
+						if not (isfile and isfile(PATCH)) then return end
+
+						local text = readfile(PATCH)
+						if text == last then return end
+						last = text
+
+						-- Blank or comment-only files are how a patch is "cleared".
+						if text:gsub('%s', '') == '' then return end
+
+						local chunk, syntax = loadstring(text, 'vainpatch')
+						if not chunk then
+							tell('rejected: ' .. tostring(syntax))
+							return
+						end
+
+						local ok, err = pcall(chunk)
+						tell(ok and 'applied' or ('failed: ' .. tostring(err)))
+					end)
+					task.wait(0.75)
+				until not Patch.Enabled
+			end)
+
+			--[[
+				The farm's own account of itself, on disk.
+
+				Reading this back is how a fight can be examined without watching it: what it
+				thought was dangerous, where it decided to stand, and how often it managed to
+				decide at all.
+			]]
+			task.spawn(function()
+				repeat
+					pcall(function()
+						if not (WriteState and WriteState.Enabled and writefile) then return end
+						status.at = os.date('%H:%M:%S')
+						status.tuning = tuning
+						writefile(STATE, httpService:JSONEncode(status))
+					end)
+					task.wait(1)
+				until not Patch.Enabled
+			end)
+		end
+	})
+	WriteState = Patch:CreateToggle({
+		Name = 'Write State',
+		Default = true,
+		Tooltip = 'Also writes what the farm currently sees to vain/dq/state.json once a second'
+	})
+end)
+
 -- ── Strip Decorations ────────────────────────────────────────────────────────
 run(function()
 	local Strip, Effects
@@ -4319,6 +4457,9 @@ end
 
 -- Re-exported for the modules kept alongside this file.
 vain.Libraries.dungeonquest = {
+	-- Reachable from a live patch: change a number here and the farm uses it immediately.
+	tuning = tuning,
+	status = status,
 	remote = remote,
 	inCombat = inCombat,
 	faceNearest = faceNearest,
