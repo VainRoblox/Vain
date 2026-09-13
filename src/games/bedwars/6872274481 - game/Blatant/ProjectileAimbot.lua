@@ -30,6 +30,28 @@ local function refreshMapFilter()
 	end
 end
 
+-- What a character can stand on: anything collidable that is not a character. The map
+-- filter above is what the arrow itself collides with; a floor has to include placed
+-- blocks and everything else people stand on, wherever the game keeps them.
+local floorCheck = RaycastParams.new()
+floorCheck.FilterType = Enum.RaycastFilterType.Exclude
+floorCheck.RespectCanCollide = true
+local floorRefreshed = 0
+local function refreshFloorFilter()
+	if os.clock() - floorRefreshed < 0.5 then return end
+	floorRefreshed = os.clock()
+	local ignore = {gameCamera}
+	if lplr.Character then
+		table.insert(ignore, lplr.Character)
+	end
+	for _, ent in entitylib.List do
+		if ent.Character then
+			table.insert(ignore, ent.Character)
+		end
+	end
+	floorCheck.FilterDescendantsInstances = ignore
+end
+
 local function mousePosition()
 	if inputService.TouchEnabled then
 		return gameCamera.ViewportSize / 2
@@ -192,18 +214,13 @@ local function solve(self, projmeta, worldmeta, origin, shootpos)
 	end
 
 	refreshMapFilter()
+	refreshFloorFilter()
 
 	local aimpos = target.Position
-	--[[
-		Measured, not asked for.
-
-		A replicated character's velocity property arrives in steps: it reads zero between
-		updates and spikes on knockback, and one sample of it decided the whole lead. The
-		library differences positions over a short window instead, which is the speed they
-		are actually travelling at.
-	]]
-	local motion = projmeta.projectile == 'telepearl' and Vector3.zero
-		or prediction.smoothVelocity(target, target.Velocity)
+	-- A pearl is thrown to where they stand, not to where they are heading, so it gets
+	-- neither their motion nor their history.
+	local pearl = projmeta.projectile == 'telepearl'
+	local motion = pearl and Vector3.zero or target.AssemblyLinearVelocity
 
 	--[[
 		No latency lead: the server already compensates for it.
@@ -262,12 +279,13 @@ local function solve(self, projmeta, worldmeta, origin, shootpos)
 	end
 
 	--[[
-		Their own jump, rather than a number that was true once.
+		How hard they take off when they hop again.
 
-		The jump speed was hardcoded, and kits, effects and the game's own tuning all change
-		it - and being wrong about it is wrong in the vertical, which is where a miss becomes
-		a shot sailing over somebody. Humanoids describe their jump either as a speed or as a
-		height, so both are read.
+		plr.Jumping means "jumped again without settling" and stays set for a whole chain of
+		hops, on the way down as much as on the way up. So it is passed as the speed of the
+		next hop after they land, never as their speed now - reading it as the second is what
+		aimed over the head of anybody coming down from one. Humanoids describe a jump either
+		as a speed or as a height, so both are read.
 	]]
 	local jumpSpeed
 	if plr.Jumping then
@@ -283,8 +301,10 @@ local function solve(self, projmeta, worldmeta, origin, shootpos)
 	end
 
 	local hints = {
+		root = not pearl and plr.RootPart or nil,
 		rootPosition = plr.RootPart and plr.RootPart.Position or nil,
 		lifetime = lifetime,
+		floorParams = floorCheck,
 	}
 
 	local aimDirection = (aimpos - offsetpos)
@@ -359,6 +379,23 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 			ProjectileAimbot:Clean(function()
 				pcall(function() runService:UnbindFromRenderStep(bindName) end)
 			end)
+
+			--[[
+				Recorded before the shot, not from it.
+
+				Strafes, hops and knockback are read from what a target has been doing, and a
+				history that only starts when you draw has nothing in it when you let go.
+			]]
+			ProjectileAimbot:Clean(runService.Heartbeat:Connect(function()
+				if not entitylib.isAlive then return end
+				local here = entitylib.character.RootPart.Position
+				for _, ent in entitylib.List do
+					local root = ent.RootPart
+					if root and ent.Targetable and (root.Position - here).Magnitude <= Range.Value + 20 then
+						prediction.observe(root)
+					end
+				end
+			end))
 
 			old = bedwars.ProjectileController.calculateImportantLaunchValues
 			--[[
