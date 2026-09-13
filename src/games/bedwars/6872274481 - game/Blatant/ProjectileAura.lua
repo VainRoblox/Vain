@@ -36,6 +36,28 @@ local function refreshMapFilter()
 	end
 end
 
+-- What a character can stand on: anything collidable that is not a character. The map
+-- filter above is what the arrow itself collides with; a floor has to include placed
+-- blocks and everything else people stand on, wherever the game keeps them.
+local floorCheck = RaycastParams.new()
+floorCheck.FilterType = Enum.RaycastFilterType.Exclude
+floorCheck.RespectCanCollide = true
+local floorRefreshed = 0
+local function refreshFloorFilter()
+	if os.clock() - floorRefreshed < 0.5 then return end
+	floorRefreshed = os.clock()
+	local ignore = {gameCamera}
+	if lplr.Character then
+		table.insert(ignore, lplr.Character)
+	end
+	for _, ent in entitylib.List do
+		if ent.Character then
+			table.insert(ignore, ent.Character)
+		end
+	end
+	floorCheck.FilterDescendantsInstances = ignore
+end
+
 -- First person puts the camera inside your own head, so the gap between the camera and
 -- the head is what separates the two views. Shiftlock still counts as third person here,
 -- which matches what you see on screen.
@@ -77,6 +99,18 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 	Function = function(callback)
 		if callback then
 			task.spawn(resolveProjectileRemote)
+			-- Strafes, hops and knockback are read from what a target has been doing, so
+			-- that is recorded every frame rather than only when a shot goes out.
+			ProjectileAura:Clean(runService.Heartbeat:Connect(function()
+				if not entitylib.isAlive then return end
+				local here = entitylib.character.RootPart.Position
+				for _, ent in entitylib.List do
+					local root = ent.RootPart
+					if root and ent.Targetable and (root.Position - here).Magnitude <= Range.Value + 20 then
+						prediction.observe(root)
+					end
+				end
+			end))
 			repeat
 				-- Guarded because this is a long-lived loop reaching into inventory and
 				-- projectile metadata that changes underneath it. An error used to kill the
@@ -99,6 +133,7 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 								local item, ammo, projectile, itemMeta = unpack(data)
 								if (FireDelays[item.itemType] or 0) < tick() and item.tool then
 									refreshMapFilter()
+									refreshFloorFilter()
 									local meta = bedwars.ProjectileMeta[projectile]
 									local projSpeed = meta and meta.launchVelocity
 									if not projSpeed then continue end
@@ -107,13 +142,13 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 									-- compensation, rewinding targets to where you saw them, so
 									-- leading a round trip on top pushed every shot ahead of its
 									-- target by ping times their speed.
-									-- Differenced over a short window rather than read off the
-									-- part, whose velocity reads zero between replication
-									-- updates and spikes on knockback.
-									local motion = prediction.smoothVelocity(ent.RootPart, ent.RootPart.Velocity)
+									-- Their velocity as it stands. Strafes, hops and knockback are
+									-- read from the history recorded above.
+									local motion = ent.RootPart.AssemblyLinearVelocity
 									local aimAt = ent.RootPart.Position
 
-									-- Their own jump speed, however the humanoid describes it.
+									-- How hard they take off on their next hop. Jumping stays set
+									-- for a whole chain of hops, so this is never their speed now.
 									local jumpSpeed
 									if ent.Jumping then
 										local hum = ent.Humanoid
@@ -128,8 +163,10 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 									end
 
 									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, aimAt, motion, workspace.Gravity, ent.HipHeight, jumpSpeed, rayCheck, {
+										root = ent.RootPart,
 										rootPosition = ent.RootPart.Position,
 										lifetime = meta.lifetimeSec,
+										floorParams = floorCheck,
 									})
 									if calc then
 										targetinfo.Targets[ent] = tick() + 1
