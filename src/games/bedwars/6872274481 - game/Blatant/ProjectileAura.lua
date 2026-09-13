@@ -103,21 +103,15 @@ ProjectileAura = vain.Categories.Blatant:CreateModule({
 									local projSpeed = meta and meta.launchVelocity
 									if not projSpeed then continue end
 									local gravity = meta.gravitationalAcceleration or 196.2
-									-- Aimed a round trip ahead of where the target appears, for the
-									-- same reason ProjectileAimbot does: their replicated position
-									-- is already about one trip old and the shot needs another
-									-- before the server acts on it. The solver covers movement
-									-- during flight but not that, so without it the miss grows
-									-- with ping. Clamped because the ping reading can spike.
-									local latency = 0
-									pcall(function()
-										latency = lplr:GetNetworkPing() * 2
-									end)
+									-- No latency lead. The server re-runs the shot with lag
+									-- compensation, rewinding targets to where you saw them, so
+									-- leading a round trip on top pushed every shot ahead of its
+									-- target by ping times their speed.
 									-- Differenced over a short window rather than read off the
 									-- part, whose velocity reads zero between replication
 									-- updates and spikes on knockback.
 									local motion = prediction.smoothVelocity(ent.RootPart, ent.RootPart.Velocity)
-									local aimAt = ent.RootPart.Position + (motion * math.clamp(latency, 0, 0.5))
+									local aimAt = ent.RootPart.Position
 
 									-- Their own jump speed, however the humanoid describes it.
 									local jumpSpeed
