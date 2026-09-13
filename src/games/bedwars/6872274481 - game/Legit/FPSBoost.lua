@@ -3,8 +3,17 @@ local Kill
 local Visualizer
 local effects, util = {}, {}
 
+--[[
+	Named apart from the universal FPS Boost on purpose.
+
+	Creating a module removes any existing module with the same name, and this file loads
+	after the universal one - so while both were called FPS Boost, joining a match quietly
+	deleted the real FPS Boost from Utility and put this smaller effects toggle in the Legit
+	window in its place. That is why FPS Boost only ever appeared in the lobby: the lobby is
+	the one place this file does not load.
+]]
 FPSBoost = vain.Legit:CreateModule({
-	Name = 'FPS Boost',
+	Name = 'Effect Remover',
 	Function = function(callback)
 		if callback then
 			if Kill.Enabled then
@@ -51,7 +60,7 @@ FPSBoost = vain.Legit:CreateModule({
 			table.clear(util)
 		end
 	end,
-	Tooltip = 'Improves the framerate by turning off certain effects'
+	Tooltip = 'Turns off kill effects, the audio visualizer and match nametags for framerate'
 })
 Kill = FPSBoost:CreateToggle({
 	Name = 'Kill Effects',
