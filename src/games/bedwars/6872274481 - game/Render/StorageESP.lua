@@ -4,6 +4,7 @@ local Background
 local Color = {}
 local ShowAmount
 local ShowAll
+local ShowOwn
 local Reference = {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
@@ -13,6 +14,38 @@ Folder.Parent = vain.gui
 -- when the GUI restores a saved config. Reading .Enabled straight off them threw.
 local function on(setting)
 	return setting ~= nil and setting.Enabled
+end
+
+--[[
+	Your own team's crate, found the way ChestSteal and the game's own getTeamCrate find it.
+
+	The Team attribute sits on a holder with the block underneath it, so it is looked for up
+	a few parents rather than only on the tagged instance, and compared as text because the
+	id comes back as a string in some places and a number in others.
+]]
+local function teamOf(inst)
+	local team = inst:GetAttribute('Team')
+	if team == nil then team = inst:GetAttribute('GeneratorTeam') end
+	return team ~= nil and tostring(team) or nil
+end
+
+local function ownTeamChest(block)
+	local mine = lplr:GetAttribute('Team')
+	if mine == nil or not block then return false end
+	mine = tostring(mine)
+
+	local node = block
+	for _ = 1, 3 do
+		if not node then break end
+		if teamOf(node) == mine then return true end
+		node = node.Parent
+	end
+	return false
+end
+
+-- Hidden unless asked for: what is in your own crate is something you already know.
+local function hiddenAsOwn(block)
+	return not on(ShowOwn) and ownTeamChest(block)
 end
 
 local function nearStorageItem(item)
@@ -108,6 +141,7 @@ end
 local function Added(v)
 	local chest = v:WaitForChild('ChestFolderValue', 3)
 	if not (chest and StorageESP.Enabled) then return end
+	if hiddenAsOwn(v) then return end
 	chest = chest.Value
 	local billboard = Instance.new('BillboardGui')
 	billboard.Parent = Folder
@@ -228,6 +262,17 @@ ShowAll = StorageESP:CreateToggle({
 	Function = function()
 		for _, v in Reference do
 			task.spawn(refreshAdornee, v)
+		end
+	end
+})
+ShowOwn = StorageESP:CreateToggle({
+	Name = 'Show Own',
+	Tooltip = "Also shows your own team's chest",
+	Function = function()
+		-- Which chests exist changes, not just what they show, so they are rebuilt.
+		if StorageESP.Enabled then
+			StorageESP:Toggle()
+			StorageESP:Toggle()
 		end
 	end
 })
