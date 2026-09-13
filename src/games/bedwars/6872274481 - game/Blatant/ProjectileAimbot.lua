@@ -308,11 +308,34 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 		end
 
 		if callback then
-			ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
+			--[[
+				Moved the moment the mouse does, not a frame later.
+
+				RenderStepped runs after the frame's input has already been read, so a circle
+				updated only there was always drawn at last frame's mouse position - the
+				trailing delay. Two things close it: the position is set straight from the
+				input event as the mouse moves, and again at the very front of the render
+				step, ahead of everything else that frame, for anything the event missed.
+			]]
+			local function placeCircle()
 				if CircleObject then
 					CircleObject.Position = mousePosition()
 				end
+			end
+
+			ProjectileAimbot:Clean(inputService.InputChanged:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseMovement then
+					placeCircle()
+				end
 			end))
+
+			local bindName = 'VainProjectileAimbotFOV'
+			pcall(function()
+				runService:BindToRenderStep(bindName, Enum.RenderPriority.First.Value, placeCircle)
+			end)
+			ProjectileAimbot:Clean(function()
+				pcall(function() runService:UnbindFromRenderStep(bindName) end)
+			end)
 
 			old = bedwars.ProjectileController.calculateImportantLaunchValues
 			--[[
