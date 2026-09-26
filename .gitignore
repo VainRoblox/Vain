@@ -3,3 +3,6 @@ loadstring.lua
 * - dev.lua
 .claude
 .claude/
+
+# Place dumps: hundreds of megabytes, and only ever local research material.
+*.rbxlx
