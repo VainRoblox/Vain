@@ -14,7 +14,15 @@ local function Added(bed)
 	end)
 
 	for _, part in parts do
-		if part:IsA('BasePart') and part.Name ~= 'Blanket' then
+		--[[
+			The visible bed only.
+
+			A bed carries an invisible Root part - fully transparent, no colour of its own,
+			so it comes out default grey - that wraps the whole model. Boxing it drew a grey
+			cube over the bed, which is the grey blob on your own bed; skipping anything
+			transparent leaves just the parts you can actually see, whichever team it is.
+		]]
+		if part:IsA('BasePart') and part.Name ~= 'Blanket' and part.Name ~= 'Root' and part.Transparency < 1 then
 			local handle = Instance.new('BoxHandleAdornment')
 			handle.Size = part.Size + Vector3.new(.01, .01, .01)
 			handle.AlwaysOnTop = true
