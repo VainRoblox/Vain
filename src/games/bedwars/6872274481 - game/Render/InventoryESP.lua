@@ -7,6 +7,12 @@ local Size
 local Gap
 local ShowAll
 local Teammates
+local Alerts
+-- Item Alerts' watched items for the current pass, item -> amount. Watched items are
+-- always drawn, whatever the list says, since they are what the alert is about.
+local watching = {}
+-- player -> {itemType = true} for what they have already been called out for.
+local alerted = {}
 
 -- The things worth knowing an enemy has. Seeded straight into the item list, so they can
 -- be switched off or removed there like anything else rather than being nine settings of
@@ -53,6 +59,7 @@ end
 -- than however the inventory happened to be arranged.
 local function listed(itemType)
 	if not itemType then return nil end
+	if watching[itemType] then return 0 end
 	if not (List and List.ListEnabled) then return nil end
 
 	for i, v in List.ListEnabled do
@@ -121,6 +128,76 @@ local function addIcon(frame, itemType, amount)
 	end
 end
 
+-- The tint and outline a player's strip wears while they hold enough of a watched item.
+local function paint(container, active)
+	local frame = container:FindFirstChild('Frame')
+	if not frame then return end
+
+	local stroke = frame:FindFirstChild('AlertStroke')
+	if active and Alerts then
+		local tint, opacity = Alerts.color()
+		frame.BackgroundColor3 = tint
+		frame.BackgroundTransparency = 1 - opacity
+		if not stroke then
+			stroke = Instance.new('UIStroke')
+			stroke.Name = 'AlertStroke'
+			stroke.Thickness = 2
+			stroke.Parent = frame
+		end
+		stroke.Color = tint
+		stroke.Enabled = true
+	else
+		frame.BackgroundColor3 = Color3.fromHSV(Color.Hue or 0, Color.Sat or 0, Color.Value or 0.15)
+		frame.BackgroundTransparency = 1 - (on(Background) and (Color.Opacity or 0.5) or 0)
+		if stroke then stroke.Enabled = false end
+	end
+end
+
+--[[
+	The outline around the player themselves, for as long as they hold enough.
+
+	Kept in this module's folder with the character as its adornee, the way Chams draws
+	its highlights, and taken away the moment they drop below - or the setting goes off.
+]]
+local function setHighlight(entry, plr, want)
+	local char = plr and plr.Character
+	if want and char and Alerts then
+		local highlight = entry.Highlight
+		if not (highlight and highlight.Parent) then
+			highlight = Instance.new('Highlight')
+			highlight.Name = 'ItemAlert'
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.Parent = Folder
+			entry.Highlight = highlight
+		end
+		local tint, opacity = Alerts.highlightColor()
+		highlight.Adornee = char
+		highlight.FillColor = tint
+		highlight.OutlineColor = tint
+		highlight.FillTransparency = 1 - opacity
+		highlight.OutlineTransparency = 0
+		highlight.Enabled = true
+	elseif entry.Highlight then
+		entry.Highlight:Destroy()
+		entry.Highlight = nil
+	end
+end
+
+-- Said once per item as they reach it, and again only after they have dropped below.
+local function announce(plr, found)
+	local before = alerted[plr] or {}
+	local now, fresh = {}, {}
+	for _, hit in found do
+		now[hit.itemType] = true
+		if not before[hit.itemType] then fresh[#fresh + 1] = hit end
+	end
+	alerted[plr] = now
+
+	if #fresh > 0 and Alerts then
+		Alerts.notify('InventoryESP', plr.Name .. ' has ' .. Alerts.describe(fresh))
+	end
+end
+
 --[[
 	Draws what a player is carrying.
 
@@ -148,6 +225,8 @@ local function refreshAdornee(entry, plr)
 	end
 
 	local totals, rank, order = {}, {}, {}
+	-- Everything they hold, for the alerts - counted whether or not it is drawn.
+	local all = {}
 
 	local function count(item)
 		if type(item) ~= 'table' or not item.itemType then return end
@@ -180,14 +259,19 @@ local function refreshAdornee(entry, plr)
 	local folder = inventoryFolder(plr)
 	if folder then
 		for _, child in folder:GetChildren() do
-			-- Worn armour is in this folder too, carrying the slot it sits in.
-			if child:GetAttribute('ArmorSlot') == nil and not isGear(child.Name) then
+			all[child.Name] = (all[child.Name] or 0) + (tonumber(child:GetAttribute('Amount')) or 1)
+			-- Worn armour is in this folder too, carrying the slot it sits in. A watched
+			-- item is drawn even if it is gear, since you asked about it.
+			if watching[child.Name] or (child:GetAttribute('ArmorSlot') == nil and not isGear(child.Name)) then
 				count({itemType = child.Name, amount = child:GetAttribute('Amount')})
 			end
 		end
 	elseif type(inventory.items) == 'table' then
 		for _, item in inventory.items do
-			if not isGear(item.itemType) then
+			if type(item) == 'table' and item.itemType then
+				all[item.itemType] = (all[item.itemType] or 0) + (tonumber(item.amount) or 1)
+			end
+			if type(item) == 'table' and (watching[item.itemType] or not isGear(item.itemType)) then
 				count(item)
 			end
 		end
@@ -211,7 +295,12 @@ local function refreshAdornee(entry, plr)
 		any = true
 	end
 
-	entry.Shown = any
+	local found = Alerts and Alerts.enabled() and Alerts.matches(all, watching) or {}
+	paint(container, #found > 0)
+	announce(plr, found)
+	setHighlight(entry, plr, #found > 0 and Alerts.highlight())
+
+	entry.Shown = any or #found > 0
 end
 
 --[[
@@ -246,6 +335,7 @@ local function complain(err)
 end
 
 local function refreshAll()
+	watching = Alerts and Alerts.enabled() and Alerts.watches() or {}
 	for ent, entry in Entries do
 		if entry.Billboard.Parent and entry.Player and entry.Player.Parent then
 			-- Each player is read on its own. One that cannot be read used to abort the
@@ -254,6 +344,7 @@ local function refreshAll()
 			local ok, err = pcall(function()
 				if hidden(ent, entry.Player) then
 					entry.Shown = false
+					setHighlight(entry, entry.Player, false)
 				else
 					refreshAdornee(entry, entry.Player)
 				end
@@ -264,6 +355,7 @@ local function refreshAll()
 			end
 		else
 			entry.Billboard:Destroy()
+			setHighlight(entry, entry.Player, false)
 			Entries[ent] = nil
 		end
 	end
@@ -366,6 +458,7 @@ InventoryESP = vain.Categories.Render:CreateModule({
 				local entry = Entries[ent]
 				if entry then
 					entry.Billboard:Destroy()
+					setHighlight(entry, entry.Player, false)
 					Entries[ent] = nil
 				end
 			end))
@@ -383,6 +476,7 @@ InventoryESP = vain.Categories.Render:CreateModule({
 			end)
 		else
 			table.clear(Entries)
+			table.clear(alerted)
 			Folder:ClearAllChildren()
 		end
 	end,
@@ -411,6 +505,8 @@ Background = InventoryESP:CreateToggle({
 				blur.Visible = callback
 			end
 		end
+		-- A flagged player keeps their alert colour.
+		task.spawn(refreshAll)
 	end,
 	Default = true
 })
@@ -427,6 +523,7 @@ Color = InventoryESP:CreateColorSlider({
 				frame.BackgroundTransparency = 1 - opacity
 			end
 		end
+		task.spawn(refreshAll)
 	end,
 	Darker = true
 })
@@ -464,4 +561,11 @@ ShowAmount = InventoryESP:CreateToggle({
 	Function = function()
 		task.spawn(refreshAll)
 	end
+})
+Alerts = itemAlerts.create(InventoryESP, {
+	refresh = function()
+		task.spawn(refreshAll)
+	end,
+	highlight = true,
+	defaults = {'emerald x10', 'diamond x10'}
 })

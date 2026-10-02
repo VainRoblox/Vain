@@ -5,7 +5,11 @@ local Color = {}
 local ShowAmount
 local ShowAll
 local ShowOwn
+local Alerts
 local Reference = {}
+-- chest -> {itemType = true} for what it has already been called out for, so each item is
+-- said once when a chest reaches it and again only after it has dropped back below.
+local alerted = {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
 
@@ -48,13 +52,57 @@ local function hiddenAsOwn(block)
 	return not on(ShowOwn) and ownTeamChest(block)
 end
 
+local refreshAdornee
+
 local function nearStorageItem(item)
 	for _, v in List.ListEnabled do
 		if item:find(v) then return v end
 	end
 end
 
-local function refreshAdornee(v)
+local function where(inst)
+	if inst:IsA('BasePart') then return inst.Position end
+	if inst:IsA('Model') then
+		local ok, pivot = pcall(inst.GetPivot, inst)
+		if ok then return pivot.Position end
+	end
+	local part = inst:FindFirstChildWhichIsA('BasePart', true)
+	return part and part.Position or nil
+end
+
+-- The tint and outline a chest wears while it holds enough of a watched item, or its usual
+-- look when it does not.
+local function paint(v, active)
+	local frame = v:FindFirstChild('Frame')
+	if not frame then return end
+
+	local stroke = frame:FindFirstChild('AlertStroke')
+	if active and Alerts then
+		local tint, opacity = Alerts.color()
+		frame.BackgroundColor3 = tint
+		frame.BackgroundTransparency = 1 - opacity
+		if not stroke then
+			stroke = Instance.new('UIStroke')
+			stroke.Name = 'AlertStroke'
+			stroke.Thickness = 2
+			stroke.Parent = frame
+		end
+		stroke.Color = tint
+		stroke.Enabled = true
+	else
+		frame.BackgroundColor3 = Color3.fromHSV(Color.Hue or 0, Color.Sat or 0, Color.Value or 0)
+		frame.BackgroundTransparency = 1 - (on(Background) and (Color.Opacity or 0.5) or 0)
+		if stroke then stroke.Enabled = false end
+	end
+end
+
+local function refreshAll()
+	for _, v in Reference do
+		task.spawn(refreshAdornee, v)
+	end
+end
+
+function refreshAdornee(v)
 	local chest = v.Adornee:FindFirstChild('ChestFolderValue')
 	chest = chest and chest.Value or nil
 	if not chest then
@@ -82,7 +130,8 @@ local function refreshAdornee(v)
 		summed. Reading only the first stack, the way the old dedup did, would under-report
 		anything that arrived in separate drops.
 	]]
-	local order, totals = {}, {}
+	local order, totals, all = {}, {}, {}
+	local watches = Alerts and Alerts.watches() or {}
 	for _, item in chestitems do
 		--[[
 			A child with no Amount is not an item.
@@ -93,9 +142,11 @@ local function refreshAdornee(v)
 		]]
 		local amount = item:GetAttribute('Amount')
 		if type(amount) ~= 'number' then continue end
+		all[item.Name] = (all[item.Name] or 0) + amount
 
-		-- ShowAll displays all items regardless of the list; otherwise use the filter
-		local shouldShow = on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)
+		-- ShowAll displays all items regardless of the list; otherwise use the filter. A
+		-- watched item is always shown, since it is what the alert is about.
+		local shouldShow = on(ShowAll) or watches[item.Name] ~= nil or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name)
 		if not shouldShow then continue end
 
 		if totals[item.Name] == nil then
@@ -136,6 +187,36 @@ local function refreshAdornee(v)
 		end
 	end
 	table.clear(chestitems)
+
+	--[[
+		Whether it holds enough of something watched.
+
+		Counted over everything in the chest, not just what is drawn, and said once per
+		item: a chest that keeps its emeralds is not news every time someone opens it. An
+		item that drops back below is forgotten, so reaching it again is said again.
+	]]
+	local block = v.Adornee
+	local found = Alerts and Alerts.enabled() and Alerts.matches(all, watches) or {}
+	if #found > 0 then v.Enabled = true end
+	paint(v, #found > 0)
+
+	if block then
+		local before = alerted[block] or {}
+		local now, fresh = {}, {}
+		for _, hit in found do
+			now[hit.itemType] = true
+			if not before[hit.itemType] then fresh[#fresh + 1] = hit end
+		end
+		alerted[block] = now
+
+		if #fresh > 0 and Alerts then
+			local position = where(block)
+			local distance = position and entitylib.isAlive
+				and math.floor((position - entitylib.character.RootPart.Position).Magnitude) or nil
+			Alerts.notify('StorageESP', 'A chest holds ' .. Alerts.describe(fresh)
+				.. (distance and (' (' .. distance .. ' studs away)') or ''))
+		end
+	end
 end
 
 local function Added(v)
@@ -186,14 +267,10 @@ local function Added(v)
 
 	StorageESP:Clean(chest.ChildAdded:Connect(function(item)
 		watchAmount(item)
-		if on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
-			refreshAdornee(billboard)
-		end
+		refreshAdornee(billboard)
 	end))
-	StorageESP:Clean(chest.ChildRemoved:Connect(function(item)
-		if on(ShowAll) or table.find(List.ListEnabled, item.Name) or nearStorageItem(item.Name) then
-			refreshAdornee(billboard)
-		end
+	StorageESP:Clean(chest.ChildRemoved:Connect(function()
+		refreshAdornee(billboard)
 	end))
 	task.spawn(refreshAdornee, billboard)
 end
@@ -208,6 +285,7 @@ StorageESP = vain.Categories.Render:CreateModule({
 			end
 		else
 			table.clear(Reference)
+			table.clear(alerted)
 			Folder:ClearAllChildren()
 		end
 	end,
@@ -231,6 +309,8 @@ Background = StorageESP:CreateToggle({
 			v.Frame.BackgroundTransparency = 1 - (callback and Color.Opacity or 0)
 			v.Blur.Visible = callback
 		end
+		-- A chest that is flagged keeps its alert colour.
+		refreshAll()
 	end,
 	Default = true
 })
@@ -244,6 +324,7 @@ Color = StorageESP:CreateColorSlider({
 			v.Frame.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 			v.Frame.BackgroundTransparency = 1 - opacity
 		end
+		refreshAll()
 	end,
 	Darker = true
 })
@@ -275,4 +356,8 @@ ShowOwn = StorageESP:CreateToggle({
 			StorageESP:Toggle()
 		end
 	end
+})
+Alerts = itemAlerts.create(StorageESP, {
+	refresh = refreshAll,
+	defaults = {'emerald x10', 'diamond x10'}
 })

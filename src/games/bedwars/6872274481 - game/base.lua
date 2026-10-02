@@ -612,6 +612,324 @@ local function getCursorDistance(ent)
 	return (mouse - Vector2.new(position.X, position.Y)).Magnitude
 end
 
+--[[
+	Item alerts, shared by StorageESP and InventoryESP.
+
+	You pick items to watch and how many of each counts, and both modules flag whatever
+	holds that many - a chest, a player - by tinting its ESP, telling you once, and for
+	players optionally highlighting them. The list, the parsing and the settings are the
+	same in both, so they live here rather than twice.
+
+	Entries are kept as plain text, 'emerald x10', because that is what a TextList holds
+	and saves. Typed by hand they are read just as loosely: 'emerald:10', 'Emerald 10' and
+	a bare 'emerald' (meaning one) all work, by item id or by the name the game shows.
+]]
+local itemAlerts = {}
+do
+	-- Filled in place rather than replaced, so a dropdown that was handed these tables
+	-- before the item metadata existed still sees the names once it does.
+	local names, labels, byLabel = {}, {}, {}
+
+	function itemAlerts.items()
+		if #names > 0 then return names, labels end
+
+		local ok, meta = pcall(function() return bedwars.ItemMeta end)
+		if ok and type(meta) == 'table' then
+			for itemType, data in meta do
+				if type(itemType) == 'string' and type(data) == 'table' then
+					names[#names + 1] = itemType
+					local label = type(data.displayName) == 'string' and data.displayName or itemType
+					labels[itemType] = label
+					byLabel[label:lower()] = byLabel[label:lower()] or itemType
+				end
+			end
+		end
+		table.sort(names, function(a, b)
+			local la, lb = labels[a]:lower(), labels[b]:lower()
+			if la == lb then return a < b end
+			return la < lb
+		end)
+		return names, labels
+	end
+
+	function itemAlerts.label(itemType)
+		itemAlerts.items()
+		return labels[itemType] or itemType
+	end
+
+	-- An entry as text, the form the list keeps.
+	function itemAlerts.entry(itemType, amount)
+		return itemType .. ' x' .. math.max(1, math.floor(tonumber(amount) or 1))
+	end
+
+	-- Text back to an item id and an amount, or nil for text that names no item.
+	function itemAlerts.parse(text)
+		if type(text) ~= 'string' then return nil end
+		itemAlerts.items()
+
+		local head, amount = text:match('^(.-)%s*(%d+)%s*$')
+		if head then
+			-- A separator before the number, but only a real one: 'box 5' is not 'bo x5'.
+			head = head:gsub('%s+x$', ''):gsub(':$', '')
+		else
+			head, amount = text, 1
+		end
+		head = head:match('^%s*(.-)%s*$')
+		if head == '' then return nil end
+
+		local function resolve(name)
+			local lower = name:lower()
+			local snake = (lower:gsub('%s+', '_'))
+			return (labels[name] and name)
+				or (labels[lower] and lower)
+				or (labels[snake] and snake)
+				or byLabel[lower]
+		end
+
+		local itemType = resolve(head)
+		if not itemType then
+			-- A name that ends in a number of its own, like fishing_rod_1, typed with no
+			-- amount after it.
+			local whole = text:match('^%s*(.-)%s*$')
+			itemType = resolve(whole)
+			amount = 1
+		end
+		if not itemType then return nil end
+		return itemType, math.max(1, tonumber(amount) or 1)
+	end
+
+	--[[
+		The settings, added to a module.
+
+		options.refresh is called whenever something changes what should be flagged, and
+		options.highlight adds the player highlight, which only makes sense for people.
+		Returns what the module needs to ask: what is watched, which of those a set of
+		totals meets, the colours, and whether to say so.
+	]]
+	function itemAlerts.create(module, options)
+		options = options or {}
+		local refresh = options.refresh or function() end
+		local defaults = options.defaults or {'emerald x10', 'diamond x10'}
+		local api = {}
+		local Master, Item, Amount, Add, Watched, Reset, Notify, Alert, Highlight, HighlightColor
+		itemAlerts.items()
+
+		local function on(setting)
+			return setting ~= nil and setting.Enabled
+		end
+
+		local function layout()
+			local shown = on(Master)
+			for _, setting in {Item, Amount, Add, Watched, Reset, Notify, Alert, Highlight} do
+				if setting and setting.Object then setting.Object.Visible = shown end
+			end
+			if HighlightColor and HighlightColor.Object then
+				HighlightColor.Object.Visible = shown and on(Highlight)
+			end
+		end
+
+		-- Replaced whole through Load, which every GUI's list has, rather than through
+		-- methods only some of them do.
+		local function setList(list, enabled)
+			if not Watched then return end
+			Watched:Load({List = list, ListEnabled = enabled})
+			refresh()
+		end
+
+		Master = module:CreateToggle({
+			Name = 'Item Alerts',
+			Tooltip = 'Flags whoever holds enough of an item you pick',
+			Function = function()
+				-- The list may have been empty if the metadata was not there yet.
+				local list = itemAlerts.items()
+				if Item and Item.Change and #list > 0 and Item.Value == 'None' then
+					Item:Change(list)
+				end
+				layout()
+				refresh()
+			end
+		})
+		Item = module:CreateDropdown({
+			Name = 'Alert Item',
+			Tooltip = 'The item to watch for - type to search',
+			List = names,
+			Labels = labels,
+			Search = true,
+			Darker = true,
+			Visible = false
+		})
+		Amount = module:CreateSlider({
+			Name = 'Alert Amount',
+			Tooltip = 'How many of it counts',
+			Min = 1,
+			Max = 256,
+			Default = 10,
+			Darker = true,
+			Visible = false
+		})
+		--[[
+			Buttons are created visible and hidden afterwards by layout, rather than created
+			hidden: in GUIs whose buttons hand nothing back there would be no way to show
+			them again. A GUI with no buttons at all still has the list to type into.
+		]]
+		local makeButton = module.CreateButton and function(settings)
+			return module:CreateButton(settings)
+		end or function() return nil end
+
+		Add = makeButton({
+			Name = 'Add Item',
+			Tooltip = 'Adds the item and amount above to the list',
+			Darker = true,
+			Function = function()
+				local itemType = Item and Item.Value
+				if not itemType or itemType == 'None' then return end
+
+				-- One entry per item, so adding it again changes the amount rather than
+				-- leaving two to disagree.
+				local entry = itemAlerts.entry(itemType, Amount and Amount.Value or 1)
+				local list, enabled = {}, {}
+				for _, v in Watched.List do
+					if itemAlerts.parse(v) ~= itemType then list[#list + 1] = v end
+				end
+				for _, v in Watched.ListEnabled do
+					if itemAlerts.parse(v) ~= itemType then enabled[#enabled + 1] = v end
+				end
+				list[#list + 1] = entry
+				enabled[#enabled + 1] = entry
+				setList(list, enabled)
+			end
+		})
+		Watched = module:CreateTextList({
+			Name = 'Watched Items',
+			Tooltip = "Items being watched, as 'item xAmount'",
+			Placeholder = 'emerald x10',
+			Default = defaults,
+			Darker = true,
+			Visible = false,
+			Function = function()
+				refresh()
+			end
+		})
+		Reset = makeButton({
+			Name = 'Reset Items',
+			Tooltip = 'Puts the watched items back to the default list',
+			Darker = true,
+			Function = function()
+				setList(table.clone(defaults), table.clone(defaults))
+			end
+		})
+		Notify = module:CreateToggle({
+			Name = 'Alert Notify',
+			Tooltip = 'Tells you when something reaches an amount',
+			Default = true,
+			Darker = true,
+			Visible = false
+		})
+		Alert = module:CreateColorSlider({
+			Name = 'Alert Color',
+			Tooltip = 'Colour the ESP turns while it holds enough',
+			DefaultHue = 0.12,
+			DefaultSat = 0.85,
+			DefaultValue = 1,
+			DefaultOpacity = 0.6,
+			Darker = true,
+			Visible = false,
+			Function = function()
+				refresh()
+			end
+		})
+		if options.highlight then
+			Highlight = module:CreateToggle({
+				Name = 'Highlight',
+				Tooltip = 'Outlines the player while they hold enough',
+				Darker = true,
+				Visible = false,
+				Function = function()
+					layout()
+					refresh()
+				end
+			})
+			HighlightColor = module:CreateColorSlider({
+				Name = 'Highlight Color',
+				Tooltip = 'Colour of the highlight',
+				DefaultHue = 0,
+				DefaultSat = 0.85,
+				DefaultValue = 1,
+				DefaultOpacity = 0.5,
+				Darker = true,
+				Visible = false,
+				Function = function()
+					refresh()
+				end
+			})
+		end
+
+		function api.enabled()
+			return on(Master)
+		end
+
+		-- What is watched and how many of each, from the entries that are switched on.
+		function api.watches()
+			local map = {}
+			if not (on(Master) and Watched) then return map end
+			for _, text in Watched.ListEnabled do
+				local itemType, amount = itemAlerts.parse(text)
+				if itemType then
+					map[itemType] = math.min(map[itemType] or math.huge, amount)
+				end
+			end
+			return map
+		end
+
+		-- Which watched items a set of totals meets, ordered by name so a message reads
+		-- the same way every time.
+		function api.matches(totals, watches)
+			watches = watches or api.watches()
+			local found = {}
+			for itemType, need in watches do
+				local have = totals[itemType] or 0
+				if have >= need then
+					found[#found + 1] = {itemType = itemType, have = have, need = need}
+				end
+			end
+			table.sort(found, function(a, b)
+				return itemAlerts.label(a.itemType) < itemAlerts.label(b.itemType)
+			end)
+			return found
+		end
+
+		function api.describe(found)
+			local parts = {}
+			for _, hit in found do
+				parts[#parts + 1] = hit.have .. ' ' .. itemAlerts.label(hit.itemType)
+			end
+			return table.concat(parts, ', ')
+		end
+
+		function api.color()
+			return Color3.fromHSV(Alert.Hue or 0.12, Alert.Sat or 0.85, Alert.Value or 1), Alert.Opacity or 0.6
+		end
+
+		function api.notify(title, text)
+			if on(Notify) then
+				notif(title, text, 6, 'info')
+			end
+		end
+
+		function api.highlight()
+			return on(Master) and on(Highlight)
+		end
+
+		function api.highlightColor()
+			if not HighlightColor then return Color3.new(1, 0, 0), 0.5 end
+			return Color3.fromHSV(HighlightColor.Hue or 0, HighlightColor.Sat or 0.85, HighlightColor.Value or 1), HighlightColor.Opacity or 0.5
+		end
+
+		task.defer(layout)
+		return api
+	end
+end
+
 -- Shown when hovering an individual Target Mode option. Keys match sortmethods plus
 -- 'Distance', which is not in that table because it is the default magnitude ordering.
 local sortmethodtips = {
