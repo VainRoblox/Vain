@@ -215,8 +215,18 @@ function refreshAdornee(v)
 			local position = where(block)
 			local distance = position and entitylib.isAlive
 				and math.floor((position - entitylib.character.RootPart.Position).Magnitude) or nil
-			Alerts.notify('StorageESP', 'A chest holds ' .. Alerts.describe(fresh)
-				.. (distance and (' (' .. distance .. ' studs away)') or ''))
+			-- Whose chest it is, in their colour, from the same Team attribute Show Own reads.
+			local owner
+			local node = block
+			for _ = 1, 3 do
+				if not node then break end
+				owner = teamOf(node)
+				if owner then break end
+				node = node.Parent
+			end
+			local team = itemAlerts.teamName(owner)
+			Alerts.notify('StorageESP', (team and (team .. "'s chest holds ") or 'A chest holds ')
+				.. Alerts.describe(fresh) .. (distance and (' (' .. distance .. ' studs away)') or ''))
 		end
 	end
 end

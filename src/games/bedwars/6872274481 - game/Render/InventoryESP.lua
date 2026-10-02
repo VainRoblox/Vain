@@ -196,7 +196,9 @@ local function announce(plr, found)
 	alerted[plr] = now
 
 	if #fresh > 0 and Alerts then
-		local who = plr == lplr and 'You have ' or (plr.Name .. ' has ')
+		-- Named in their team's colour, the way the nametag over them is.
+		local who = plr == lplr and (itemAlerts.playerName(plr, 'You') .. ' have ')
+			or (itemAlerts.playerName(plr) .. ' has ')
 		Alerts.notify('InventoryESP', who .. Alerts.describe(fresh))
 	end
 end
