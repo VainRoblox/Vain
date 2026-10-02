@@ -37,3 +37,7 @@ button.MouseLeave:Connect(function()
 	})
 end)
 button.MouseButton1Click:Connect(optionsettings.Function)
+
+-- Handed back so a module can show and hide the button with the rest of its settings.
+-- Not registered as an option: there is nothing about a button to save.
+return {Type = 'Button', Object = button}
