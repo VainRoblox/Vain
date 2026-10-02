@@ -47,9 +47,11 @@ local function ownTeamChest(block)
 	return false
 end
 
--- Hidden unless asked for: what is in your own crate is something you already know.
+-- Hidden unless asked for: what is in your own crate is something you already know. Item
+-- Alerts with Ignore Self off asks for it too, so your team's chest is watched as well.
 local function hiddenAsOwn(block)
-	return not on(ShowOwn) and ownTeamChest(block)
+	if on(ShowOwn) or (Alerts and Alerts.includeSelf()) then return false end
+	return ownTeamChest(block)
 end
 
 local refreshAdornee
@@ -359,5 +361,12 @@ ShowOwn = StorageESP:CreateToggle({
 })
 Alerts = itemAlerts.create(StorageESP, {
 	refresh = refreshAll,
+	-- Ignore Self changes which chests are shown at all, so they are rebuilt.
+	rebuild = function()
+		if StorageESP.Enabled then
+			StorageESP:Toggle()
+			StorageESP:Toggle()
+		end
+	end,
 	defaults = {'emerald x10', 'diamond x10'}
 })

@@ -711,7 +711,7 @@ do
 		local refresh = options.refresh or function() end
 		local defaults = options.defaults or {'emerald x10', 'diamond x10'}
 		local api = {}
-		local Master, Item, Amount, Add, Watched, Reset, Notify, Alert, Highlight, HighlightColor
+		local Master, Item, Amount, Add, Watched, Reset, Notify, IgnoreSelf, Alert, Highlight, HighlightColor
 		itemAlerts.items()
 
 		local function on(setting)
@@ -720,7 +720,7 @@ do
 
 		local function layout()
 			local shown = on(Master)
-			for _, setting in {Item, Amount, Add, Watched, Reset, Notify, Alert, Highlight} do
+			for _, setting in {Item, Amount, Add, Watched, Reset, Notify, IgnoreSelf, Alert, Highlight} do
 				if setting and setting.Object then setting.Object.Visible = shown end
 			end
 			if HighlightColor and HighlightColor.Object then
@@ -825,6 +825,18 @@ do
 			Darker = true,
 			Visible = false
 		})
+		IgnoreSelf = module:CreateToggle({
+			Name = 'Ignore Self',
+			Tooltip = 'Off also flags you and your own team',
+			Default = true,
+			Darker = true,
+			Visible = false,
+			Function = function()
+				-- Which things are looked at can change, not just how they look.
+				local rebuild = options.rebuild or refresh
+				rebuild()
+			end
+		})
 		Alert = module:CreateColorSlider({
 			Name = 'Alert Color',
 			Tooltip = 'Colour the ESP turns while it holds enough',
@@ -866,6 +878,11 @@ do
 
 		function api.enabled()
 			return on(Master)
+		end
+
+		-- Whether you and your own team are flagged too, rather than left out.
+		function api.includeSelf()
+			return on(Master) and IgnoreSelf ~= nil and not IgnoreSelf.Enabled
 		end
 
 		-- What is watched and how many of each, from the entries that are switched on.
