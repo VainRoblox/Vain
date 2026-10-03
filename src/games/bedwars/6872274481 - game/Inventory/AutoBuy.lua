@@ -420,6 +420,41 @@ SmartCheck = AutoBuy:CreateToggle({
 	Default = true,
 	Tooltip = 'Saves everything for iron armor first\nNeeds Buy Armor on'
 })
+--[[
+	Custom items: priority/item/amount/after, where "after" (anything in the fourth field)
+	buys it after the sword, armor and tools instead of before.
+
+	Topped up to the amount you set, a stack at a time: whatever is short is rounded up to
+	whole stacks - rounding down left it never topping up once you had used less than a
+	stack - and as many of those as you can afford are bought now, rather than nothing at
+	all until you could afford every one. Entries run in priority order, and two with the
+	same priority both run instead of one replacing the other.
+]]
+local function customBuyer(itemType, amount)
+	return function(currencytable, shop)
+		if not shop then return end
+		-- Held back too: these are bought with the same iron the armor needs, so buying
+		-- them first is why there was none left for it.
+		if savingForArmor() then return end
+
+		local v = bedwars.Shop.getShopItem(itemType, lplr)
+		if not (v and amount) then return end
+		-- getTeamWool was renamed getTeamWoolById upstream; same signature (team id in,
+		-- wool ItemType out).
+		local held = getItem(itemType == 'wool_white' and bedwars.Shop.getTeamWoolById(lplr:GetAttribute('Team')) or itemType)
+		local short = amount - (held and held.amount or 0)
+		if short <= 0 then return end
+
+		local stacks = math.ceil(short / math.max(v.amount or 1, 1))
+		local bought = 0
+		while bought < stacks and canBuy(v, currencytable) do
+			buyItem(v, currencytable)
+			bought += 1
+		end
+		return bought > 0
+	end
+end
+
 AutoBuy:CreateTextList({
 	Name = 'Item',
 	Tooltip = 'Which items this applies to',
@@ -427,31 +462,18 @@ AutoBuy:CreateTextList({
 	Function = function(list)
 		table.clear(Custom)
 		table.clear(CustomPost)
+		local before, after = {}, {}
 		for _, entry in list do
 			local tab = entry:split('/')
-			local ind = tonumber(tab[1])
-			if ind then
-				(tab[4] and CustomPost or Custom)[ind] = function(currencytable, shop)
-					if not shop then return end
-					-- Held back too: these are bought with the same iron the armor needs,
-					-- so buying them first is why there was none left for it.
-					if savingForArmor() then return end
-
-					local v = bedwars.Shop.getShopItem(tab[2], lplr)
-					if v then
-						-- getTeamWool was renamed getTeamWoolById upstream; same signature
-						-- (team id in, wool ItemType out).
-						local item = getItem(tab[2] == 'wool_white' and bedwars.Shop.getTeamWoolById(lplr:GetAttribute('Team')) or tab[2])
-						item = (item and tonumber(tab[3]) - item.amount or tonumber(tab[3])) // v.amount
-						if item > 0 and canBuy(v, currencytable, item) then
-							for _ = 1, item do
-								buyItem(v, currencytable)
-							end
-							return true
-						end
-					end
-				end
+			local priority = tonumber(tab[1])
+			if priority and tab[2] then
+				table.insert(tab[4] and after or before, {priority = priority, buy = customBuyer(tab[2], tonumber(tab[3]))})
 			end
 		end
+		for target, entries in {[Custom] = before, [CustomPost] = after} do
+			table.sort(entries, function(a, b) return a.priority < b.priority end)
+			for i, entry in entries do target[i] = entry.buy end
+		end
+		npctick = tick()
 	end
 })
