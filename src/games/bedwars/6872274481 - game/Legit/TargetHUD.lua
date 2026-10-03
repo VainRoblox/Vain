@@ -18,6 +18,7 @@ local Mode, Range, Angle, Linger, ShowEquipment, WinIndicator, Compact, Accent, 
 local card, stroke, avatar, nameLabel, winLabel, infoLabel, extraLabel, barBack, barFill, barGhost, equipment
 local icons = {}
 local target, lastSeen = nil, 0
+local hitsToKill
 local ghost = 1
 local LAST_HIT_HOLD = 6
 
@@ -99,7 +100,7 @@ local function layout()
 	infoLabel.Visible = not compact
 	local left = compact and 8 or 62
 	nameLabel.Position = UDim2.fromOffset(left, 6)
-	nameLabel.Size = UDim2.new(1, -left - 70, 0, 18)
+	nameLabel.Size = UDim2.new(1, -left - 96, 0, 18)
 	barBack.Position = UDim2.fromOffset(left, 27)
 	barBack.Size = UDim2.new(1, -left - 8, 0, 8)
 	infoLabel.Position = UDim2.fromOffset(left, 38)
@@ -111,6 +112,32 @@ local function layout()
 	equipment.Position = UDim2.fromOffset(8, extra and 74 or 58)
 	local height = compact and 42 or (58 + (extra and 16 or 0) + (on(ShowEquipment) and 20 or 0))
 	card.Size = UDim2.new(1, 0, 0, height)
+end
+
+--[[
+	The win check: how many hits each of you needs to finish the other. Your own health is
+	read straight off your character (Health plus any shield) - the entity list's copy of it
+	did not follow your own damage, which is why it said winning while losing. Damage is the
+	sword damage of what each of you holds, from the item meta; anything that is not a sword
+	counts as a fist.
+]]
+local FIST_DAMAGE = 1
+
+local function swordDamage(itemType)
+	local meta = itemType and bedwars.ItemMeta[itemType]
+	return meta and meta.sword and tonumber(meta.sword.damage) or FIST_DAMAGE
+end
+
+hitsToKill = function(player, theirHealth)
+	local character = lplr.Character
+	if not (entitylib.isAlive and character) then return nil end
+	local myHealth = (character:GetAttribute('Health') or 0) + getShieldAttribute(character)
+	local myTool = store.hand and store.hand.tool
+	local inventory = store.inventories[player]
+	local theirItem = inventory and inventory.hand and inventory.hand.itemType
+	local mine = math.max(math.ceil(theirHealth / swordDamage(myTool and myTool.Name)), 1)
+	local theirs = math.max(math.ceil(myHealth / swordDamage(theirItem)), 1)
+	return mine, theirs
 end
 
 local function show(entity, player)
@@ -129,12 +156,17 @@ local function show(entity, player)
 	barGhost.Size = UDim2.fromScale(ghost, 1)
 	barFill.BackgroundColor3 = Color3.fromHSV(fraction / 3, 0.85, 0.95)
 
-	local mine = entitylib.isAlive and entitylib.character.Health or 0
 	winLabel.Visible = on(WinIndicator) and player ~= lplr
 	if winLabel.Visible then
-		local diff = mine - health
-		winLabel.Text = math.abs(diff) < 1 and 'EVEN' or (diff > 0 and 'WINNING' or 'LOSING')
-		winLabel.TextColor3 = math.abs(diff) < 1 and Color3.fromRGB(230, 230, 230) or (diff > 0 and Color3.fromRGB(110, 230, 120) or Color3.fromRGB(255, 90, 90))
+		-- Who needs fewer hits to finish the other, with what each of you is holding.
+		local mineLeft, theirsLeft = hitsToKill(player, health)
+		if not mineLeft then
+			winLabel.Text = ''
+		else
+			local diff = theirsLeft - mineLeft
+			winLabel.Text = string.format('%s %dv%d', diff == 0 and 'EVEN' or (diff > 0 and 'WINNING' or 'LOSING'), mineLeft, theirsLeft)
+			winLabel.TextColor3 = diff == 0 and Color3.fromRGB(230, 230, 230) or (diff > 0 and Color3.fromRGB(110, 230, 120) or Color3.fromRGB(255, 90, 90))
+		end
 	end
 
 	local distance = (entitylib.isAlive and entity.RootPart) and (entity.RootPart.Position - entitylib.character.RootPart.Position).Magnitude or 0
@@ -313,7 +345,7 @@ winLabel = Instance.new('TextLabel')
 winLabel.BackgroundTransparency = 1
 winLabel.AnchorPoint = Vector2.new(1, 0)
 winLabel.Position = UDim2.new(1, -8, 0, 6)
-winLabel.Size = UDim2.fromOffset(64, 18)
+winLabel.Size = UDim2.fromOffset(90, 18)
 winLabel.Font = Enum.Font.GothamBold
 winLabel.TextSize = 11
 winLabel.TextXAlignment = Enum.TextXAlignment.Right
