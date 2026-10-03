@@ -153,9 +153,9 @@ end
 	team colour draining to the respawn. It grows and shrinks smoothly as rows come and go,
 	and while the GUI is open with nobody dead it shows a preview so it can be placed.
 ]]
-local ROW_HEIGHT = 28
-local HEADER_HEIGHT = 22
-local PANEL_WIDTH = 200
+local ROW_HEIGHT = 23
+local HEADER_HEIGHT = 19
+local PANEL_WIDTH = 172
 local header, countLabel, sizeTween, lastHeight
 
 local function guiOpen()
@@ -173,7 +173,7 @@ local function row(index)
 	frame.Parent = list
 
 	local avatar = Instance.new('ImageLabel')
-	avatar.Size = UDim2.fromOffset(20, 20)
+	avatar.Size = UDim2.fromOffset(16, 16)
 	avatar.Position = UDim2.fromOffset(0, 2)
 	avatar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	avatar.BorderSizePixel = 0
@@ -182,9 +182,9 @@ local function row(index)
 
 	local name = Instance.new('TextLabel')
 	name.BackgroundTransparency = 1
-	name.Position = UDim2.fromOffset(27, 2)
-	name.Size = UDim2.new(1, -80, 0, 20)
-	name.TextSize = 13
+	name.Position = UDim2.fromOffset(22, 1)
+	name.Size = UDim2.new(1, -70, 0, 18)
+	name.TextSize = 12
 	name.TextXAlignment = Enum.TextXAlignment.Left
 	name.TextTruncate = Enum.TextTruncate.AtEnd
 	name.Parent = frame
@@ -192,15 +192,15 @@ local function row(index)
 	local timer = Instance.new('TextLabel')
 	timer.BackgroundTransparency = 1
 	timer.AnchorPoint = Vector2.new(1, 0)
-	timer.Position = UDim2.new(1, 0, 0, 2)
-	timer.Size = UDim2.fromOffset(50, 20)
-	timer.TextSize = 13
+	timer.Position = UDim2.new(1, 0, 0, 1)
+	timer.Size = UDim2.fromOffset(46, 18)
+	timer.TextSize = 12
 	timer.TextXAlignment = Enum.TextXAlignment.Right
 	timer.Parent = frame
 
 	local track = Instance.new('Frame')
-	track.Position = UDim2.new(0, 27, 1, -3)
-	track.Size = UDim2.new(1, -27, 0, 2)
+	track.Position = UDim2.new(0, 22, 1, -3)
+	track.Size = UDim2.new(1, -22, 0, 2)
 	track.BackgroundColor3 = Color3.new(1, 1, 1)
 	track.BackgroundTransparency = 0.88
 	track.BorderSizePixel = 0
@@ -358,7 +358,7 @@ local function build()
 	header = Instance.new('TextLabel')
 	header.BackgroundTransparency = 1
 	header.Size = UDim2.new(1, -60, 0, HEADER_HEIGHT - 6)
-	header.TextSize = 11
+	header.TextSize = 10
 	header.TextColor3 = Color3.fromRGB(150, 150, 150)
 	header.TextXAlignment = Enum.TextXAlignment.Left
 	header.Text = 'RESPAWNING'
@@ -369,7 +369,7 @@ local function build()
 	countLabel.Position = UDim2.fromScale(1, 0)
 	countLabel.Size = UDim2.fromOffset(60, HEADER_HEIGHT - 6)
 	countLabel.Font = Enum.Font.GothamBold
-	countLabel.TextSize = 11
+	countLabel.TextSize = 10
 	countLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 	countLabel.TextXAlignment = Enum.TextXAlignment.Right
 	countLabel.Parent = panel
@@ -391,7 +391,7 @@ end
 RespawnTimers = vain.Legit:CreateModule({
 	Name = 'Respawn Timers',
 	Tooltip = 'Shows when dead players respawn',
-	Size = UDim2.fromOffset(200, 60),
+	Size = UDim2.fromOffset(172, 50),
 	Function = function(callback)
 		if callback then
 			build()
