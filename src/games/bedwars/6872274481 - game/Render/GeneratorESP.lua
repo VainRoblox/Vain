@@ -149,7 +149,8 @@ local function add(part)
 	card.Parent = billboard
 	Instance.new('UICorner', card).CornerRadius = UDim.new(0, 6)
 	local stroke = Instance.new('UIStroke')
-	stroke.Thickness = 1.5
+	stroke.Thickness = 1
+	stroke.Transparency = 0.3
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = card
 	local padding = Instance.new('UIPadding')
@@ -323,10 +324,10 @@ local function refresh(model, entry, here)
 	if full then
 		local pulse = 0.5 + 0.5 * math.sin(os.clock() * 6)
 		entry.stroke.Color = Color3.fromHSV(FullColor.Hue, FullColor.Sat, FullColor.Value)
-		entry.stroke.Thickness = 1.5 + pulse * 1.5
+		entry.stroke.Thickness = 1 + pulse
 	else
 		entry.stroke.Color = info.color
-		entry.stroke.Thickness = 1.5
+		entry.stroke.Thickness = 1
 	end
 	local pad = math.floor(size * 0.35)
 	entry.padding.PaddingLeft = UDim.new(0, pad + 2)

@@ -153,7 +153,7 @@ local function drawHistory(card, player)
 			local icon = kitIcon(row, kits[i].kit, order, math.clamp((i - 1) * 0.05, 0, 0.45))
 			if WinTint and WinTint.Enabled and kits[i].won ~= nil then
 				local stroke = Instance.new('UIStroke')
-				stroke.Thickness = 1.5
+				stroke.Thickness = 1
 				stroke.Color = kits[i].won and Color3.fromRGB(90, 220, 110) or Color3.fromRGB(235, 80, 80)
 				stroke.Parent = icon
 			end
@@ -188,7 +188,7 @@ local function drawHistory(card, player)
 				count.ZIndex = 11
 				count.Parent = icon
 				local mark = Instance.new('UIStroke')
-				mark.Thickness = 1.5
+				mark.Thickness = 1
 				mark.Color = Color3.fromRGB(255, 210, 90)
 				mark.Parent = icon
 			end
