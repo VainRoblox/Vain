@@ -1850,6 +1850,9 @@ run(function()
 					local targetpos = attackTable.validate.targetPosition.value
 					store.attackReach = ((selfpos - targetpos).Magnitude * 100) // 1 / 100
 					store.attackReachUpdate = tick() + 1
+					-- Who was hit last, for Target HUD's Last Hit mode.
+					store.lastHitCharacter = attackTable.entityInstance
+					store.lastHitAt = tick()
 
 					if Reach.Enabled or HitBoxes.Enabled then
 						attackTable.validate.raycast = attackTable.validate.raycast or {}
