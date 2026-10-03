@@ -13,6 +13,7 @@ local GeneratorESP
 local Diamond, Emerald, Team, ShowItems, ShowTier, ShowTimer, ProgressBar, Icons
 local Background, BackgroundColor, Outline, FontOption, Range, Scale
 local ShowDistance, Compact, HideEmpty, FullAlert, FullAmount, FullColor, ShowTierUp
+local ReplaceGame, ShrinkFar, FullSizeWithin, MinSize, ShowOccupants
 
 --[[
 	When the diamond and emerald generators level up: the game's BWOreGenLevelSystem steps
@@ -107,9 +108,45 @@ local function enabledKind(kind)
 	return false
 end
 
+--[[
+	The game's own label over a generator is a BillboardGui under its RoactTree. With
+	Replace Game Label on it is switched off and the card takes its place - the same spot
+	over the generator - and it is switched back on when the card goes.
+]]
+local function gameLabels(model)
+	local list = {}
+	local tree = model:FindFirstChild('RoactTree')
+	if tree then
+		if tree:IsA('BillboardGui') then list[#list + 1] = tree end
+		for _, child in tree:GetDescendants() do
+			if child:IsA('BillboardGui') then list[#list + 1] = child end
+		end
+	end
+	return list
+end
+
+local function restoreGame(entry)
+	for gui, enabled in entry.hidden or {} do
+		pcall(function() gui.Enabled = enabled end)
+	end
+	entry.hidden = nil
+end
+
+local function replaceGame(model, entry, billboard)
+	if not entry.hidden then entry.hidden = {} end
+	for _, gui in gameLabels(model) do
+		if entry.hidden[gui] == nil then entry.hidden[gui] = gui.Enabled end
+		gui.Enabled = false
+		-- Sits where the game's label was.
+		billboard.StudsOffset = gui.StudsOffset
+		billboard.StudsOffsetWorldSpace = gui.StudsOffsetWorldSpace
+	end
+end
+
 local function remove(model)
 	local entry = generators[model]
 	if entry then
+		restoreGame(entry)
 		entry.billboard:Destroy()
 		generators[model] = nil
 	end
@@ -200,6 +237,7 @@ local function add(part)
 	local distance = newText(header, 5)
 	local tierUp = newText(header, 6)
 	local contents = row(2)
+	local occupants = row(4)
 
 	local bar = Instance.new('Frame')
 	bar.Name = 'Bar'
@@ -218,7 +256,12 @@ local function add(part)
 	generators[part] = {
 		billboard = billboard, adornee = part, card = card, stroke = stroke, padding = padding,
 		header = header, icon = icon, title = title, timer = timer, tier = tier, distance = distance, tierUp = tierUp,
-		contents = contents, chips = {}, bar = bar, fill = fill
+		contents = contents, chips = {}, bar = bar, fill = fill, occupants = occupants, dots = {},
+		scaler = (function()
+			local scale = Instance.new('UIScale')
+			scale.Parent = card
+			return scale
+		end)()
 	}
 end
 
@@ -312,6 +355,8 @@ local function refresh(model, entry, here)
 	local inRange = not here or (entry.adornee.Position - here).Magnitude <= Range.Value
 	if not (kind and enabledKind(kind) and inRange) then
 		billboard.Enabled = false
+		-- Not shown here, so the game's own label comes back.
+		restoreGame(entry)
 		return
 	end
 
@@ -327,6 +372,7 @@ local function refresh(model, entry, here)
 	end
 	if on(HideEmpty) and total == 0 then
 		billboard.Enabled = false
+		restoreGame(entry)
 		return
 	end
 	local full = on(FullAlert) and total >= FullAmount.Value
@@ -402,6 +448,53 @@ local function refresh(model, entry, here)
 		entry.fill.BackgroundColor3 = info.color
 	end
 
+	-- The game's label off and the card in its place, or the game's label back.
+	if on(ReplaceGame) then
+		replaceGame(model, entry, billboard)
+	elseif entry.hidden then
+		restoreGame(entry)
+		billboard.StudsOffset = Vector3.zero
+		billboard.StudsOffsetWorldSpace = Vector3.new(0, 4.5, 0)
+	end
+
+	-- Smaller the further away it is, so distant cards do not fill the screen.
+	local distanceAway = here and (entry.adornee.Position - here).Magnitude or 0
+	entry.scaler.Scale = on(ShrinkFar)
+		and math.clamp(FullSizeWithin.Value / math.max(distanceAway, 1), MinSize.Value / 100, 1)
+		or 1
+
+	-- Who is standing at it, one dot per player in their team colour.
+	local present = {}
+	if on(ShowOccupants) and not compact then
+		local center = entry.adornee.Position
+		for _, entity in entitylib.List do
+			if entity.Player and entity.RootPart and (entity.Health or 0) > 0 then
+				local offset = entity.RootPart.Position - center
+				if Vector2.new(offset.X, offset.Z).Magnitude <= 10 and offset.Y <= 6 and offset.Y >= -16 then
+					present[#present + 1] = entity.Player
+				end
+			end
+		end
+	end
+	for i, player in present do
+		local dot = entry.dots[i]
+		if not dot then
+			dot = Instance.new('Frame')
+			dot.BorderSizePixel = 0
+			dot.LayoutOrder = i
+			dot.Parent = entry.occupants
+			Instance.new('UICorner', dot).CornerRadius = UDim.new(1, 0)
+			entry.dots[i] = dot
+		end
+		local dotSize = math.max(6, math.floor(size * 0.6))
+		dot.Size = UDim2.fromOffset(dotSize, dotSize)
+		dot.BackgroundColor3 = player.Team and player.TeamColor.Color or Color3.new(1, 1, 1)
+		dot.Visible = true
+	end
+	for i = #present + 1, #entry.dots do entry.dots[i].Visible = false end
+	entry.occupants.Visible = #present > 0
+	entry.occupants.Size = UDim2.fromOffset(0, math.max(6, math.floor(size * 0.6)))
+
 	billboard.Size = UDim2.fromOffset(size * 22, size * 6)
 	billboard.Enabled = true
 end
@@ -474,6 +567,44 @@ ProgressBar = GeneratorESP:CreateToggle({
 ShowTier = GeneratorESP:CreateToggle({
 	Name = 'Show Tier',
 	Tooltip = 'Shows each generator\'s tier'
+})
+ReplaceGame = GeneratorESP:CreateToggle({
+	Name = 'Replace Game Label',
+	Tooltip = 'Hides the game\'s label and takes its place',
+	Default = true
+})
+ShrinkFar = GeneratorESP:CreateToggle({
+	Name = 'Shrink With Distance',
+	Tooltip = 'Far cards get smaller instead of filling the screen',
+	Default = true,
+	Function = function(callback)
+		for _, setting in {FullSizeWithin, MinSize} do
+			if setting and setting.Object then setting.Object.Visible = callback end
+		end
+	end
+})
+FullSizeWithin = GeneratorESP:CreateSlider({
+	Name = 'Full Size Within',
+	Tooltip = 'Closer than this, cards are full size',
+	Min = 5,
+	Max = 150,
+	Default = 35,
+	Darker = true,
+	Suffix = function(val) return val == 1 and 'stud' or 'studs' end
+})
+MinSize = GeneratorESP:CreateSlider({
+	Name = 'Smallest Size',
+	Tooltip = 'How small far cards can get',
+	Min = 10,
+	Max = 100,
+	Default = 40,
+	Darker = true,
+	Suffix = function() return '%' end
+})
+ShowOccupants = GeneratorESP:CreateToggle({
+	Name = 'Who\'s At Gen',
+	Tooltip = 'A dot in their team colour for each player at it',
+	Default = true
 })
 ShowTierUp = GeneratorESP:CreateToggle({
 	Name = 'Tier Up Timer',
