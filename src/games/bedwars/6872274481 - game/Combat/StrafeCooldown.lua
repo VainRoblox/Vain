@@ -2,6 +2,12 @@ local StrafeCooldown
 local Duration
 local ItemCooldown
 local BarColor
+local BarStyle, PosX, PosY, Width, ReadyFlash, ReadySound
+local ringLines = {}
+local counting, readyAt = false, 0
+local READY_HOLD = 0.4
+local RING_SEGMENTS = 40
+local RING_RADIUS = 24
 local old, hook
 local cooldownController, oldCooldown, cooldownHook
 local screen, bar, fill, label
@@ -46,7 +52,39 @@ local function buildBar()
 	label.Parent = screen
 end
 
+local function hideRing()
+	for _, line in ringLines do line.Visible = false end
+end
+
+-- The ring round the crosshair: an arc that unwinds clockwise from the top as it runs out.
+local function drawRing(fraction, color)
+	local viewport = gameCamera.ViewportSize
+	local center = Vector2.new(viewport.X / 2, viewport.Y / 2)
+	local shown = math.floor(RING_SEGMENTS * fraction + 0.5)
+	for i = 1, RING_SEGMENTS do
+		local line = ringLines[i]
+		if not line then
+			line = Drawing.new('Line')
+			line.Thickness = 3
+			ringLines[i] = line
+		end
+		if i <= shown then
+			local a0 = (i - 1) / RING_SEGMENTS * math.pi * 2
+			local a1 = i / RING_SEGMENTS * math.pi * 2
+			line.From = center + Vector2.new(math.sin(a0), -math.cos(a0)) * RING_RADIUS
+			line.To = center + Vector2.new(math.sin(a1), -math.cos(a1)) * RING_RADIUS
+			line.Color = color
+			line.Transparency = 1
+			line.Visible = true
+		else
+			line.Visible = false
+		end
+	end
+end
+
 local function clearBar()
+	for _, line in ringLines do pcall(function() line:Remove() end) end
+	table.clear(ringLines)
 	if screen then
 		screen:Destroy()
 		screen = nil
@@ -63,14 +101,48 @@ end
 local function step()
 	if not (screen and Duration) then return end
 
+	local style = BarStyle and BarStyle.Value or 'Bar'
+	local color = BarColor and Color3.fromHSV(BarColor.Hue, BarColor.Sat, BarColor.Value) or Color3.fromRGB(90, 170, 255)
+	screen.Position = UDim2.fromScale(PosX.Value / 100, PosY.Value / 100)
+	screen.Size = UDim2.fromOffset(Width.Value, 16)
+	-- Text only drops the bar behind the numbers.
+	screen.BackgroundTransparency = style == 'Bar' and 0.35 or 1
+	fill.Visible = style == 'Bar'
+
 	local remaining = resetAt - tick()
 	if remaining <= 0 then
+		-- Just ran out: a short READY, and the sound if wanted.
+		if counting then
+			counting = false
+			if ReadyFlash.Enabled then readyAt = tick() end
+			if ReadySound.Enabled then
+				pcall(function() bedwars.SoundManager:playSound(bedwars.SoundList.PING) end)
+			end
+		end
+		if ReadyFlash.Enabled and tick() - readyAt < READY_HOLD then
+			screen.Visible = style ~= 'Ring'
+			fill.Size = UDim2.fromScale(1, 1)
+			fill.BackgroundColor3 = Color3.new(1, 1, 1)
+			label.Text = 'READY'
+			if style == 'Ring' then drawRing(1, Color3.new(1, 1, 1)) end
+			return
+		end
 		screen.Visible = false
+		hideRing()
 		return
 	end
+	counting = true
 
+	local fraction = math.clamp(remaining / length, 0, 1)
+	if style == 'Ring' then
+		screen.Visible = false
+		drawRing(fraction, color)
+		return
+	end
+	hideRing()
 	screen.Visible = true
-	fill.Size = UDim2.fromScale(math.clamp(remaining / length, 0, 1), 1)
+	fill.BackgroundColor3 = color
+	fill.Size = UDim2.fromScale(fraction, 1)
 	label.Text = string.format('%.1fs', remaining)
 end
 
@@ -195,4 +267,50 @@ BarColor = StrafeCooldown:CreateColorSlider({
 			fill.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 		end
 	end
+})
+BarStyle = StrafeCooldown:CreateDropdown({
+	Name = 'Style',
+	List = {'Bar', 'Ring', 'Text'},
+	Tooltips = {Bar = 'A bar that drains', Ring = 'A ring round the crosshair', Text = 'Just the seconds'},
+	Function = function(val)
+		for _, setting in {PosX, PosY, Width} do
+			if setting and setting.Object then setting.Object.Visible = val ~= 'Ring' end
+		end
+	end
+})
+PosX = StrafeCooldown:CreateSlider({
+	Name = 'Position X',
+	Tooltip = 'Across the screen',
+	Min = 0,
+	Max = 100,
+	Default = 50,
+	Darker = true,
+	Suffix = function() return '%' end
+})
+PosY = StrafeCooldown:CreateSlider({
+	Name = 'Position Y',
+	Tooltip = 'Down the screen',
+	Min = 0,
+	Max = 100,
+	Default = 78,
+	Darker = true,
+	Suffix = function() return '%' end
+})
+Width = StrafeCooldown:CreateSlider({
+	Name = 'Width',
+	Tooltip = 'How wide the bar is',
+	Min = 60,
+	Max = 500,
+	Default = 220,
+	Darker = true,
+	Suffix = function() return 'px' end
+})
+ReadyFlash = StrafeCooldown:CreateToggle({
+	Name = 'Ready Flash',
+	Tooltip = 'Flashes READY when it runs out',
+	Default = true
+})
+ReadySound = StrafeCooldown:CreateToggle({
+	Name = 'Ready Sound',
+	Tooltip = 'Pings when it runs out'
 })
