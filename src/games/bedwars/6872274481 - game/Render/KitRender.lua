@@ -6,57 +6,10 @@ local ShowTeam, MostPlayed, IconSize, RowPosition, WinTint
 local showsPlayer
 
 --[[
-	The kits someone played in their last matches, from their match history.
-
-	Asked for the way the game's Match History app does it -
-	MatchHistoryController:requestMatchHistory with the player's name, which resolves to
-	{player, matchHistory} - as that answers for any player, private profiles included.
-	The user id as text is tried next, then the profile's own history (RequestProfileData),
-	which comes back empty when the profile is friends only or hidden. Each match lists
-	every player with the kit they played under bedwars.kit.
-
-	Every request has a time limit, so one the server never answers still ends in "no
-	history" instead of leaving the card waiting. Asked for once per player and kept for
-	the session; the draft screen asks for everyone at once, so the requests are spread out.
+	The kits someone played in their last matches, from their match history (fetched once
+	per player by the shared matchHistory helper). Each match lists every player with the
+	kit they played under bedwars.kit, and the teams with their placement.
 ]]
-local REQUEST_TIMEOUT = 6
-
--- Runs a yielding request with a time limit; nil if it errors or takes too long.
-local function within(seconds, request)
-	local result, finished = nil, false
-	local thread = task.spawn(function()
-		local ok, value = pcall(request)
-		result = ok and value or nil
-		finished = true
-	end)
-	local started = os.clock()
-	while not finished and os.clock() - started < seconds do
-		task.wait(0.1)
-	end
-	if not finished then pcall(task.cancel, thread) end
-	return result
-end
-
-local function historyFrom(data)
-	if type(data) == 'table' and type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
-		return data.matchHistory
-	end
-end
-
-local function requestMatches(player)
-	local controller = bedwars.MatchHistoryController
-	for _, query in {player.Name, tostring(player.UserId)} do
-		local history = historyFrom(within(REQUEST_TIMEOUT, function()
-			local promise = controller:requestMatchHistory(query)
-			local ok, value = promise:await()
-			return ok and value or nil
-		end))
-		if history then return history end
-	end
-	return historyFrom(within(REQUEST_TIMEOUT, function()
-		return bedwars.Client:Get('RequestProfileData'):CallServer(player)
-	end))
-end
 
 -- Whether they won: their team in match.teams is the one placed first (placement 0).
 -- Nil when the match does not say.
@@ -72,51 +25,19 @@ local function wonMatch(match, userId)
 	return nil
 end
 
-local historyCache, historyWaiters = {}, {}
-local historyQueue = 0
-
 local function fetchHistory(player, callback)
 	local userId = player.UserId
-	local cached = historyCache[userId]
-	if type(cached) == 'table' then
-		callback(cached)
-		return
-	end
-	historyWaiters[userId] = historyWaiters[userId] or {}
-	table.insert(historyWaiters[userId], callback)
-	if cached == 'pending' then return end
-	historyCache[userId] = 'pending'
-
-	historyQueue += 1
-	local delay = (historyQueue - 1) * 0.15
-	task.delay(delay, function()
-		historyQueue = math.max(historyQueue - 1, 0)
+	matchHistory.fetch(player, function(matches)
 		local kits = {}
-		local history = requestMatches(player)
-		if history then
-			local matches = table.clone(history)
-			table.sort(matches, function(a, b)
-				return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
-			end)
-			for _, match in matches do
-				if #kits >= 10 then break end
-				for _, entry in (type(match.players) == 'table' and match.players or {}) do
-					local info = type(entry) == 'table' and entry.playerInfo
-					if info and tonumber(info.userId) == userId then
-						local kit = entry.bedwars and entry.bedwars.kit
-						if type(kit) == 'string' and kit ~= '' then
-							kits[#kits + 1] = {kit = kit, won = wonMatch(match, userId)}
-						end
-						break
-					end
-				end
+		for _, match in matches do
+			if #kits >= 10 then break end
+			local entry = matchHistory.entryFor(match, userId)
+			local kit = entry and entry.bedwars and entry.bedwars.kit
+			if type(kit) == 'string' and kit ~= '' then
+				kits[#kits + 1] = {kit = kit, won = wonMatch(match, userId)}
 			end
 		end
-		historyCache[userId] = kits
-		for _, waiting in historyWaiters[userId] or {} do
-			pcall(waiting, kits)
-		end
-		historyWaiters[userId] = nil
+		callback(kits)
 	end)
 end
 
@@ -176,7 +97,8 @@ local function rowText(row, text)
 	label.Parent = row
 end
 
--- Show Team off leaves your own team's cards, yours included, alone.
+-- Show Team off leaves out kit history on your own team's cards, yours included; their
+-- kits still show, as the game shows them anyway.
 showsPlayer = function(player)
 	if not ShowTeam or ShowTeam.Enabled then return true end
 	if player == lplr then return false end
@@ -366,13 +288,11 @@ local function callback5v5(v, plr)
 		end
 
 		roact.Image = kitImage.renderImage
-		roact.Visible = showsPlayer(player)
 		roact.Position = UDim2.fromScale(1.05, 0)
 		tweenService:Create(roact, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.fromScale(1.05, 0.4)}):Play()
 
 		local function update()
 			roact.Image = getKitMeta(player).renderImage
-			roact.Visible = showsPlayer(player)
 		end
 
 		-- Re-bind the kit listener to whichever player the card currently shows.
@@ -426,7 +346,6 @@ local function callbacksquad(v)
 
 		local function update()
 			Roact.Image = getKitMeta(player).renderImage
-			Roact.Visible = showsPlayer(player)
 		end
 
 		-- Keep the kit listener bound to whichever player this card now shows.
@@ -606,7 +525,7 @@ HistoryCount = KitDisplay:CreateSlider({
 })
 ShowTeam = KitDisplay:CreateToggle({
 	Name = 'Show Team',
-	Tooltip = 'Also shows your own team\'s cards',
+	Tooltip = 'Also shows kit history for your team',
 	Default = true,
 	Function = function()
 		if KitDisplay.Enabled then
