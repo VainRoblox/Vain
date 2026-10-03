@@ -386,8 +386,11 @@ local function refresh(model, entry, here)
 	entry.stroke.Enabled = on(Outline) or full
 	if full then
 		local pulse = 0.5 + 0.5 * math.sin(os.clock() * 6)
-		entry.stroke.Color = Color3.fromHSV(FullColor.Hue, FullColor.Sat, FullColor.Value)
+		local alert = Color3.fromHSV(FullColor.Hue, FullColor.Sat, FullColor.Value)
+		entry.stroke.Color = alert
 		entry.stroke.Thickness = 1 + pulse
+		-- A gentle flash: the background leans only a little towards the alert colour.
+		entry.card.BackgroundColor3 = Color3.fromHSV(bg.Hue, bg.Sat, bg.Value):Lerp(alert, 0.22 * pulse)
 	else
 		entry.stroke.Color = info.color
 		entry.stroke.Thickness = 1
