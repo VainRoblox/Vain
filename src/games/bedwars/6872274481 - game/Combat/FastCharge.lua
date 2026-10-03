@@ -5,9 +5,9 @@
 
 	A charged weapon's strength comes from how long it has been drawn: the game takes the
 	draw time against the projectile source's maxStrengthChargeSec and scales the launch
-	from there, every time it works out a launch. So the draw time is raised to the share of
-	a full charge you set, at that moment - the shot leaves as strong as if you had held it
-	that long, and the aim arc shows it too.
+	from there into velocityMultiplier, which is what the launch reads. So both are raised to
+	the share of a full charge you set whenever a launch is worked out - the shot leaves as
+	strong as if you had held it that long, and the aim arc shows it too.
 ]]
 local FastCharge
 local ChargeSpeed
@@ -25,6 +25,12 @@ local function applyCharge(projmeta)
 	local wanted = maxcharge * (ChargeSpeed.Value / 100)
 	if projmeta.drawDurationSeconds < wanted then
 		projmeta.drawDurationSeconds = wanted
+	end
+	-- The same scale the game's charge loop uses; without it the launch keeps last frame's.
+	local ratio = maxcharge > 0 and math.min(1, projmeta.drawDurationSeconds / maxcharge) or 1
+	local multiplier = ratio + (1 - ratio) * (source.minStrengthScalar or 0.5)
+	if (projmeta.velocityMultiplier or 0) < multiplier then
+		projmeta.velocityMultiplier = multiplier
 	end
 end
 

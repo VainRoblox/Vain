@@ -109,10 +109,10 @@ local function applySpread(aimpos, origin)
 	return aimpos + (right * math.cos(angle) + up * math.sin(angle)) * miss
 end
 
--- The game builds the draw strength itself, every frame, from drawDurationSeconds:
--- ratio = min(1, drawDurationSeconds / maxStrengthChargeSec), and the launch speed is
--- scaled from minStrengthScalar up to full at ratio 1. Writing the draw time is enough -
--- the game recomputes the speed and fires its own max charge handling from there.
+-- The game builds the draw strength each frame from drawDurationSeconds:
+-- ratio = min(1, drawDurationSeconds / maxStrengthChargeSec), and velocityMultiplier runs
+-- from minStrengthScalar up to 1 at ratio 1. The launch reads velocityMultiplier, which
+-- would still be last frame's, so it is written here too.
 local function applyCharge(projmeta)
 	if not InstantCharge.Enabled or projmeta.drawDurationSeconds == nil then return end
 
@@ -125,6 +125,11 @@ local function applyCharge(projmeta)
 	local wanted = maxcharge * (ChargeSpeed.Value / 100)
 	if projmeta.drawDurationSeconds < wanted then
 		projmeta.drawDurationSeconds = wanted
+	end
+	local ratio = maxcharge > 0 and math.min(1, projmeta.drawDurationSeconds / maxcharge) or 1
+	local multiplier = ratio + (1 - ratio) * (source.minStrengthScalar or 0.5)
+	if (projmeta.velocityMultiplier or 0) < multiplier then
+		projmeta.velocityMultiplier = multiplier
 	end
 end
 
