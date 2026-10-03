@@ -9,8 +9,9 @@
 	arrows and fireballs you can step out of the way of, and the exact spot an enemy's pearl
 	is about to put them.
 
-	Aim Preview does the same for whatever you are holding, from your cursor, so a pearl or
-	a fireball lands where you meant it to.
+	Aim Preview does the same for whatever you are holding, worked out the way
+	ProjectileController:calculateImportantLaunchValues does at full draw, so it shows where
+	a fully charged shot lands.
 ]]
 local Trajectories
 local ShowOwn, ShowTeam, Marker, Danger, AimPreview, MaxTime, Thickness
@@ -106,7 +107,6 @@ local function simulate(origin, velocity, gravity)
 		end
 		points[#points + 1] = point
 		previous = point
-		if #points > 160 then break end
 	end
 	return points, nil
 end
@@ -174,7 +174,8 @@ local function projectileGravity(root)
 	return workspace.Gravity
 end
 
--- What you are holding, if it throws or fires something: speed and gravity from its meta.
+-- What you are holding, if it throws or fires something: speed and gravity from its meta,
+-- with the overrides some kits put on them.
 local function heldProjectile()
 	local tool = store.hand and store.hand.tool
 	local meta = tool and bedwars.ItemMeta[tool.Name]
@@ -186,7 +187,26 @@ local function heldProjectile()
 	end)
 	local pmeta = ok and name and bedwars.ProjectileMeta[name]
 	if not pmeta then return nil end
-	return pmeta.launchVelocity or 100, pmeta.gravitationalAcceleration or 196.2, name
+	local overrides
+	if pmeta.getProjectileOverridesFunction then
+		local fine, result = pcall(pmeta.getProjectileOverridesFunction, lplr)
+		overrides = fine and type(result) == 'table' and result or nil
+	end
+	local speed = overrides and overrides.launchVelocityOverride or pmeta.launchVelocity or 100
+	return speed, pmeta.gravitationalAcceleration or 196.2, name, tool
+end
+
+-- The game's launch constants (ProjectileController): the aim is lifted slightly above the
+-- cursor ray and pointed at a spot far along it, not at whatever the cursor touches.
+local Y_TARGET_OFFSET = inputService.TouchEnabled and not inputService.KeyboardEnabled and 0.25 or 0.05
+local CAMERA_MULTIPLIER = 10
+
+local function launchPosition(tool)
+	local ok, position = pcall(function()
+		return bedwars.ProjectileController:getLaunchPosition(tool)
+	end)
+	if ok and typeof(position) == 'Vector3' then return position end
+	return entitylib.character.Head.Position
 end
 
 local function aimPreview()
@@ -194,18 +214,19 @@ local function aimPreview()
 		destroyPool('aim')
 		return
 	end
-	local speed, gravity, name = heldProjectile()
+	local speed, gravity, name, tool = heldProjectile()
 	if not speed then
 		local entry = pools.aim
 		if entry then hidePool(entry) end
 		return
 	end
 
-	local origin = entitylib.character.Head.Position
-	local ray = cloneref(lplr:GetMouse()).UnitRay
-	local hit = workspace:Raycast(ray.Origin, ray.Direction * 1000, rayParams)
-	local aimAt = hit and hit.Position or (ray.Origin + ray.Direction * 1000)
-	local direction = aimAt - origin
+	local origin = launchPosition(tool)
+	local mouse = cloneref(lplr:GetMouse())
+	local ray = gameCamera:ScreenPointToRay(mouse.X, mouse.Y)
+	local camera = gameCamera.CFrame.Position
+	local unit = (ray.Direction.Unit + Vector3.new(0, Y_TARGET_OFFSET, 0)).Unit
+	local direction = camera + unit * ((camera - origin).Magnitude * CAMERA_MULTIPLIER) - origin
 	if direction.Magnitude <= 0 then return end
 	local points, landing = simulate(origin, direction.Unit * speed, gravity)
 	draw('aim', points, landing, (name or ''):find('pearl') and colorOf(PearlColor, Color3.fromRGB(200, 120, 255)) or colorOf(AimColor, Color3.fromRGB(120, 220, 255)))
@@ -293,7 +314,7 @@ AimPreview = Trajectories:CreateToggle({
 })
 MaxTime = Trajectories:CreateSlider({
 	Name = 'Max Time',
-	Tooltip = 'How far ahead each path is drawn',
+	Tooltip = 'Seconds of flight each path shows',
 	Min = 0.5,
 	Max = 6,
 	Default = 3,
