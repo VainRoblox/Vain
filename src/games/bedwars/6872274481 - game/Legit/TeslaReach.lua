@@ -215,7 +215,7 @@ TeslaReach = vain.Legit:CreateModule({
 Mode = TeslaReach:CreateDropdown({
 	Name = 'Mode',
 	List = {'Ring', 'Sphere'},
-	Tooltips = {'A ring on the ground at your height', 'The whole range as a sphere'},
+	Tooltips = {Ring = 'A ring on the ground at your height', Sphere = 'The whole range as a sphere'},
 	Function = function(val)
 		if Thickness and Thickness.Object then Thickness.Object.Visible = val == 'Ring' end
 	end
