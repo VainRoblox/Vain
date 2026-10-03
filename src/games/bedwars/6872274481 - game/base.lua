@@ -2553,30 +2553,28 @@ run(function()
 	-- than stacking another track on top of one still running.
 	local swingtrack
 
-	-- How long to leave a swing running when the track itself cannot say, and how long to
-	-- fade it out over.
-	local SWING_FALLBACK = 0.3
-	local SWING_FADE = 0.1
-
 	--[[
-		Ends a swing once it has had its time.
+		The swing's rhythm: no more often than the game's own break cooldown, which is how
+		often it plays the swing when you mine by hand, and blended into the next.
 
-		Scheduled rather than waited on. Waiting blocked the promise this is called from
-		and, at any break speed shorter than the wait, started the next swing on top of one
-		still playing. Leaving it to be stopped by the next swing instead was worse: the
-		last one of a dig had no next swing to replace it, so it simply never stopped.
-
-		Length is zero until the asset has loaded, which is usually the case immediately
-		after asking for it, so there is a fallback to fall back on.
+		Swings used to be stopped on a timer, and the timer had to guess: a track's Length
+		reads zero until its asset has loaded, which is almost always the case right after it
+		starts, so every swing was cut off at a fixed 0.3s wherever it had got to. Then
+		nothing played until the next block, and the arm snapped and paused, snapped and
+		paused. Now a swing is only cut short by the next one, with a fade, and the last of a
+		dig plays out and cleans itself up when it ends.
 	]]
+	local SWING_GAP = 0.3
+	local SWING_FADE = 0.15
+	local lastSwing = 0
+
 	local function endSwing(track)
-		task.delay(track.Length > 0 and track.Length or SWING_FALLBACK, function()
-			if swingtrack == track then
-				swingtrack = nil
-			end
-			pcall(function()
-				track:Stop(SWING_FADE)
-				track:Destroy()
+		pcall(function()
+			track.Stopped:Once(function()
+				if swingtrack == track then
+					swingtrack = nil
+				end
+				pcall(track.Destroy, track)
 			end)
 		end)
 	end
@@ -2700,13 +2698,11 @@ run(function()
 						animation never got past its opening frames before being cut back
 						to the start, which is not a fast swing, it is a stutter.
 
-						A swing already running is left alone now and the next begins when
-						it has finished. swingtrack is cleared by endSwing after the
-						track's own length, so that is the whole of the timing: the arm
-						swings at the speed the animation was made for however quickly the
-						blocks are going.
+						Swings come at the game's own mining rhythm (SWING_GAP) however
+						quickly the blocks are going, each fading into the next.
 					]]
-					if anim and not swingtrack then
+					if anim and os.clock() - lastSwing >= SWING_GAP then
+						lastSwing = os.clock()
 						pcall(function()
 							local held = store.hand.tool and bedwars.ItemMeta[store.hand.tool.Name]
 							local swing = (held and held.breakBlockSwingAnimationOverride) or bedwars.AnimationType.FP_USE_ITEM
@@ -2715,6 +2711,10 @@ run(function()
 
 						-- The character swing is the half other players can see.
 						pcall(function()
+							local previous = swingtrack
+							if previous and previous.IsPlaying then
+								previous:Stop(SWING_FADE)
+							end
 							local track = bedwars.AnimationUtil:playAnimation(lplr, bedwars.BlockController:getAnimationController():getAssetId(bedwars.AnimationType.SWORD_SWING))
 							swingtrack = track
 							endSwing(track)
