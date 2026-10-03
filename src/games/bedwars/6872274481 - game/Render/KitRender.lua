@@ -6,11 +6,28 @@ local HistoryCount
 --[[
 	The kits someone played in their last matches, from their match history.
 
-	It is the same history the player profile shows, asked for the same way -
-	RequestProfileData with the player - and each match in it lists every player with the
-	kit they played under bedwars.kit. Asked for once per player and kept for the session;
-	the draft screen asks for everyone at once, so the requests are spread out a little.
+	Asked for the way the Match History app does it - RequestMatchHistory with the user id
+	as text - which answers for any player, private profiles included. The profile's own
+	history (RequestProfileData) is only the fallback, as it comes back empty when the
+	profile is friends only or hidden. Each match lists every player with the kit they
+	played under bedwars.kit. Asked for once per player and kept for the session; the draft
+	screen asks for everyone at once, so the requests are spread out a little.
 ]]
+local function requestMatches(player)
+	local ok, data = pcall(function()
+		return bedwars.Client:Get('RequestMatchHistory'):CallServer(tostring(player.UserId))
+	end)
+	if ok and type(data) == 'table' and type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
+		return data.matchHistory
+	end
+	ok, data = pcall(function()
+		return bedwars.Client:Get('RequestProfileData'):CallServer(player)
+	end)
+	if ok and type(data) == 'table' and type(data.matchHistory) == 'table' then
+		return data.matchHistory
+	end
+end
+
 local historyCache, historyWaiters = {}, {}
 local historyQueue = 0
 
@@ -31,11 +48,9 @@ local function fetchHistory(player, callback)
 	task.delay(delay, function()
 		historyQueue = math.max(historyQueue - 1, 0)
 		local kits = {}
-		local ok, data = pcall(function()
-			return bedwars.Client:Get('RequestProfileData'):CallServer(player)
-		end)
-		if ok and type(data) == 'table' and type(data.matchHistory) == 'table' then
-			local matches = table.clone(data.matchHistory)
+		local history = requestMatches(player)
+		if history then
+			local matches = table.clone(history)
 			table.sort(matches, function(a, b)
 				return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
 			end)
