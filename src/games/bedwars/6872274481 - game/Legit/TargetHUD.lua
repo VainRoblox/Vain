@@ -23,6 +23,7 @@ local target, lastSeen = nil, 0
 local hitsToKill
 local ghost = 1
 local LAST_HIT_HOLD = 6
+local HIT_RANGE = 150
 
 local function on(setting)
 	return setting ~= nil and setting.Enabled
@@ -43,15 +44,16 @@ local function pick()
 	if not entitylib.isAlive then return nil end
 	local here = entitylib.character.RootPart.Position
 
-	if Mode.Value == 'Last Hit' then
-		if store.lastHitCharacter and tick() - (store.lastHitAt or 0) <= LAST_HIT_HOLD then
-			local entity = entitylib.getEntity(store.lastHitCharacter)
-			if entity and isEnemy(entity) and (entity.RootPart.Position - here).Magnitude <= Range.Value then
-				return entity
-			end
+	-- Whoever you hit in the last few seconds comes first in every mode, and a long bow or
+	-- lasso shot counts too - Range is for picking someone, not for dropping who you are
+	-- already fighting.
+	if store.lastHitCharacter and tick() - (store.lastHitAt or 0) <= LAST_HIT_HOLD then
+		local entity = entitylib.getEntity(store.lastHitCharacter)
+		if entity and isEnemy(entity) and (entity.RootPart.Position - here).Magnitude <= math.max(Range.Value, HIT_RANGE) then
+			return entity
 		end
-		return nil
 	end
+	if Mode.Value == 'Last Hit' then return nil end
 
 	local look = gameCamera.CFrame.LookVector
 	local best, bestScore

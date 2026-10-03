@@ -2849,7 +2849,10 @@ run(function()
 	end))
 	pcall(function()
 		local ClientSyncEvents = require(lplr.PlayerScripts.TS['client-sync-events']).ClientSyncEvents
-		local connection = ClientSyncEvents.LocalProjectileImpact:connect(function(_, _, entity)
+		-- The handler gets one event object ({projectile, hitPosition, hitEntity, hitPart}),
+		-- not the values as separate arguments.
+		local connection = ClientSyncEvents.LocalProjectileImpact:connect(function(event)
+			local entity = type(event) == 'table' and event.hitEntity
 			local character = entity and entity.getInstance and entity:getInstance()
 			recordHit(character)
 		end)
