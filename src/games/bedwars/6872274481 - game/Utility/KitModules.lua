@@ -155,7 +155,7 @@ kitRun(function()
 	local function getSummonerController()
 		if SummonerKitController then return SummonerKitController end
 		pcall(function()
-			SummonerKitController = bedwars.KnitClient.Controllers.SummonerKitController
+			SummonerKitController = bedwars.SummonerKitController
 		end)
 		return SummonerKitController
 	end
@@ -393,9 +393,9 @@ kitRun(function()
 											if nailMesh and nailMesh:IsA("MeshPart") then
 												nailMesh.Color = clawColors[clawLevel] or clawColors[1]
 											end
-											if bedwars.KnightClient and bedwars.KnightClient.Controllers.SummonerKitSkinController then
-												if bedwars.KnightClient.Controllers.SummonerKitSkinController:isPrismaticSkin(lplr) then
-													bedwars.KnightClient.Controllers.SummonerKitSkinController:applyClawRGB(clawModel)
+											if bedwars.SummonerKitSkinController then
+												if bedwars.SummonerKitSkinController:isPrismaticSkin(lplr) then
+													bedwars.SummonerKitSkinController:applyClawRGB(clawModel)
 												end
 											end
 											clawModel.Parent = workspace
@@ -3317,7 +3317,7 @@ kitRun(function()
 							if not part then continue end
 							if (part.Position - localPosition).Magnitude > Distance.Value then continue end
 							if Void.Enabled and isAboveVoid(part.Position) then continue end
-							local success = bedwars.Client:Get(remotes.HannahPromptTrigger).instance:InvokeServer({
+							local success = bedwars.Client:Get('HannahPromptTrigger').instance:InvokeServer({
 								user = lplr,
 								victimEntity = v
 							})
@@ -3422,7 +3422,7 @@ kitRun(function()
         end)
         
         local success = pcall(function()
-            bedwars.Client:Get(remotes.RequestDragonPunch):SendToServer({
+            bedwars.Client:Get(remotes.KaliyahPunch):SendToServer({
                 target = target
             })
         end)
@@ -4211,7 +4211,7 @@ kitRun(function()
         collectedMetals[metalId] = true
 
         local success = pcall(function()
-            bedwars.Client:Get(remotes.CollectCollectableEntity).instance:FireServer({ id = metalId })
+            bedwars.Client:Get('CollectCollectableEntity').instance:FireServer({ id = metalId })
         end)
 
         if Animation.Enabled then
@@ -4785,6 +4785,16 @@ end)
 
 kitRun(function()
     local AutoPyro
+    -- The flamethrower upgrade tiers, from the game's flamethrower-upgrade module.
+    local pyroMeta
+    local function pyroUpgradeMeta()
+    	if pyroMeta then return pyroMeta end
+    	pcall(function()
+    		local module = replicatedStorage.TS:FindFirstChild('flamethrower-upgrade', true)
+    		pyroMeta = module and require(module).FlamethrowerUpgradeMeta
+    	end)
+    	return pyroMeta
+    end
 
     local list = {'Range', 'Heat', 'Power'}
 
@@ -4806,7 +4816,8 @@ kitRun(function()
     						v = v:lower()
     						local value = flamethrower.tool:GetAttribute(v) or -1
     						if value < 3 then
-    							local nextUpgrade = bedwars.PyroUpgradeMeta[v].tiers[value + 2]
+    							local meta = pyroUpgradeMeta()
+    							local nextUpgrade = meta and meta[v] and meta[v].tiers[value + 2]
     							if nextUpgrade then
     								local currency = getItem(nextUpgrade.currency)
     								if currency and currency.amount >= nextUpgrade.price then
@@ -5559,13 +5570,13 @@ kitRun(function()
         
         local success = false
         pcall(function()
-            local result = bedwars.Client:Get(remotes.SummonOwl).instance:InvokeServer(targetPlayer)
+            local result = bedwars.Client:Get('SummonOwl').instance:InvokeServer(targetPlayer)
             
             if result then
             task.wait(0.05)
             
             pcall(function()
-    			bedwars.Client:Get(remotes.UseAbility).instance:FireServer("SUMMON_OWL")
+    			bedwars.Client:Get('UseAbility').instance:FireServer("SUMMON_OWL")
 			end)
                 
                 currentMountedPlayer = targetPlayer
@@ -5578,11 +5589,11 @@ kitRun(function()
     
     local function demountOwl()
         pcall(function()
-            bedwars.Client:Get(remotes.UseAbility).instance:FireServer("DEACTIVE_OWL")
+            bedwars.Client:Get('UseAbility').instance:FireServer("DEACTIVE_OWL")
             
             task.wait(0.05)
             
-            bedwars.Client:Get(remotes.RemoveOwl).instance:FireServer()
+            bedwars.Client:Get('RemoveOwl').instance:FireServer()
         end)
         
         currentMountedPlayer = nil
@@ -8884,7 +8895,8 @@ kitRun(function()
             end
             
             if character == lplr.Character then
-                local KnitClient = bedwars.KnitClient
+                -- The game's controllers by name, through the bedwars table's own fallback.
+                local KnitClient = {Controllers = setmetatable({}, {__index = function(_, name) return bedwars[name] end})}
                 
                 KnitClient.Controllers.SwordController:toggleSwordSwing(true)
                 KnitClient.Controllers.BlockPlacementController:disableBlockPlacer()
@@ -9623,7 +9635,7 @@ kitRun(function()
                         local r = RangeSlider.Value
                         kitCollection(lplr.Name .. ':pinata', function(v)
                             if getItem('candy') then
-                                bedwars.Client:Get(remotes.DepositCoins):CallServer(v)
+                                bedwars.Client:Get('DepositCoins'):CallServer(v)
                             end
                         end, r, true)
                     end)
@@ -10503,13 +10515,13 @@ kitRun(function()
                 if CollectionToggle.Enabled then
                     task.spawn(function()
                         kitCollection('HarvestableCrop', function(v)
-                            bedwars.Client:Get(remotes.Harvest):CallServer({position = bedwars.BlockController:getBlockPosition(v.Position)})
+                            bedwars.Client:Get(remotes.HarvestCrop):CallServer({position = bedwars.BlockController:getBlockPosition(v.Position)})
                             
                             if Animation.Enabled then
                                 bedwars.GameAnimationUtil:playAnimation(lplr.Character, bedwars.AnimationType.PUNCH)
                                 bedwars.ViewmodelController:playAnimation(bedwars.AnimationType.FP_USE_ITEM)
                                 
-                                if lplr.Character:GetAttribute('CropKitSkin') == bedwars.BedwarsKitSkin.FARMER_CLETUS_VALENTINE then
+                                if tostring(lplr.Character:GetAttribute('CropKitSkin') or ''):lower():find('valentine') ~= nil then
                                     bedwars.SoundManager:playSound(bedwars.SoundList.VALETINE_CROP_HARVEST)
                                 else
                                     bedwars.SoundManager:playSound(bedwars.SoundList.CROP_HARVEST)
@@ -10539,13 +10551,13 @@ kitRun(function()
             if callback and FarmerCletus.Enabled then
                 task.spawn(function()
                     kitCollection('HarvestableCrop', function(v)
-                        bedwars.Client:Get(remotes.Harvest):CallServer({position = bedwars.BlockController:getBlockPosition(v.Position)})
+                        bedwars.Client:Get(remotes.HarvestCrop):CallServer({position = bedwars.BlockController:getBlockPosition(v.Position)})
                         
                         if Animation.Enabled then
                             bedwars.GameAnimationUtil:playAnimation(lplr.Character, bedwars.AnimationType.PUNCH)
                             bedwars.ViewmodelController:playAnimation(bedwars.AnimationType.FP_USE_ITEM)
                             
-                            if lplr.Character:GetAttribute('CropKitSkin') == bedwars.BedwarsKitSkin.FARMER_CLETUS_VALENTINE then
+                            if tostring(lplr.Character:GetAttribute('CropKitSkin') or ''):lower():find('valentine') ~= nil then
                                 bedwars.SoundManager:playSound(bedwars.SoundList.VALETINE_CROP_HARVEST)
                             else
                                 bedwars.SoundManager:playSound(bedwars.SoundList.CROP_HARVEST)
