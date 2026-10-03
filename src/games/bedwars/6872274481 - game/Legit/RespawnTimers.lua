@@ -14,7 +14,7 @@
 ]]
 local RespawnTimers
 local Teammates, ShowFinals, WorldMarkers, Corner, Background
-local RespawnSound, WarnBefore, OnlyNearby, NearbyRange, AlwaysShow, PanelScale, FontOption
+local RespawnSound, WarnBefore, OnlyNearby, NearbyRange, AlwaysShow, PanelScale, FontOption, ShowKit
 local panel, list, scaler
 local dead = {}
 local rows = {}
@@ -180,6 +180,14 @@ local function row(index)
 	avatar.Parent = frame
 	Instance.new('UICorner', avatar).CornerRadius = UDim.new(1, 0)
 
+	local kit = Instance.new('ImageLabel')
+	kit.BackgroundTransparency = 1
+	kit.Size = UDim2.fromOffset(16, 16)
+	kit.Position = UDim2.fromOffset(19, 2)
+	kit.ScaleType = Enum.ScaleType.Crop
+	kit.Parent = frame
+	Instance.new('UICorner', kit).CornerRadius = UDim.new(0.3, 0)
+
 	local name = Instance.new('TextLabel')
 	name.BackgroundTransparency = 1
 	name.Position = UDim2.fromOffset(22, 1)
@@ -212,7 +220,7 @@ local function row(index)
 	fill.Parent = track
 	Instance.new('UICorner', fill).CornerRadius = UDim.new(1, 0)
 
-	entry = {frame = frame, avatar = avatar, name = name, timer = timer, track = track, fill = fill}
+	entry = {frame = frame, avatar = avatar, kit = kit, name = name, timer = timer, track = track, fill = fill}
 	rows[index] = entry
 	return entry
 end
@@ -222,6 +230,14 @@ local function render(items, font)
 		local entry = row(i)
 		local color = item.player.Team and item.player.TeamColor.Color or Color3.fromRGB(230, 230, 230)
 		entry.avatar.Image = 'rbxthumb://type=AvatarHeadShot&id=' .. item.player.UserId .. '&w=48&h=48'
+		-- The kit they play, next to their avatar, with the name moved over for it.
+		local kitName = item.player:GetAttribute('PlayingAsKit')
+		local kitMeta = kitName and kitName ~= 'none' and bedwars.BedwarsKitMeta[kitName]
+		local showKit = on(ShowKit) and kitMeta ~= nil and kitMeta.renderImage ~= nil
+		entry.kit.Visible = showKit
+		entry.kit.Image = showKit and kitMeta.renderImage or ''
+		entry.name.Position = UDim2.fromOffset(showKit and 40 or 22, 1)
+		entry.name.Size = UDim2.new(1, showKit and -88 or -70, 0, 18)
 		entry.name.Text = item.player.DisplayName
 		entry.name.TextColor3 = color
 		entry.name.FontFace = font
@@ -460,6 +476,11 @@ NearbyRange = RespawnTimers:CreateSlider({
 	Darker = true,
 	Visible = false,
 	Suffix = function(val) return val == 1 and 'stud' or 'studs' end
+})
+ShowKit = RespawnTimers:CreateToggle({
+	Name = 'Show Kit',
+	Tooltip = 'Shows the kit each player respawns with',
+	Default = true
 })
 AlwaysShow = RespawnTimers:CreateToggle({
 	Name = 'Always Show',
