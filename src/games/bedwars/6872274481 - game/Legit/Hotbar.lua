@@ -1,9 +1,9 @@
 --[[
 	Hotbar.
 
-	Recolours the game's hotbar. Each slot's tile is a frame the game paints #1D242E with a
-	lighter border, so tiles are found by that colour the first time they are seen and
-	remembered; which one is selected comes from your hotbar slot (store.inventory
+	Recolours the game's hotbar. Tiles are found by where they sit, not by their colour, so
+	a recolour in a game update does not lose them: every slot is a direct child of
+	ItemsHotbar, and its tile is the square, bordered frame inside it; which one is selected comes from your hotbar slot (store.inventory
 	.hotbarSlot) and the tiles' order across the screen. The health bar is
 	HotbarHealthbarContainer, its fill the first frame inside HealthbarProgressWrapper.
 
@@ -26,9 +26,6 @@ local function colorOf(setting)
 	return Color3.fromHSV(setting.Hue, setting.Sat, setting.Value)
 end
 
-local function close(a, b)
-	return math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) < 0.02
-end
 
 -- Finds the hotbar's tiles and health bar, once a second.
 local function scan()
@@ -39,10 +36,19 @@ local function scan()
 	healthContainer = gui:FindFirstChild('HotbarHealthbarContainer', true)
 	local items = gui:FindFirstChild('ItemsHotbar', true)
 	if not items then return end
-	for _, object in items:GetDescendants() do
-		if object:IsA('GuiObject') and not tiles[object] and object.SizeConstraint == Enum.SizeConstraint.RelativeYY
-			and object.BorderSizePixel == 1 and close(object.BackgroundColor3, GAME_TILE) then
-			tiles[object] = true
+	for _, slot in items:GetChildren() do
+		if slot:IsA('GuiObject') then
+			-- The tile: the square frame inside the slot whose border is drawn inset - the
+			-- game sets that on the tile alone, the slot around it keeps the default.
+			local found
+			for _, object in {slot, unpack(slot:GetDescendants())} do
+				if object:IsA('GuiObject') and object.SizeConstraint == Enum.SizeConstraint.RelativeYY
+					and object.BorderMode == Enum.BorderMode.Inset then
+					found = object
+					break
+				end
+			end
+			if found then tiles[found] = true end
 		end
 	end
 end
