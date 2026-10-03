@@ -516,7 +516,8 @@ card.Visible = false
 card.Parent = TargetHUD.Children
 Instance.new('UICorner', card).CornerRadius = UDim.new(0, 8)
 stroke = Instance.new('UIStroke')
-stroke.Thickness = 1.5
+stroke.Thickness = 1
+stroke.Transparency = 0.35
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = card
 
