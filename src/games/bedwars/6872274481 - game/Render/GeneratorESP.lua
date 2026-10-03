@@ -12,6 +12,7 @@
 local GeneratorESP
 local Diamond, Emerald, Team, ShowItems, ShowTier, ShowTimer, ProgressBar, Icons
 local Background, BackgroundColor, Outline, FontOption, Range, Scale
+local ShowDistance, Compact, HideEmpty, FullAlert, FullAmount, FullColor
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
 local generators = {}
@@ -161,6 +162,7 @@ local function add(part)
 	local title = newText(header, 2)
 	local timer = newText(header, 3)
 	local tier = newText(header, 4)
+	local distance = newText(header, 5)
 	local contents = row(2)
 
 	local bar = Instance.new('Frame')
@@ -179,7 +181,7 @@ local function add(part)
 
 	generators[part] = {
 		billboard = billboard, adornee = part, card = card, stroke = stroke, padding = padding,
-		header = header, icon = icon, title = title, timer = timer, tier = tier,
+		header = header, icon = icon, title = title, timer = timer, tier = tier, distance = distance,
 		contents = contents, chips = {}, bar = bar, fill = fill
 	}
 end
@@ -281,12 +283,33 @@ local function refresh(model, entry, here)
 	local size = math.floor(14 * Scale.Value)
 	local font = FontOption and FontOption.Value or Font.fromEnum(Enum.Font.GothamBold)
 
+	-- What is waiting on it: its own resource for diamond and emerald, everything for a base.
+	local counts = piles[model] or {}
+	local total = 0
+	for itemType, amount in counts do
+		if kind == 'team' or itemType == info.item then total += amount end
+	end
+	if on(HideEmpty) and total == 0 then
+		billboard.Enabled = false
+		return
+	end
+	local full = on(FullAlert) and total >= FullAmount.Value
+	local compact = on(Compact)
+
 	-- Card
 	local bg = BackgroundColor
 	entry.card.BackgroundColor3 = Color3.fromHSV(bg.Hue, bg.Sat, bg.Value)
 	entry.card.BackgroundTransparency = on(Background) and (1 - bg.Opacity) or 1
-	entry.stroke.Enabled = on(Outline)
-	entry.stroke.Color = info.color
+	-- A full pile pulses the outline in the alert colour, outline setting or not.
+	entry.stroke.Enabled = on(Outline) or full
+	if full then
+		local pulse = 0.5 + 0.5 * math.sin(os.clock() * 6)
+		entry.stroke.Color = Color3.fromHSV(FullColor.Hue, FullColor.Sat, FullColor.Value)
+		entry.stroke.Thickness = 1.5 + pulse * 1.5
+	else
+		entry.stroke.Color = info.color
+		entry.stroke.Thickness = 1.5
+	end
 	local pad = math.floor(size * 0.35)
 	entry.padding.PaddingLeft = UDim.new(0, pad + 2)
 	entry.padding.PaddingRight = UDim.new(0, pad + 2)
@@ -297,24 +320,32 @@ local function refresh(model, entry, here)
 	entry.header.Size = UDim2.fromOffset(0, size + 2)
 	local image = iconOf(info.item)
 	entry.icon.Image = image
-	entry.icon.Visible = on(Icons) and kind ~= 'team' and image ~= ''
-	entry.title.Text = kind == 'team' and (textOf(model, 'Title') or 'Base Generator') or info.name
-	entry.title.TextColor3 = info.color
+	-- Compact keeps just the icon, the amount and the timer.
+	entry.icon.Visible = image ~= '' and (compact or (on(Icons) and kind ~= 'team'))
+	if compact then
+		entry.title.Text = 'x' .. total
+	else
+		entry.title.Text = kind == 'team' and (textOf(model, 'Title') or 'Base Generator') or info.name
+	end
+	entry.title.TextColor3 = full and Color3.fromHSV(FullColor.Hue, FullColor.Sat, FullColor.Value) or info.color
 	local seconds = secondsOf(model)
 	entry.timer.Visible = on(ShowTimer) and seconds ~= nil
 	entry.timer.Text = seconds and (seconds % 1 == 0 and (seconds .. 's') or string.format('%.1fs', seconds)) or ''
 	local level = model:GetAttribute('GeneratorLevel')
 	local tierText = textOf(model, 'GenTier') or textOf(model, 'Tier')
-	entry.tier.Visible = on(ShowTier) and (tierText ~= nil or level ~= nil)
+	entry.tier.Visible = not compact and on(ShowTier) and (tierText ~= nil or level ~= nil)
 	entry.tier.Text = tierText and tierText:upper() or ('T' .. tostring(level or ''))
 	entry.tier.TextColor3 = Color3.fromRGB(200, 200, 200)
-	for _, label in {entry.title, entry.timer, entry.tier} do
+	entry.distance.Visible = not compact and on(ShowDistance) and here ~= nil
+	entry.distance.Text = here and string.format('%dm', math.floor((entry.adornee.Position - here).Magnitude)) or ''
+	entry.distance.TextColor3 = Color3.fromRGB(170, 170, 170)
+	for _, label in {entry.title, entry.timer, entry.tier, entry.distance} do
 		label.TextSize = size
 		label.FontFace = font
 	end
 
 	-- Contents
-	if on(ShowItems) then
+	if on(ShowItems) and not compact then
 		setContents(entry, piles[model], size, font)
 	else
 		entry.contents.Visible = false
@@ -322,7 +353,7 @@ local function refresh(model, entry, here)
 
 	-- Progress to the next spawn, full just after one and empty as the next lands.
 	local cooldown = tonumber(model:GetAttribute('Cooldown'))
-	entry.bar.Visible = on(ProgressBar) and seconds ~= nil and cooldown ~= nil and cooldown > 0
+	entry.bar.Visible = not compact and on(ProgressBar) and seconds ~= nil and cooldown ~= nil and cooldown > 0
 	if entry.bar.Visible then
 		entry.bar.Size = UDim2.fromOffset(math.max(entry.header.AbsoluteSize.X, size * 4), math.max(2, math.floor(size / 5)))
 		entry.fill.Size = UDim2.fromScale(math.clamp(seconds / cooldown, 0, 1), 1)
@@ -334,7 +365,7 @@ local function refresh(model, entry, here)
 end
 
 local function update()
-	if on(ShowItems) then scanPiles() end
+	if on(ShowItems) or on(HideEmpty) or on(FullAlert) or on(Compact) then scanPiles() end
 	local here = entitylib.isAlive and entitylib.character.RootPart.Position
 
 	for model, entry in generators do
@@ -397,6 +428,45 @@ ProgressBar = GeneratorESP:CreateToggle({
 ShowTier = GeneratorESP:CreateToggle({
 	Name = 'Show Tier',
 	Tooltip = 'Shows each generator\'s tier'
+})
+ShowDistance = GeneratorESP:CreateToggle({
+	Name = 'Distance',
+	Tooltip = 'Shows how far away each one is'
+})
+Compact = GeneratorESP:CreateToggle({
+	Name = 'Compact',
+	Tooltip = 'Just the icon, amount and timer'
+})
+HideEmpty = GeneratorESP:CreateToggle({
+	Name = 'Hide Empty',
+	Tooltip = 'Hides generators with nothing on them'
+})
+FullAlert = GeneratorESP:CreateToggle({
+	Name = 'Full Alert',
+	Tooltip = 'Flashes a generator once its pile is big enough',
+	Function = function(callback)
+		for _, setting in {FullAmount, FullColor} do
+			if setting and setting.Object then setting.Object.Visible = callback end
+		end
+	end
+})
+FullAmount = GeneratorESP:CreateSlider({
+	Name = 'Full Amount',
+	Tooltip = 'How many count as full',
+	Min = 1,
+	Max = 30,
+	Default = 4,
+	Darker = true,
+	Visible = false
+})
+FullColor = GeneratorESP:CreateColorSlider({
+	Name = 'Full Color',
+	Tooltip = 'Colour of the full alert',
+	DefaultHue = 0.13,
+	DefaultSat = 0.9,
+	DefaultValue = 1,
+	Darker = true,
+	Visible = false
 })
 Icons = GeneratorESP:CreateToggle({
 	Name = 'Icons',
