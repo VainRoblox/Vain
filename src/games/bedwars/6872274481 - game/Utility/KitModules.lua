@@ -3790,7 +3790,7 @@ kitRun(function()
                     local angel = controller ~= nil and controller.isAngel == true
                     -- The angel just came up: pick and land after the delay.
                     if angel and not wasAngel then
-                        task.delay(FireDelay.Value, function()
+                        task.delay(FireDelay:GetRandomValue(), function()
                             pcall(fire)
                             escaping = false
                         end)
@@ -3900,14 +3900,14 @@ kitRun(function()
         Default = 15,
         Suffix = function(val) return val == 1 and 'stud' or 'studs' end
     })
-    FireDelay = AutoLani:CreateSlider({
+    FireDelay = AutoLani:CreateTwoSlider({
         Name = 'Fire Delay',
-        Tooltip = 'Wait after the angel appears',
+        Tooltip = 'Wait after the angel appears, random between both (seconds)',
         Min = 0,
         Max = 3,
-        Default = 0.1,
-        Decimal = 10,
-        Suffix = function() return 's' end
+        DefaultMin = 0.1,
+        DefaultMax = 0.3,
+        Decimal = 100
     })
     SkipFalling = AutoLani:CreateToggle({
         Name = 'Skip Falling',
