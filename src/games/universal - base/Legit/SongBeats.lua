@@ -93,10 +93,12 @@ SongBeats = vain.Legit:CreateModule({
 	Tooltip = 'Built in mp3 player'
 })
 List = SongBeats:CreateTextList({
+	Tooltip = 'Song files to play',
 	Name = 'Songs',
 	Placeholder = 'filepath/bpm/start'
 })
 FOV = SongBeats:CreateToggle({
+	Tooltip = 'Pulses the FOV to the beat',
 	Name = 'Beat FOV',
 	Function = function(callback)
 		if FOVValue.Object then
@@ -111,6 +113,7 @@ FOV = SongBeats:CreateToggle({
 	Default = true
 })
 FOVValue = SongBeats:CreateSlider({
+	Tooltip = 'How strong the pulse is',
 	Name = 'Adjustment',
 	Min = 1,
 	Max = 30,
@@ -118,6 +121,7 @@ FOVValue = SongBeats:CreateSlider({
 	Darker = true
 })
 Volume = SongBeats:CreateSlider({
+	Tooltip = 'How loud the songs are',
 	Name = 'Volume',
 	Function = function(val)
 		if songobj then

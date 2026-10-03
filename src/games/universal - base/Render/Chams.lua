@@ -106,6 +106,7 @@ Chams = vain.Categories.Render:CreateModule({
 	Tooltip = 'Render players through walls'
 })
 Targets = Chams:CreateTargets({
+	Tooltip = 'Who is outlined',
 	Players = true,
 	Function = function()
 		if Chams.Enabled then
@@ -115,6 +116,7 @@ Targets = Chams:CreateTargets({
 	end
 	})
 Mode = Chams:CreateDropdown({
+	Tooltip = 'How players are drawn',
 	Name = 'Mode',
 	List = {'Highlight', 'BoxHandles'},
 	Function = function(val)
@@ -127,6 +129,7 @@ Mode = Chams:CreateDropdown({
 	end
 })
 FillColor = Chams:CreateColorSlider({
+	Tooltip = 'Fill colour',
 	Name = 'Color',
 	Function = function(hue, sat, val)
 		for i, v in Reference do
@@ -140,6 +143,7 @@ FillColor = Chams:CreateColorSlider({
 	end
 })
 OutlineColor = Chams:CreateColorSlider({
+	Tooltip = 'Outline colour',
 	Name = 'Outline Color',
 	DefaultSat = 0,
 	Function = function(hue, sat, val)
@@ -152,6 +156,7 @@ OutlineColor = Chams:CreateColorSlider({
 	Darker = true
 })
 FillTransparency = Chams:CreateSlider({
+	Tooltip = 'How see-through the fill is',
 	Name = 'Transparency',
 	Min = 0,
 	Max = 1,
@@ -168,6 +173,7 @@ FillTransparency = Chams:CreateSlider({
 	Decimal = 10
 })
 OutlineTransparency = Chams:CreateSlider({
+	Tooltip = 'How see-through the outline is',
 	Name = 'Outline Transparency',
 	Min = 0,
 	Max = 1,
@@ -183,6 +189,7 @@ OutlineTransparency = Chams:CreateSlider({
 	Darker = true
 })
 Walls = Chams:CreateToggle({
+	Tooltip = 'Shows them through walls',
 	Name = 'Render Walls',
 	Function = function(callback)
 		for _, v in Reference do

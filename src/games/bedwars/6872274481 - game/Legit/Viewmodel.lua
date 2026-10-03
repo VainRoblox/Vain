@@ -83,6 +83,7 @@ Vertical = Viewmodel:CreateSlider({
 })
 for _, name in {'Rotation X', 'Rotation Y', 'Rotation Z'} do
 	table.insert(Rots, Viewmodel:CreateSlider({
+		Tooltip = 'Moves the held item',
 		Name = name,
 		Min = 0,
 		Max = 360,

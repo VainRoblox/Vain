@@ -102,6 +102,7 @@ Atmosphere = vain.Legit:CreateModule({
 for i, v in apidump do
 	Toggles[i] = {Objects = {}}
 	Toggles[i].Toggle = Atmosphere:CreateToggle({
+		Tooltip = 'Changes this lighting property',
 		Name = i,
 		Function = function(callback)
 			if Atmosphere.Enabled then
@@ -118,6 +119,7 @@ for i, v in apidump do
 	for i2, v2 in v do
 		if v2 == 'Text' or v2 == 'Number' then
 			Toggles[i].Objects[i2] = Atmosphere:CreateTextBox({
+				Tooltip = 'Value for this property',
 				Name = i2,
 				Function = function(enter)
 					if Atmosphere.Enabled and enter then
@@ -131,6 +133,7 @@ for i, v in apidump do
 			})
 		elseif v2 == 'Color' then
 			Toggles[i].Objects[i2] = Atmosphere:CreateColorSlider({
+				Tooltip = 'Colour for this property',
 				Name = i2,
 				Function = function()
 					if Atmosphere.Enabled then

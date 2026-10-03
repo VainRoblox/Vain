@@ -82,6 +82,7 @@ Radar = vain:CreateOverlay({
 	end
 })
 Targets = Radar:CreateTargets({
+	Tooltip = 'Who shows on the radar',
 	Players = true,
 	Function = function()
 		if Radar.Button.Enabled then
@@ -91,6 +92,7 @@ Targets = Radar:CreateTargets({
 	end
 })
 DotStyle = Radar:CreateDropdown({
+	Tooltip = 'Shape of the dots',
 	Name = 'Dot Style',
 	List = {'Circles', 'Squares'},
 	Function = function(val)
@@ -100,6 +102,7 @@ DotStyle = Radar:CreateDropdown({
 	end
 })
 PlayerColor = Radar:CreateColorSlider({
+	Tooltip = 'Colour of the dots',
 	Name = 'Player Color',
 	Function = function(hue, sat, val)
 		for ent, dot in Reference do
@@ -143,12 +146,14 @@ local barcorner = Instance.new('UICorner')
 barcorner.CornerRadius = UDim.new(0, 8)
 barcorner.Parent = bar
 Radar:CreateColorSlider({
+	Tooltip = 'Colour of the frame',
 	Name = 'Bar Color',
 	Function = function(hue, sat, val)
 		bar.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 	end
 })
 Radar:CreateToggle({
+	Tooltip = 'Background behind the radar',
 	Name = 'Show Background',
 	Default = true,
 	Function = function(callback)
@@ -158,6 +163,7 @@ Radar:CreateToggle({
 	end
 })
 Radar:CreateToggle({
+	Tooltip = 'Crosshair in the middle',
 	Name = 'Show Cross',
 	Default = true,
 	Function = function(callback)
@@ -166,6 +172,7 @@ Radar:CreateToggle({
 	end
 })
 Clamp = Radar:CreateToggle({
+	Tooltip = 'Keeps far players on the edge',
 	Name = 'Clamp Radar',
 	Default = true
 })

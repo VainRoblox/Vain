@@ -201,7 +201,7 @@ run(function()
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
 	})
-	Target = SilentAim:CreateTargets({Players = true})
+	Target = SilentAim:CreateTargets({Tooltip = 'Who shots are sent to', Players = true})
 	Mode = SilentAim:CreateDropdown({
 		Name = 'Mode',
 		List = {'Mouse', 'Position'},
@@ -225,13 +225,15 @@ run(function()
 		Tooltip = 'FindPartOnRay* - Deprecated methods of raycasting used in old games\nRaycast - The modern raycast method\nPointToRay - Method to generate a ray from screen coords\nRay - Hooking Ray.new'
 	})
 	MethodRay = SilentAim:CreateDropdown({
+		Tooltip = 'Which shot method is redirected',
 		Name = 'Raycast Type',
 		List = {'All', 'Exclude', 'Include'},
 		Darker = true,
 		Visible = false
 	})
-	IgnoredScripts = SilentAim:CreateTextList({Name = 'Ignored Scripts'})
+	IgnoredScripts = SilentAim:CreateTextList({Tooltip = 'Scripts left alone', Name = 'Ignored Scripts'})
 	Range = SilentAim:CreateSlider({
+		Tooltip = 'How far a target can be',
 		Name = 'Range',
 		Min = 1,
 		Max = 1000,
@@ -246,6 +248,7 @@ run(function()
 		end
 	})
 	HitChance = SilentAim:CreateSlider({
+		Tooltip = 'How often shots are redirected',
 		Name = 'Hit Chance',
 		Min = 0,
 		Max = 100,
@@ -253,6 +256,7 @@ run(function()
 		Suffix = '%'
 	})
 	HeadshotChance = SilentAim:CreateSlider({
+		Tooltip = 'How often it aims for the head',
 		Name = 'Headshot Chance',
 		Min = 0,
 		Max = 100,
@@ -260,6 +264,7 @@ run(function()
 		Suffix = '%'
 	})
 	AutoFire = SilentAim:CreateToggle({
+		Tooltip = 'Fires for you when on target',
 		Name = 'AutoFire',
 		Function = function(callback)
 			AutoFireShootDelay.Object.Visible = callback
@@ -268,6 +273,7 @@ run(function()
 		end
 	})
 	AutoFireShootDelay = SilentAim:CreateSlider({
+		Tooltip = 'Wait between auto shots',
 		Name = 'Next Shot Delay',
 		Min = 0,
 		Max = 1,
@@ -286,6 +292,7 @@ run(function()
 		Tooltip = 'Determines the position to check for before shooting'
 	})
 	AutoFirePosition = SilentAim:CreateTextBox({
+		Tooltip = 'Aim offset from the target',
 		Name = 'Offset',
 		Function = function()
 			local suc, res = pcall(function()
@@ -297,8 +304,9 @@ run(function()
 		Visible = false,
 		Darker = true
 	})
-	Wallbang = SilentAim:CreateToggle({Name = 'Wallbang'})
+	Wallbang = SilentAim:CreateToggle({Tooltip = 'Shoots through walls', Name = 'Wallbang'})
 	SilentAim:CreateToggle({
+		Tooltip = 'Draws the range circle',
 		Name = 'Range Circle',
 		Function = function(callback)
 			if callback then
@@ -322,6 +330,7 @@ run(function()
 		end
 	})
 	CircleColor = SilentAim:CreateColorSlider({
+		Tooltip = 'Colour of the circle',
 		Name = 'Circle Color',
 		Function = function(hue, sat, val)
 			if CircleObject then
@@ -332,6 +341,7 @@ run(function()
 		Visible = false
 	})
 	CircleTransparency = SilentAim:CreateSlider({
+		Tooltip = 'How see-through the circle is',
 		Name = 'Transparency',
 		Min = 0,
 		Max = 1,
@@ -346,6 +356,7 @@ run(function()
 		Visible = false
 	})
 	CircleFilled = SilentAim:CreateToggle({
+		Tooltip = 'Fills the circle in',
 		Name = 'Circle Filled',
 		Function = function(callback)
 			if CircleObject then
@@ -356,6 +367,7 @@ run(function()
 		Visible = false
 	})
 	Projectile = SilentAim:CreateToggle({
+		Tooltip = 'Leads targets for slow projectiles',
 		Name = 'Projectile',
 		Function = function(callback)
 			ProjectileSpeed.Object.Visible = callback
@@ -363,6 +375,7 @@ run(function()
 		end
 	})
 	ProjectileSpeed = SilentAim:CreateSlider({
+		Tooltip = 'Projectile speed to lead with',
 		Name = 'Speed',
 		Min = 1,
 		Max = 1000,
@@ -374,6 +387,7 @@ run(function()
 		end
 	})
 	ProjectileGravity = SilentAim:CreateSlider({
+		Tooltip = 'Projectile drop to lead with',
 		Name = 'Gravity',
 		Min = 0,
 		Max = 192.6,

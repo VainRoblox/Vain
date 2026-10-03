@@ -34,6 +34,7 @@ for _, v in Enum.HumanoidStateType:GetEnumItems() do
 	end
 end
 State = StateSpoofer:CreateDropdown({
+	Tooltip = 'State to report',
 	Name = 'Humanoid State',
 	List = states
 })

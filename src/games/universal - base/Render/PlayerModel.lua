@@ -63,6 +63,7 @@ PlayerModel = vain.Categories.Render:CreateModule({
 	Tooltip = 'Change the player models to a Mesh'
 })
 Scale = PlayerModel:CreateSlider({
+	Tooltip = 'How big the model is',
 	Name = 'Scale',
 	Min = 0,
 	Max = 2,
@@ -76,6 +77,7 @@ Scale = PlayerModel:CreateSlider({
 })
 for _, name in {'Rotation X', 'Rotation Y', 'Rotation Z'} do 
 	table.insert(Rots, PlayerModel:CreateSlider({
+		Tooltip = 'Model rotation',
 		Name = name,
 		Min = 0,
 		Max = 360,
@@ -89,6 +91,7 @@ for _, name in {'Rotation X', 'Rotation Y', 'Rotation Z'} do
 	}))
 end
 Local = PlayerModel:CreateToggle({
+	Tooltip = 'Also on your own character',
 	Name = 'Local',
 	Function = function()
 		if PlayerModel.Enabled then 
@@ -98,6 +101,7 @@ Local = PlayerModel:CreateToggle({
 	end
 })
 Mesh = PlayerModel:CreateTextBox({
+	Tooltip = 'Mesh id for the model',
 	Name = 'Mesh',
 	Placeholder = 'mesh id',
 	Function = function()
@@ -107,6 +111,7 @@ Mesh = PlayerModel:CreateTextBox({
 	end
 })
 Texture = PlayerModel:CreateTextBox({
+	Tooltip = 'Texture id for the model',
 	Name = 'Texture',
 	Placeholder = 'texture id',
 	Function = function()

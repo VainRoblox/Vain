@@ -32,6 +32,7 @@ Mode = AutoClicker:CreateDropdown({
 	Tooltip = 'Tool - Automatically uses roblox tools (eg. swords)\nClick - Left click\nRightClick - Right click'
 })
 CPS = AutoClicker:CreateTwoSlider({
+	Tooltip = 'Random clicks per second between these',
 	Name = 'CPS',
 	Min = 1,
 	Max = 20,

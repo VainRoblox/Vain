@@ -54,6 +54,7 @@ Fullbright = vain.Categories.Render:CreateModule({
 	Tooltip = 'Increase the lighting of the world around you.'
 })
 Mode = Fullbright:CreateDropdown({
+	Tooltip = 'How the lighting is brightened',
 	Name = 'Mode',
 	List = {'Lighting', 'PointLight'},
 	Function = function()

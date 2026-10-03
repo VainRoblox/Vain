@@ -59,6 +59,7 @@ Mode = HighJump:CreateDropdown({
 	Tooltip = 'Velocity - Uses smooth movement to boost you upward\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position upward\nInstant - Teleports you to the peak of the jump'
 })
 Value = HighJump:CreateSlider({
+	Tooltip = 'How high you jump',
 	Name = 'Velocity',
 	Min = 1,
 	Max = 150,
@@ -68,6 +69,7 @@ Value = HighJump:CreateSlider({
 	end
 })
 AutoDisable = HighJump:CreateToggle({
+	Tooltip = 'Turns off after one jump',
 	Name = 'Auto Disable',
 	Default = true
 })

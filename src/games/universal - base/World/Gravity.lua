@@ -44,6 +44,7 @@ Mode = Gravity:CreateDropdown({
 	Tooltip = 'Workspace - Adjusts the gravity for the entire game\nVelocity - Adjusts the local players gravity\nImpulse - Same as velocity while using forces instead'
 })
 Value = Gravity:CreateSlider({
+	Tooltip = 'World gravity',
 	Name = 'Gravity',
 	Min = 0,
 	Max = 192,

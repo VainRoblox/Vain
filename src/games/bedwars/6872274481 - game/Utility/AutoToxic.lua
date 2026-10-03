@@ -76,6 +76,7 @@ GG = AutoToxic:CreateToggle({
 })
 for _, v in {'Kill', 'Death', 'Bed', 'BedDestroyed', 'Win'} do
 	Toggles[v] = AutoToxic:CreateToggle({
+		Tooltip = 'Sends a message for this',
 		Name = v..' ',
 		Function = function(callback)
 			if Lists[v] then
@@ -84,6 +85,7 @@ for _, v in {'Kill', 'Death', 'Bed', 'BedDestroyed', 'Win'} do
 		end
 	})
 	Lists[v] = AutoToxic:CreateTextList({
+		Tooltip = 'Messages for this',
 		Name = v,
 		Darker = true,
 		Visible = false

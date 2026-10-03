@@ -16,6 +16,7 @@ TimeChanger = vain.Legit:CreateModule({
 	Tooltip = 'Change the time of the current world'
 })
 Value = TimeChanger:CreateSlider({
+	Tooltip = 'Time of day',
 	Name = 'Time',
 	Min = 0,
 	Max = 24,

@@ -16,6 +16,7 @@ Clock = vain.Legit:CreateModule({
 	Tooltip = 'Shows the current local time'
 })
 Clock:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Gotham',
 	Function = function(val)
@@ -23,6 +24,7 @@ Clock:CreateFont({
 	end
 })
 Clock:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
@@ -32,6 +34,7 @@ Clock:CreateColorSlider({
 	end
 })
 TwentyFourHour = Clock:CreateToggle({
+	Tooltip = 'Uses 24 hour time',
 	Name = '24 Hour Clock'
 })
 label = Instance.new('TextLabel')

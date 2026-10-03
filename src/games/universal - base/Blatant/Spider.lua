@@ -89,6 +89,7 @@ Mode = Spider:CreateDropdown({
 	Tooltip = 'Velocity - Uses smooth movement to boost you upward\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position upward\nPart - Positions a climbable part infront of you'
 })
 Value = Spider:CreateSlider({
+	Tooltip = 'How fast you climb',
 	Name = 'Speed',
 	Min = 0,
 	Max = 100,
@@ -99,6 +100,7 @@ Value = Spider:CreateSlider({
 	end
 })
 State = Spider:CreateToggle({
+	Tooltip = 'Uses the climbing animation',
 	Name = 'Climb State',
 	Darker = true
 })

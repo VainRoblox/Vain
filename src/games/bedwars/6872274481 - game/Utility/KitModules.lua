@@ -3136,6 +3136,7 @@ kitRun(function()
 		end
 	})
 	Targets = AutoEmber:CreateTargets({
+		Tooltip = 'Who it is used on',
 		Players = true,
 		NPCs = false
 	})
@@ -3333,6 +3334,7 @@ kitRun(function()
 	})
 
 	Targets = AutoHannah:CreateTargets({
+		Tooltip = 'Who it is used on',
 		Players = true,
 		Walls = false,
 		NPCs = false
@@ -3857,6 +3859,7 @@ kitRun(function()
         return list
     end
     Teammate = AutoLani:CreateDropdown({
+        Tooltip = 'The teammate for Specific',
         Name = 'Teammate',
         List = teammateList(),
         Darker = true,

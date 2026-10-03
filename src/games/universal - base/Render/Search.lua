@@ -45,6 +45,7 @@ Search = vain.Categories.Render:CreateModule({
 	Tooltip = 'Draws box around selected parts\nAdd parts in Search frame'
 })
 List = Search:CreateTextList({
+	Tooltip = 'Part names to find',
 	Name = 'Parts',
 	Function = function()
 		if Search.Enabled then
@@ -54,6 +55,7 @@ List = Search:CreateTextList({
 	end
 })
 Color = Search:CreateColorSlider({
+	Tooltip = 'Colour of the highlight',
 	Name = 'Color',
 	Function = function(hue, sat, val)
 		for _, v in Reference do
@@ -62,6 +64,7 @@ Color = Search:CreateColorSlider({
 	end
 })
 FillTransparency = Search:CreateSlider({
+	Tooltip = 'How see-through the highlight is',
 	Name = 'Transparency',
 	Min = 0,
 	Max = 1,

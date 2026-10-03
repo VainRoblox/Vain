@@ -111,6 +111,7 @@ StaffDetector = vain.Categories.Utility:CreateModule({
 	Tooltip = 'Detects people with a staff rank ingame'
 })
 Mode = StaffDetector:CreateDropdown({
+	Tooltip = 'What to do when staff join',
 	Name = 'Mode',
 	List = {'Uninject', 'ServerHop', 'Profile', 'AutoConfig', 'Notify'},
 	Function = function(val)
@@ -120,20 +121,24 @@ Mode = StaffDetector:CreateDropdown({
 	end
 })
 Profile = StaffDetector:CreateTextBox({
+	Tooltip = 'Profile to switch to',
 	Name = 'Profile',
 	Default = 'default',
 	Darker = true,
 	Visible = false
 })
 Users = StaffDetector:CreateTextList({
+	Tooltip = 'Extra users to treat as staff',
 	Name = 'Users',
 	Placeholder = 'player (userid)'
 })
 Group = StaffDetector:CreateTextBox({
+	Tooltip = 'Group id to check',
 	Name = 'Group',
 	Placeholder = 'Group Id'
 })
 Role = StaffDetector:CreateTextBox({
+	Tooltip = 'Group roles counted as staff',
 	Name = 'Role',
 	Placeholder = 'Role Rank'
 })

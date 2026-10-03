@@ -138,6 +138,7 @@ Mode = Phase:CreateDropdown({
 	Tooltip = 'Part - Modifies parts collision status around you\nCharacter - Modifies the local collision status of the character\nCFrame - Teleports you past parts\nMotor - Same as CFrame with a bypass\nFFlag - Directly adjusts all physics collisions'
 })
 StudLimit = Phase:CreateSlider({
+	Tooltip = 'Thickest wall it goes through',
 	Name = 'Wall Size',
 	Min = 1,
 	Max = 20,

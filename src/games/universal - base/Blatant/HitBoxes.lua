@@ -32,12 +32,14 @@ HitBoxes = vain.Categories.Blatant:CreateModule({
 	end,
 	Tooltip = 'Expands entities hitboxes'
 })
-Targets = HitBoxes:CreateTargets({Players = true})
+Targets = HitBoxes:CreateTargets({Tooltip = 'Whose hitboxes grow', Players = true})
 TargetPart = HitBoxes:CreateDropdown({
+	Tooltip = 'Which body part grows',
 	Name = 'Part',
 	List = {'RootPart', 'Head'}
 })
 Expand = HitBoxes:CreateSlider({
+	Tooltip = 'How much bigger they get',
 	Name = 'Expand amount',
 	Min = 0,
 	Max = 2,

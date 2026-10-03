@@ -52,14 +52,16 @@ Mode = SpinBot:CreateDropdown({
 	Tooltip = 'CFrame - Directly adjusts your characters angle\nRotVelocity - Sets the rotation velocity so that you spin\nBodyMover - Uses body movers to edit your rotation velocity'
 })
 Value = SpinBot:CreateSlider({
+	Tooltip = 'How fast you spin',
 	Name = 'Speed',
 	Min = 1,
 	Max = 100,
 	Default = 40
 })
-XToggle = SpinBot:CreateToggle({Name = 'Spin X'})
+XToggle = SpinBot:CreateToggle({Tooltip = 'Spins on the X axis', Name = 'Spin X'})
 YToggle = SpinBot:CreateToggle({
+	Tooltip = 'Spins on the Y axis',
 	Name = 'Spin Y',
 	Default = true
 })
-ZToggle = SpinBot:CreateToggle({Name = 'Spin Z'})
+ZToggle = SpinBot:CreateToggle({Tooltip = 'Spins on the Z axis', Name = 'Spin Z'})

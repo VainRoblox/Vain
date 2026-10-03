@@ -31,6 +31,7 @@ FPS = vain.Legit:CreateModule({
 	Tooltip = 'Shows the current framerate'
 })
 FPS:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Gotham',
 	Function = function(val)
@@ -38,6 +39,7 @@ FPS:CreateFont({
 	end
 })
 FPS:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,

@@ -27,6 +27,7 @@ Timer = vain.Categories.Blatant:CreateModule({
 	Tooltip = 'Change the game speed.'
 })
 Value = Timer:CreateSlider({
+	Tooltip = 'Game speed multiplier',
 	Name = 'Value',
 	Min = 1,
 	Max = 3,

@@ -17,6 +17,7 @@ Speedmeter = vain.Legit:CreateModule({
 	Tooltip = 'A label showing the average velocity in studs'
 })
 Speedmeter:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Gotham',
 	Function = function(val)
@@ -24,6 +25,7 @@ Speedmeter:CreateFont({
 	end
 })
 Speedmeter:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,

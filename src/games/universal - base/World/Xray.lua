@@ -27,6 +27,7 @@ Xray = vain.Categories.World:CreateModule({
 	Tooltip = 'Renders whitelisted parts through walls.'
 })
 List = Xray:CreateTextList({
+	Tooltip = 'Part names to see through',
 	Name = 'Part',
 	Function = function()
 		if Xray.Enabled then

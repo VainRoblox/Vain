@@ -93,6 +93,7 @@ Arrows = vain.Categories.Render:CreateModule({
 	Tooltip = 'Draws arrows on screen when entities\nare out of your field of view.'
 })
 Targets = Arrows:CreateTargets({
+	Tooltip = 'Who gets an arrow',
 	Players = true,
 	Function = function()
 		if Arrows.Enabled then
@@ -102,6 +103,7 @@ Targets = Arrows:CreateTargets({
 	end
 })
 Color = Arrows:CreateColorSlider({
+	Tooltip = 'Colour of the arrows',
 	Name = 'Player Color',
 	Function = function(hue, sat, val)
 		if Arrows.Enabled then
@@ -121,12 +123,14 @@ Teammates = Arrows:CreateToggle({
 	Tooltip = 'Hides teammates & non targetable entities'
 })
 Distance = Arrows:CreateToggle({
+	Tooltip = 'Only within the distance below',
 	Name = 'Distance Check',
 	Function = function(callback)
 		DistanceLimit.Object.Visible = callback
 	end
 })
 DistanceLimit = Arrows:CreateTwoSlider({
+	Tooltip = 'Distance range shown',
 	Name = 'Player Distance',
 	Min = 0,
 	Max = 256,

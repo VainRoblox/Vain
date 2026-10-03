@@ -15,6 +15,7 @@ Ping = vain.Legit:CreateModule({
 	Tooltip = 'Shows the current connection speed to the roblox server'
 })
 Ping:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Gotham',
 	Function = function(val)
@@ -22,6 +23,7 @@ Ping:CreateFont({
 	end
 })
 Ping:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,

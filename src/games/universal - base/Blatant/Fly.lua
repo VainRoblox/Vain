@@ -216,6 +216,7 @@ run(function()
 		end
 	end
 	State = Fly:CreateDropdown({
+		Tooltip = 'State your character is put in',
 		Name = 'Humanoid State',
 		List = states
 	})
@@ -230,6 +231,7 @@ run(function()
 		Tooltip = 'The key combination for going up & down'
 	})
 	Options.Value = Fly:CreateSlider({
+		Tooltip = 'How fast you fly',
 		Name = 'Speed',
 		Min = 1,
 		Max = 150,
@@ -239,6 +241,7 @@ run(function()
 		end
 	})
 	VerticalValue = Fly:CreateSlider({
+		Tooltip = 'How fast you rise and sink',
 		Name = 'Vertical Speed',
 		Min = 1,
 		Max = 150,
@@ -248,6 +251,7 @@ run(function()
 		end
 	})
 	Options.TPFrequency = Fly:CreateSlider({
+		Tooltip = 'How often it teleports forward',
 		Name = 'TP Frequency',
 		Min = 0,
 		Max = 1,
@@ -259,6 +263,7 @@ run(function()
 		end
 	})
 	Options.PulseLength = Fly:CreateSlider({
+		Tooltip = 'How long each speed pulse lasts',
 		Name = 'Pulse Length',
 		Min = 0,
 		Max = 1,
@@ -270,6 +275,7 @@ run(function()
 		end
 	})
 	Options.PulseDelay = Fly:CreateSlider({
+		Tooltip = 'Time between speed pulses',
 		Name = 'Pulse Delay',
 		Min = 0,
 		Max = 1,
@@ -281,6 +287,7 @@ run(function()
 		end
 	})
 	BounceLength = Fly:CreateSlider({
+		Tooltip = 'How long each bounce lasts',
 		Name = 'Bounce Length',
 		Min = 0,
 		Max = 30,
@@ -291,6 +298,7 @@ run(function()
 		end
 	})
 	BounceDelay = Fly:CreateSlider({
+		Tooltip = 'Time between bounces',
 		Name = 'Bounce Delay',
 		Min = 0,
 		Max = 1,
@@ -302,6 +310,7 @@ run(function()
 		end
 	})
 	FloatTPGround = Fly:CreateSlider({
+		Tooltip = 'Ground friction while flying',
 		Name = 'Ground',
 		Min = 0,
 		Max = 1,
@@ -314,6 +323,7 @@ run(function()
 		end
 	})
 	FloatTPAir = Fly:CreateSlider({
+		Tooltip = 'Air friction while flying',
 		Name = 'Air',
 		Min = 0,
 		Max = 5,
@@ -326,6 +336,7 @@ run(function()
 		end
 	})
 	WallCheck = Fly:CreateToggle({
+		Tooltip = 'Stops at walls instead of passing through',
 		Name = 'Wall Check',
 		Default = true,
 		Darker = true,
@@ -342,6 +353,7 @@ run(function()
 		Tooltip = 'Forces the character to look infront of the camera'
 	})
 	CustomProperties = Fly:CreateToggle({
+		Tooltip = 'Uses the friction values below',
 		Name = 'Custom Properties',
 		Function = function()
 			if Fly.Enabled then

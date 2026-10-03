@@ -121,6 +121,7 @@ Disguise = vain.Legit:CreateModule({
 	Tooltip = 'Changes your character or animation to a specific ID (animation packs or userid\'s only)'
 })
 Mode = Disguise:CreateDropdown({
+	Tooltip = 'How you are disguised',
 	Name = 'Mode',
 	List = {'Character', 'Animation'},
 	Function = function()
@@ -131,6 +132,7 @@ Mode = Disguise:CreateDropdown({
 	end
 })
 IDBox = Disguise:CreateTextBox({
+	Tooltip = 'Who to look like',
 	Name = 'Disguise',
 	Placeholder = 'Disguise User Id',
 	Function = function()

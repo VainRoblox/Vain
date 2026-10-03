@@ -46,6 +46,7 @@ Mode = LongJump:CreateDropdown({
 	Tooltip = 'Velocity - Uses smooth physics based movement\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position of the root'
 })
 Value = LongJump:CreateSlider({
+	Tooltip = 'How far you jump',
 	Name = 'Speed',
 	Min = 1,
 	Max = 150,
@@ -55,6 +56,7 @@ Value = LongJump:CreateSlider({
 	end
 })
 AutoDisable = LongJump:CreateToggle({
+	Tooltip = 'Turns off after one jump',
 	Name = 'Auto Disable',
 	Default = true
 })

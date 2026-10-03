@@ -77,6 +77,7 @@ SessionInfo = vain:CreateOverlay({
 	end
 })
 FontOption = SessionInfo:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Arial'
 })
@@ -89,6 +90,7 @@ Hide = SessionInfo:CreateTextList({
 	Color = Color3.fromRGB(250, 50, 56)
 })
 SessionInfo:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Background Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
@@ -98,6 +100,7 @@ SessionInfo:CreateColorSlider({
 	end
 })
 BorderColor = SessionInfo:CreateColorSlider({
+	Tooltip = 'Colour of the border',
 	Name = 'Border Color',
 	Function = function(hue, sat, val, opacity)
 		infostroke.Color = Color3.fromHSV(hue, sat, val)
@@ -107,12 +110,14 @@ BorderColor = SessionInfo:CreateColorSlider({
 	Visible = false
 })
 TextSize = SessionInfo:CreateSlider({
+	Tooltip = 'How big the text is',
 	Name = 'Text Size',
 	Min = 1,
 	Max = 30,
 	Default = 16
 })
 Title = SessionInfo:CreateToggle({
+	Tooltip = 'Shows the title',
 	Name = 'Title',
 	Function = function(callback)
 		if TitleOffset.Object then
@@ -122,11 +127,13 @@ Title = SessionInfo:CreateToggle({
 	Default = true
 })
 TitleOffset = SessionInfo:CreateToggle({
+	Tooltip = 'Spaces the title from the list',
 	Name = 'Offset',
 	Default = true,
 	Darker = true
 })
 SessionInfo:CreateToggle({
+	Tooltip = 'Draws a border',
 	Name = 'Border',
 	Function = function(callback)
 		infostroke.Enabled = callback
@@ -134,12 +141,14 @@ SessionInfo:CreateToggle({
 	end
 })
 Custom = SessionInfo:CreateToggle({
+	Tooltip = 'Adds your own line',
 	Name = 'Add custom text',
 	Function = function(enabled)
 		CustomBox.Object.Visible = enabled
 	end
 })
 CustomBox = SessionInfo:CreateTextBox({
+	Tooltip = 'Your own line of text',
 	Name = 'Custom text',
 	Darker = true,
 	Visible = false

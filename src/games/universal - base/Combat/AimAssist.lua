@@ -83,12 +83,14 @@ AimAssist = vain.Categories.Combat:CreateModule({
 	end,
 	Tooltip = 'Smoothly aims to closest valid target'
 })
-Targets = AimAssist:CreateTargets({Players = true})
+Targets = AimAssist:CreateTargets({Tooltip = 'Who it aims at', Players = true})
 Part = AimAssist:CreateDropdown({
+	Tooltip = 'Which body part it aims at',
 	Name = 'Part',
 	List = {'RootPart', 'Head'}
 })
 FOV = AimAssist:CreateSlider({
+	Tooltip = 'How far from your crosshair it reaches',
 	Name = 'FOV',
 	Min = 0,
 	Max = 1000,
@@ -100,12 +102,14 @@ FOV = AimAssist:CreateSlider({
 	end
 })
 Speed = AimAssist:CreateSlider({
+	Tooltip = 'How quickly it turns you',
 	Name = 'Speed',
 	Min = 0,
 	Max = 30,
 	Default = 15
 })
 AimAssist:CreateToggle({
+	Tooltip = 'Draws the FOV circle',
 	Name = 'Range Circle',
 	Function = function(callback)
 		if callback then
@@ -129,6 +133,7 @@ AimAssist:CreateToggle({
 	end
 })
 CircleColor = AimAssist:CreateColorSlider({
+	Tooltip = 'Colour of the circle',
 	Name = 'Circle Color',
 	Function = function(hue, sat, val)
 		if CircleObject then
@@ -139,6 +144,7 @@ CircleColor = AimAssist:CreateColorSlider({
 	Visible = false
 })
 CircleTransparency = AimAssist:CreateSlider({
+	Tooltip = 'How see-through the circle is',
 	Name = 'Transparency',
 	Min = 0,
 	Max = 1,
@@ -153,6 +159,7 @@ CircleTransparency = AimAssist:CreateSlider({
 	Visible = false
 })
 CircleFilled = AimAssist:CreateToggle({
+	Tooltip = 'Fills the circle in',
 	Name = 'Circle Filled',
 	Function = function(callback)
 		if CircleObject then
@@ -163,6 +170,7 @@ CircleFilled = AimAssist:CreateToggle({
 	Visible = false
 })
 RightClick = AimAssist:CreateToggle({
+	Tooltip = 'Only while holding right click',
 	Name = 'Require right click',
 	Function = function()
 		if AimAssist.Enabled then
@@ -172,5 +180,6 @@ RightClick = AimAssist:CreateToggle({
 	end
 })
 ShowTarget = AimAssist:CreateToggle({
+	Tooltip = 'Shows who it is aiming at',
 	Name = 'Show target info'
 })

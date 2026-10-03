@@ -17,6 +17,7 @@ Sort = ServerHop:CreateDropdown({
 	Tooltip = 'Descending - Prefers full servers\nAscending - Prefers empty servers'
 })
 ServerHop:CreateButton({
+	Tooltip = 'Goes back to the last server',
 	Name = 'Rejoin Previous Server',
 	Function = function()
 		notif('ServerHop', shared.vainserverhopprevious and 'Rejoining previous server...' or 'Cannot find previous server', 5)

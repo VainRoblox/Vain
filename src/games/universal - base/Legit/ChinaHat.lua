@@ -64,6 +64,7 @@ for _, v in Enum.Material:GetEnumItems() do
 	end
 end
 Material = ChinaHat:CreateDropdown({
+	Tooltip = 'What the hat is made of',
 	Name = 'Material',
 	List = materials,
 	Function = function(val)
@@ -73,6 +74,7 @@ Material = ChinaHat:CreateDropdown({
 	end
 })
 Color = ChinaHat:CreateColorSlider({
+	Tooltip = 'Colour of the hat',
 	Name = 'Hat Color',
 	DefaultOpacity = 0.7,
 	Function = function(hue, sat, val, opacity)

@@ -80,6 +80,7 @@ Options = {
 		Tooltip = 'MoveDirection - Uses the games input vector for movement\nDirect - Directly calculate our own input vector'
 	}),
 	Value = Speed:CreateSlider({
+		Tooltip = 'How fast you move',
 		Name = 'Speed',
 		Min = 1,
 		Max = 150,
@@ -89,6 +90,7 @@ Options = {
 		end
 	}),
 	TPFrequency = Speed:CreateSlider({
+		Tooltip = 'How often it teleports forward',
 		Name = 'TP Frequency',
 		Min = 0,
 		Max = 1,
@@ -100,6 +102,7 @@ Options = {
 		end
 	}),
 	PulseLength = Speed:CreateSlider({
+		Tooltip = 'How long each speed pulse lasts',
 		Name = 'Pulse Length',
 		Min = 0,
 		Max = 1,
@@ -111,6 +114,7 @@ Options = {
 		end
 	}),
 	PulseDelay = Speed:CreateSlider({
+		Tooltip = 'Time between speed pulses',
 		Name = 'Pulse Delay',
 		Min = 0,
 		Max = 1,
@@ -122,6 +126,7 @@ Options = {
 		end
 	}),
 	WallCheck = Speed:CreateToggle({
+		Tooltip = 'Stops at walls instead of passing through',
 		Name = 'Wall Check',
 		Default = true,
 		Darker = true,
@@ -132,6 +137,7 @@ Options = {
 }
 Options.rayCheck.RespectCanCollide = true
 CustomProperties = Speed:CreateToggle({
+	Tooltip = 'Uses custom movement values',
 	Name = 'Custom Properties',
 	Function = function()
 		if Speed.Enabled then
@@ -142,6 +148,7 @@ CustomProperties = Speed:CreateToggle({
 	Default = true
 })
 AutoJump = Speed:CreateToggle({
+	Tooltip = 'Jumps for you while moving',
 	Name = 'AutoJump',
 	Function = function(callback)
 		AutoJumpCustom.Object.Visible = callback
@@ -157,6 +164,7 @@ AutoJumpCustom = Speed:CreateToggle({
 	Visible = false
 })
 AutoJumpValue = Speed:CreateSlider({
+	Tooltip = 'How high the auto jumps go',
 	Name = 'Jump Power',
 	Min = 1,
 	Max = 50,

@@ -75,5 +75,6 @@ Cape = vain.Legit:CreateModule({
 	Tooltip = 'Add\'s a cape to your character'
 })
 Texture = Cape:CreateTextBox({
+	Tooltip = 'Image id for the cape',
 	Name = 'Texture'
 })

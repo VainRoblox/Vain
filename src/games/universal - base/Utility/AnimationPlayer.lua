@@ -54,6 +54,7 @@ AnimationPlayer = vain.Categories.Utility:CreateModule({
 	Tooltip = 'Plays a specific animation of your choosing at a certain speed'
 })
 IDBox = AnimationPlayer:CreateTextBox({
+	Tooltip = 'Animation id to play',
 	Name = 'Animation',
 	Placeholder = 'anim (num only)',
 	Function = function(enter)
@@ -70,6 +71,7 @@ for _, v in Enum.AnimationPriority:GetEnumItems() do
 	end
 end
 Priority = AnimationPlayer:CreateDropdown({
+	Tooltip = 'Animation priority',
 	Name = 'Priority',
 	List = prio,
 	Function = function(val)
@@ -79,6 +81,7 @@ Priority = AnimationPlayer:CreateDropdown({
 	end
 })
 Speed = AnimationPlayer:CreateSlider({
+	Tooltip = 'How fast it plays',
 	Name = 'Speed',
 	Function = function(val)
 		if anim then

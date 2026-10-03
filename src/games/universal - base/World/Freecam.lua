@@ -59,6 +59,7 @@ Freecam = vain.Categories.World:CreateModule({
 	Tooltip = 'Lets you fly and clip through walls freely\nwithout moving your player server-sided.'
 })
 Value = Freecam:CreateSlider({
+	Tooltip = 'How fast the camera moves',
 	Name = 'Speed',
 	Min = 1,
 	Max = 150,

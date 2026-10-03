@@ -411,6 +411,7 @@ ESP = vain.Categories.Render:CreateModule({
 	Tooltip = 'Extra Sensory Perception\nRenders an ESP on players.'
 })
 Targets = ESP:CreateTargets({
+	Tooltip = 'Who is shown',
 	Players = true,
 	Function = function()
 		if ESP.Enabled then
@@ -420,6 +421,7 @@ Targets = ESP:CreateTargets({
 	end
 })
 Method = ESP:CreateDropdown({
+	Tooltip = '2D or 3D boxes',
 	Name = 'Mode',
 	List = {'2D', '3D', 'Skeleton'},
 	Function = function(val)
@@ -436,6 +438,7 @@ Method = ESP:CreateDropdown({
 	end,
 })
 Color = ESP:CreateColorSlider({
+	Tooltip = 'Colour of the boxes',
 	Name = 'Player Color',
 	Function = function(hue, sat, val)
 		if ESP.Enabled and ColorFunc[methodused] then
@@ -444,6 +447,7 @@ Color = ESP:CreateColorSlider({
 	end
 })
 BoundingBox = ESP:CreateToggle({
+	Tooltip = 'Draws a box around them',
 	Name = 'Bounding Box',
 	Function = function()
 		if ESP.Enabled then
@@ -455,6 +459,7 @@ BoundingBox = ESP:CreateToggle({
 	Darker = true
 })
 Filled = ESP:CreateToggle({
+	Tooltip = 'Fills the box in',
 	Name = 'Filled',
 	Function = function()
 		if ESP.Enabled then
@@ -465,6 +470,7 @@ Filled = ESP:CreateToggle({
 	Darker = true
 })
 HealthBar = ESP:CreateToggle({
+	Tooltip = 'Shows their health',
 	Name = 'Health Bar',
 	Function = function()
 		if ESP.Enabled then
@@ -475,6 +481,7 @@ HealthBar = ESP:CreateToggle({
 	Darker = true
 })
 Name = ESP:CreateToggle({
+	Tooltip = 'Shows their name',
 	Name = 'Name',
 	Function = function(callback)
 		if ESP.Enabled then
@@ -487,6 +494,7 @@ Name = ESP:CreateToggle({
 	Darker = true
 })
 DisplayName = ESP:CreateToggle({
+	Tooltip = 'Display name instead of username',
 	Name = 'Use Displayname',
 	Function = function()
 		if ESP.Enabled then
@@ -498,6 +506,7 @@ DisplayName = ESP:CreateToggle({
 	Darker = true
 })
 Background = ESP:CreateToggle({
+	Tooltip = 'Background behind the name',
 	Name = 'Show Background',
 	Function = function()
 		if ESP.Enabled then
@@ -519,12 +528,14 @@ Teammates = ESP:CreateToggle({
 	Tooltip = 'Hides teammates & non targetable entities'
 })
 Distance = ESP:CreateToggle({
+	Tooltip = 'Only within the distance below',
 	Name = 'Distance Check',
 	Function = function(callback)
 		DistanceLimit.Object.Visible = callback
 	end
 })
 DistanceLimit = ESP:CreateTwoSlider({
+	Tooltip = 'Distance range shown',
 	Name = 'Player Distance',
 	Min = 0,
 	Max = 256,

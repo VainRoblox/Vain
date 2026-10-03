@@ -102,6 +102,7 @@ for _, v in Enum.Material:GetEnumItems() do
 	end
 end
 Material = AntiFall:CreateDropdown({
+	Tooltip = 'What the floor looks like',
 	Name = 'Material',
 	List = materials,
 	Darker = true,
@@ -112,6 +113,7 @@ Material = AntiFall:CreateDropdown({
 	end
 })
 Color = AntiFall:CreateColorSlider({
+	Tooltip = 'Colour of the floor',
 	Name = 'Color',
 	DefaultOpacity = 0.5,
 	Darker = true,

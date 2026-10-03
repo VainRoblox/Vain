@@ -117,7 +117,7 @@ Reach = vain.Categories.Combat:CreateModule({
 	Tooltip = 'Extends tool attack reach'
 })
 -- NPCs on by default: in most games with them, they are what you are hitting.
-Targets = Reach:CreateTargets({Players = true, NPCs = true})
+Targets = Reach:CreateTargets({Tooltip = 'Who the extra reach applies to', Players = true, NPCs = true})
 Mode = Reach:CreateDropdown({
 	Name = 'Mode',
 	List = {'TouchInterest', 'Resize'},
@@ -127,6 +127,7 @@ Mode = Reach:CreateDropdown({
 	Tooltip = 'TouchInterest - Reports fake collision events to the server\nResize - Physically modifies the tools size'
 })
 Value = Reach:CreateSlider({
+	Tooltip = 'How far you can hit',
 	Name = 'Range',
 	Min = 0,
 	Max = 2,
@@ -136,6 +137,7 @@ Value = Reach:CreateSlider({
 	end
 })
 Chance = Reach:CreateSlider({
+	Tooltip = 'How often extra reach is used',
 	Name = 'Chance',
 	Min = 0,
 	Max = 100,

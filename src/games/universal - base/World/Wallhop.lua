@@ -58,6 +58,7 @@ Wallhop = vain.Categories.World:CreateModule({
 	Tooltip = 'Automatically rotates camera for wallhopping.'
 })
 Offset = Wallhop:CreateSlider({
+	Tooltip = 'How far you are pushed off',
 	Name = 'Offset',
 	Min = -45,
 	Max = 45,

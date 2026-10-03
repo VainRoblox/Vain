@@ -292,6 +292,7 @@ NameTags = vain.Categories.Render:CreateModule({
 	Tooltip = 'Renders nametags on entities through walls.'
 })
 Targets = NameTags:CreateTargets({
+	Tooltip = 'Who gets a tag',
 	Players = true,
 	Function = function()
 		if NameTags.Enabled then
@@ -301,6 +302,7 @@ Targets = NameTags:CreateTargets({
 	end
 })
 FontOption = NameTags:CreateFont({
+	Tooltip = 'Font used for the tags',
 	Name = 'Font',
 	Blacklist = 'Arial',
 	Function = function()
@@ -311,6 +313,7 @@ FontOption = NameTags:CreateFont({
 	end
 })
 Color = NameTags:CreateColorSlider({
+	Tooltip = 'Colour of the names',
 	Name = 'Player Color',
 	Function = function(hue, sat, val)
 		if NameTags.Enabled and ColorFunc[methodused] then
@@ -319,6 +322,7 @@ Color = NameTags:CreateColorSlider({
 	end
 })
 Scale = NameTags:CreateSlider({
+	Tooltip = 'How big the tags are',
 	Name = 'Scale',
 	Function = function()
 		if NameTags.Enabled then
@@ -332,6 +336,7 @@ Scale = NameTags:CreateSlider({
 	Decimal = 10
 })
 Background = NameTags:CreateSlider({
+	Tooltip = 'How see-through the background is',
 	Name = 'Transparency',
 	Function = function()
 		if NameTags.Enabled then
@@ -345,6 +350,7 @@ Background = NameTags:CreateSlider({
 	Decimal = 10
 })
 Stroke = NameTags:CreateSlider({
+	Tooltip = 'How see-through the text outline is',
 	Name = 'Stroke Transparency',
 	Function = function()
 		if NameTags.Enabled then
@@ -358,6 +364,7 @@ Stroke = NameTags:CreateSlider({
 	Decimal = 10
 })
 Health = NameTags:CreateToggle({
+	Tooltip = 'Shows their health',
 	Name = 'Health',
 	Function = function()
 		if NameTags.Enabled then
@@ -367,6 +374,7 @@ Health = NameTags:CreateToggle({
 	end
 })
 Distance = NameTags:CreateToggle({
+	Tooltip = 'Shows how far away they are',
 	Name = 'Distance',
 	Function = function()
 		if NameTags.Enabled then
@@ -376,6 +384,7 @@ Distance = NameTags:CreateToggle({
 	end
 })
 DisplayName = NameTags:CreateToggle({
+	Tooltip = 'Display name instead of username',
 	Name = 'Use Displayname',
 	Function = function()
 		if NameTags.Enabled then
@@ -397,6 +406,7 @@ Teammates = NameTags:CreateToggle({
 	Tooltip = 'Hides teammates & non targetable entities'
 })
 DrawingToggle = NameTags:CreateToggle({
+	Tooltip = 'Draws tags with the Drawing library',
 	Name = 'Drawing',
 	Function = function()
 		if NameTags.Enabled then
@@ -406,12 +416,14 @@ DrawingToggle = NameTags:CreateToggle({
 	end
 })
 DistanceCheck = NameTags:CreateToggle({
+	Tooltip = 'Only within the distance below',
 	Name = 'Distance Check',
 	Function = function(callback)
 		DistanceLimit.Object.Visible = callback
 	end
 })
 DistanceLimit = NameTags:CreateTwoSlider({
+	Tooltip = 'Distance range shown',
 	Name = 'Player Distance',
 	Min = 0,
 	Max = 256,

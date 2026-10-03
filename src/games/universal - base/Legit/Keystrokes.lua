@@ -151,11 +151,13 @@ local function rebuild()
 end
 
 Style = Keystrokes:CreateDropdown({
+	Tooltip = 'Letters or arrows on the keys',
 	Name = 'Key Style',
 	List = {'Keyboard', 'Arrow'},
 	Function = rebuild
 })
 Color = Keystrokes:CreateColorSlider({
+	Tooltip = 'Colour of the keys',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,
@@ -169,6 +171,7 @@ Color = Keystrokes:CreateColorSlider({
 	end
 })
 ShowSpace = Keystrokes:CreateToggle({
+	Tooltip = 'Shows the spacebar',
 	Name = 'Show Spacebar',
 	Function = rebuild,
 	Default = true

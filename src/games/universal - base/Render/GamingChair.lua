@@ -213,6 +213,7 @@ GamingChair = vain.Categories.Render:CreateModule({
 	Tooltip = 'Sit in the best gaming chair known to mankind.'
 })
 Color = GamingChair:CreateColorSlider({
+	Tooltip = 'Colour of the chair',
 	Name = 'Color',
 	Function = function(h, s, v)
 		if chairhighlight then

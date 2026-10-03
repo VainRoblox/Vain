@@ -71,16 +71,19 @@ ChatSpammer = vain.Categories.Utility:CreateModule({
 	Tooltip = 'Automatically types in chat'
 })
 Lines = ChatSpammer:CreateTextList({
+	Tooltip = 'Messages to send',
 	Name = 'Lines',
 	Function = function()
 		table.clear(RandomList)
 	end
 })
 Mode = ChatSpammer:CreateDropdown({
+	Tooltip = 'Order the lines are sent in',
 	Name = 'Mode',
 	List = {'Random', 'Order'}
 })
 Delay = ChatSpammer:CreateSlider({
+	Tooltip = 'Seconds between messages',
 	Name = 'Delay',
 	Min = 0.1,
 	Max = 10,
@@ -91,6 +94,7 @@ Delay = ChatSpammer:CreateSlider({
 	end
 })
 Hide = ChatSpammer:CreateToggle({
+	Tooltip = 'Hides the chat flood warning',
 	Name = 'Hide Flood Message',
 	Default = true,
 	Function = function()

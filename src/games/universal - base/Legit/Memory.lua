@@ -15,6 +15,7 @@ Memory = vain.Legit:CreateModule({
 	Tooltip = 'A label showing the memory currently used by roblox'
 })
 Memory:CreateFont({
+	Tooltip = 'Font used for the text',
 	Name = 'Font',
 	Blacklist = 'Gotham',
 	Function = function(val)
@@ -22,6 +23,7 @@ Memory:CreateFont({
 	end
 })
 Memory:CreateColorSlider({
+	Tooltip = 'Colour of the background',
 	Name = 'Color',
 	DefaultValue = 0,
 	DefaultOpacity = 0.5,

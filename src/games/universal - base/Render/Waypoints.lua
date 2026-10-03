@@ -39,6 +39,7 @@ Waypoints = vain.Categories.Render:CreateModule({
 	Tooltip = 'Mark certain spots with a visual indicator'
 })
 FontOption = Waypoints:CreateFont({
+	Tooltip = 'Font used for the labels',
 	Name = 'Font',
 	Blacklist = 'Arial',
 	Function = function()
@@ -49,6 +50,7 @@ FontOption = Waypoints:CreateFont({
 	end,
 })
 List = Waypoints:CreateTextList({
+	Tooltip = 'Saved waypoints',
 	Name = 'Points',
 	Placeholder = 'x, y, z/name',
 	Function = function()
@@ -59,6 +61,7 @@ List = Waypoints:CreateTextList({
 	end
 })
 Waypoints:CreateButton({
+	Tooltip = 'Saves where you are standing',
 	Name = 'Add current position',
 	Function = function()
 		if entitylib.isAlive then
@@ -68,6 +71,7 @@ Waypoints:CreateButton({
 	end
 })
 Color = Waypoints:CreateColorSlider({
+	Tooltip = 'Colour of the labels',
 	Name = 'Color',
 	Function = function(hue, sat, val)
 		for _, v in WaypointFolder:GetChildren() do
@@ -76,6 +80,7 @@ Color = Waypoints:CreateColorSlider({
 	end
 })
 Scale = Waypoints:CreateSlider({
+	Tooltip = 'How big the labels are',
 	Name = 'Scale',
 	Function = function()
 		if Waypoints.Enabled then
@@ -89,6 +94,7 @@ Scale = Waypoints:CreateSlider({
 	Decimal = 10
 })
 Background = Waypoints:CreateSlider({
+	Tooltip = 'How see-through the labels are',
 	Name = 'Transparency',
 	Function = function()
 		if Waypoints.Enabled then

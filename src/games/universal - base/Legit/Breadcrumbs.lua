@@ -46,6 +46,7 @@ Breadcrumbs = vain.Legit:CreateModule({
 	Tooltip = 'Shows a trail behind your character'
 })
 Texture = Breadcrumbs:CreateTextBox({
+	Tooltip = 'Image id for the trail',
 	Name = 'Texture',
 	Placeholder = 'Texture Id',
 	Function = function(enter)
@@ -55,6 +56,7 @@ Texture = Breadcrumbs:CreateTextBox({
 	end
 })
 FadeIn = Breadcrumbs:CreateColorSlider({
+	Tooltip = 'Trail start colour',
 	Name = 'Fade In',
 	Function = function(hue, sat, val)
 		if trail then
@@ -63,6 +65,7 @@ FadeIn = Breadcrumbs:CreateColorSlider({
 	end
 })
 FadeOut = Breadcrumbs:CreateColorSlider({
+	Tooltip = 'Trail end colour',
 	Name = 'Fade Out',
 	Function = function(hue, sat, val)
 		if trail then
@@ -71,6 +74,7 @@ FadeOut = Breadcrumbs:CreateColorSlider({
 	end
 })
 Lifetime = Breadcrumbs:CreateSlider({
+	Tooltip = 'How long the trail stays',
 	Name = 'Lifetime',
 	Min = 1,
 	Max = 5,
@@ -86,6 +90,7 @@ Lifetime = Breadcrumbs:CreateSlider({
 	end
 })
 Thickness = Breadcrumbs:CreateSlider({
+	Tooltip = 'How thick the trail is',
 	Name = 'Thickness',
 	Min = 0,
 	Max = 2,

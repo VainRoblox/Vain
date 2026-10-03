@@ -363,6 +363,7 @@ for i, v in bedwars.TeamUpgradeMeta do
 	local toggleCount = count
 	local displayName = (v.name == 'Armor' and 'Protection' or v.name)
 	local toggle = AutoBuy:CreateToggle({
+		Tooltip = 'Buys this team upgrade',
 		Name = 'Buy '..displayName,
 		Function = function(callback)
 			npctick = tick()

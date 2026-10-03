@@ -57,6 +57,7 @@ TriggerBot = vain.Categories.Combat:CreateModule({
 	Tooltip = 'Shoots people that enter your crosshair'
 })
 Targets = TriggerBot:CreateTargets({
+	Tooltip = 'Who it clicks on',
 	Players = true,
 	NPCs = true
 })
@@ -71,6 +72,7 @@ ShootDelay = TriggerBot:CreateSlider({
 	Tooltip = 'The delay set after shooting a target'
 })
 Distance = TriggerBot:CreateSlider({
+	Tooltip = 'How far a target can be',
 	Name = 'Distance',
 	Min = 0,
 	Max = 1000,

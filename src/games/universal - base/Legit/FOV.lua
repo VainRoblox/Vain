@@ -18,6 +18,7 @@ FOV = vain.Legit:CreateModule({
 	Tooltip = 'Adjusts camera vision'
 })
 Value = FOV:CreateSlider({
+	Tooltip = 'Field of view, in degrees',
 	Name = 'FOV',
 	Min = 30,
 	Max = 120

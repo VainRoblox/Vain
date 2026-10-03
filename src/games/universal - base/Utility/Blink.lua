@@ -59,6 +59,7 @@ AutoSend = Blink:CreateToggle({
 	Tooltip = 'Automatically send packets in intervals'
 })
 AutoSendLength = Blink:CreateSlider({
+	Tooltip = 'How long before it sends again',
 	Name = 'Send threshold',
 	Min = 0,
 	Max = 1,

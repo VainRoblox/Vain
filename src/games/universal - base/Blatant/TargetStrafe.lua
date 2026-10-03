@@ -89,10 +89,12 @@ TargetStrafe = vain.Categories.Blatant:CreateModule({
 	Tooltip = 'Automatically strafes around the opponent'
 })
 Targets = TargetStrafe:CreateTargets({
+	Tooltip = 'Who it circles',
 	Players = true,
 	Walls = true
 })
 SearchRange = TargetStrafe:CreateSlider({
+	Tooltip = 'How far it looks for a target',
 	Name = 'Search Range',
 	Min = 1,
 	Max = 30,
@@ -102,6 +104,7 @@ SearchRange = TargetStrafe:CreateSlider({
 	end
 })
 StrafeRange = TargetStrafe:CreateSlider({
+	Tooltip = 'How far from them you circle',
 	Name = 'Strafe Range',
 	Min = 1,
 	Max = 30,
@@ -111,6 +114,7 @@ StrafeRange = TargetStrafe:CreateSlider({
 	end
 })
 YFactor = TargetStrafe:CreateSlider({
+	Tooltip = 'How much height is followed',
 	Name = 'Y Factor',
 	Min = 0,
 	Max = 100,

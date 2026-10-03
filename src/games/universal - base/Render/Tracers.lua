@@ -110,6 +110,7 @@ Tracers = vain.Categories.Render:CreateModule({
 	Tooltip = 'Renders tracers on players.'
 })
 Targets = Tracers:CreateTargets({
+	Tooltip = 'Who gets a line',
 	Players = true,
 	Function = function()
 		if Tracers.Enabled then
@@ -119,6 +120,7 @@ Targets = Tracers:CreateTargets({
 	end
 })
 StartPosition = Tracers:CreateDropdown({
+	Tooltip = 'Where the lines start',
 	Name = 'Start Position',
 	List = {'Middle', 'Bottom', 'Mouse'},
 	Function = function()
@@ -129,6 +131,7 @@ StartPosition = Tracers:CreateDropdown({
 	end
 })
 EndPosition = Tracers:CreateDropdown({
+	Tooltip = 'Where the lines end',
 	Name = 'End Position',
 	List = {'Head', 'Torso'},
 	Function = function()
@@ -139,6 +142,7 @@ EndPosition = Tracers:CreateDropdown({
 	end
 })
 Color = Tracers:CreateColorSlider({
+	Tooltip = 'Colour of the lines',
 	Name = 'Player Color',
 	Function = function(hue, sat, val)
 		if Tracers.Enabled then
@@ -147,6 +151,7 @@ Color = Tracers:CreateColorSlider({
 	end
 })
 Transparency = Tracers:CreateSlider({
+	Tooltip = 'How see-through the lines are',
 	Name = 'Transparency',
 	Min = 0,
 	Max = 1,
@@ -158,6 +163,7 @@ Transparency = Tracers:CreateSlider({
 	Decimal = 10
 })
 DistanceColor = Tracers:CreateToggle({
+	Tooltip = 'Colours lines by distance',
 	Name = 'Color by distance',
 	Function = function()
 		if Tracers.Enabled then
@@ -167,12 +173,14 @@ DistanceColor = Tracers:CreateToggle({
 	end
 })
 Distance = Tracers:CreateToggle({
+	Tooltip = 'Only within the distance below',
 	Name = 'Distance Check',
 	Function = function(callback)
 		DistanceLimit.Object.Visible = callback
 	end
 })
 DistanceLimit = Tracers:CreateTwoSlider({
+	Tooltip = 'Distance range shown',
 	Name = 'Player Distance',
 	Min = 0,
 	Max = 256,
@@ -182,6 +190,7 @@ DistanceLimit = Tracers:CreateTwoSlider({
 	Visible = false
 })
 Behind = Tracers:CreateToggle({
+	Tooltip = 'Also for players behind you',
 	Name = 'Behind',
 	Default = true
 })

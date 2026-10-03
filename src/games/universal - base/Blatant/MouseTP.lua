@@ -86,10 +86,12 @@ MouseTP = vain.Categories.Blatant:CreateModule({
 	Tooltip = 'Teleports to a selected position.'
 })
 Mode = MouseTP:CreateDropdown({
+	Tooltip = 'How it gets you there',
 	Name = 'Mode',
 	List = {'Mouse', 'Player', 'Waypoint'}
 })
 MovementMode = MouseTP:CreateDropdown({
+	Tooltip = 'How the move is made',
 	Name = 'Movement',
 	List = {'CFrame', 'Motor', 'Lerp'},
 	Function = function(val)
@@ -98,6 +100,7 @@ MovementMode = MouseTP:CreateDropdown({
 	end
 })
 Length = MouseTP:CreateSlider({
+	Tooltip = 'How long the move takes',
 	Name = 'Length',
 	Min = 0,
 	Max = 150,
@@ -108,6 +111,7 @@ Length = MouseTP:CreateSlider({
 	end
 })
 Delay = MouseTP:CreateSlider({
+	Tooltip = 'Wait before moving',
 	Name = 'Delay',
 	Min = 0,
 	Max = 1,

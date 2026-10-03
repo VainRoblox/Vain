@@ -67,6 +67,7 @@ Mode = FastProxPrompt:CreateDropdown({
 	end
 })
 Value = FastProxPrompt:CreateSlider({
+	Tooltip = 'How much faster prompts complete',
 	Name = 'Modifier',
 	Min = 0,
 	Max = 100,

@@ -109,8 +109,9 @@ Killaura = vain.Categories.Blatant:CreateModule({
 	end,
 	Tooltip = 'Attack players around you\nwithout aiming at them.'
 })
-Targets = Killaura:CreateTargets({Players = true})
+Targets = Killaura:CreateTargets({Tooltip = 'Who it attacks', Players = true})
 CPS = Killaura:CreateTwoSlider({
+	Tooltip = 'Random attack rate between these',
 	Name = 'Attacks per Second',
 	Min = 1,
 	Max = 20,
@@ -118,6 +119,7 @@ CPS = Killaura:CreateTwoSlider({
 	DefaultMax = 12
 })
 SwingRange = Killaura:CreateSlider({
+	Tooltip = 'How far you swing from',
 	Name = 'Swing range',
 	Min = 1,
 	Max = 30,
@@ -127,6 +129,7 @@ SwingRange = Killaura:CreateSlider({
 	end
 })
 AttackRange = Killaura:CreateSlider({
+	Tooltip = 'How far hits land from',
 	Name = 'Attack range',
 	Min = 1,
 	Max = 30,
@@ -136,20 +139,23 @@ AttackRange = Killaura:CreateSlider({
 	end
 })
 AngleSlider = Killaura:CreateSlider({
+	Tooltip = 'How far off your view a target can be',
 	Name = 'Max angle',
 	Min = 1,
 	Max = 360,
 	Default = 90
 })
 Max = Killaura:CreateSlider({
+	Tooltip = 'How many it attacks at once',
 	Name = 'Max targets',
 	Min = 1,
 	Max = 10,
 	Default = 10
 })
-Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
-Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
+Mouse = Killaura:CreateToggle({Tooltip = 'Only while holding left click', Name = 'Require mouse down'})
+Lunge = Killaura:CreateToggle({Tooltip = 'Only while holding a sword', Name = 'Sword lunge only'})
 Killaura:CreateToggle({
+	Tooltip = 'Marks who it is attacking',
 	Name = 'Show target',
 	Function = function(callback)
 		BoxSwingColor.Object.Visible = callback
@@ -174,6 +180,7 @@ Killaura:CreateToggle({
 	end
 })
 BoxSwingColor = Killaura:CreateColorSlider({
+	Tooltip = 'Colour of the target mark',
 	Name = 'Target Color',
 	Darker = true,
 	DefaultHue = 0.6,
@@ -181,12 +188,14 @@ BoxSwingColor = Killaura:CreateColorSlider({
 	Visible = false
 })
 BoxAttackColor = Killaura:CreateColorSlider({
+	Tooltip = 'Colour when a hit lands',
 	Name = 'Attack Color',
 	Darker = true,
 	DefaultOpacity = 0.5,
 	Visible = false
 })
 Killaura:CreateToggle({
+	Tooltip = 'Particles around the target',
 	Name = 'Target particles',
 	Function = function(callback)
 		ParticleTexture.Object.Visible = callback
@@ -229,6 +238,7 @@ Killaura:CreateToggle({
 	end
 })
 ParticleTexture = Killaura:CreateTextBox({
+	Tooltip = 'Image id for the particles',
 	Name = 'Texture',
 	Default = 'rbxassetid://14736249347',
 	Function = function()
@@ -240,6 +250,7 @@ ParticleTexture = Killaura:CreateTextBox({
 	Visible = false
 })
 ParticleColor1 = Killaura:CreateColorSlider({
+	Tooltip = 'Particle start colour',
 	Name = 'Color Begin',
 	Function = function(hue, sat, val)
 		for _, v in Particles do
@@ -253,6 +264,7 @@ ParticleColor1 = Killaura:CreateColorSlider({
 	Visible = false
 })
 ParticleColor2 = Killaura:CreateColorSlider({
+	Tooltip = 'Particle end colour',
 	Name = 'Color End',
 	Function = function(hue, sat, val)
 		for _, v in Particles do
@@ -266,6 +278,7 @@ ParticleColor2 = Killaura:CreateColorSlider({
 	Visible = false
 })
 ParticleSize = Killaura:CreateSlider({
+	Tooltip = 'How big the particles are',
 	Name = 'Size',
 	Min = 0,
 	Max = 1,
@@ -279,4 +292,4 @@ ParticleSize = Killaura:CreateSlider({
 	Darker = true,
 	Visible = false
 })
-Face = Killaura:CreateToggle({Name = 'Face target'})
+Face = Killaura:CreateToggle({Tooltip = 'Turns you towards the target', Name = 'Face target'})
