@@ -12,7 +12,23 @@
 local GeneratorESP
 local Diamond, Emerald, Team, ShowItems, ShowTier, ShowTimer, ProgressBar, Icons
 local Background, BackgroundColor, Outline, FontOption, Range, Scale
-local ShowDistance, Compact, HideEmpty, FullAlert, FullAmount, FullColor
+local ShowDistance, Compact, HideEmpty, FullAlert, FullAmount, FullColor, ShowTierUp
+
+--[[
+	When the diamond and emerald generators level up: the game's BWOreGenLevelSystem steps
+	them up at fixed times into the match - 0, 5, 10, 15 and 20 minutes - so the next one
+	is simply the next of those after how long the match has run.
+]]
+local LEVEL_TIMES = {0, 300, 600, 900, 1200}
+local function nextTierIn()
+	local started = store.matchStartTime
+	if type(started) ~= 'number' or started <= 0 then return nil end
+	local elapsed = os.time() - started
+	for _, at in LEVEL_TIMES do
+		if at > elapsed then return at - elapsed end
+	end
+	return nil
+end
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
 local generators = {}
@@ -182,6 +198,7 @@ local function add(part)
 	local timer = newText(header, 3)
 	local tier = newText(header, 4)
 	local distance = newText(header, 5)
+	local tierUp = newText(header, 6)
 	local contents = row(2)
 
 	local bar = Instance.new('Frame')
@@ -200,7 +217,7 @@ local function add(part)
 
 	generators[part] = {
 		billboard = billboard, adornee = part, card = card, stroke = stroke, padding = padding,
-		header = header, icon = icon, title = title, timer = timer, tier = tier, distance = distance,
+		header = header, icon = icon, title = title, timer = timer, tier = tier, distance = distance, tierUp = tierUp,
 		contents = contents, chips = {}, bar = bar, fill = fill
 	}
 end
@@ -358,7 +375,13 @@ local function refresh(model, entry, here)
 	entry.distance.Visible = not compact and on(ShowDistance) and here ~= nil
 	entry.distance.Text = here and string.format('%dm', math.floor((entry.adornee.Position - here).Magnitude)) or ''
 	entry.distance.TextColor3 = Color3.fromRGB(170, 170, 170)
-	for _, label in {entry.title, entry.timer, entry.tier, entry.distance} do
+	local untilTier = kind ~= 'team' and on(ShowTierUp) and not compact and nextTierIn()
+	entry.tierUp.Visible = untilTier ~= nil and untilTier ~= false
+	if entry.tierUp.Visible then
+		entry.tierUp.Text = string.format('Tier up %d:%02d', untilTier // 60, untilTier % 60)
+		entry.tierUp.TextColor3 = Color3.fromRGB(255, 210, 90)
+	end
+	for _, label in {entry.title, entry.timer, entry.tier, entry.distance, entry.tierUp} do
 		label.TextSize = size
 		label.FontFace = font
 	end
@@ -451,6 +474,11 @@ ProgressBar = GeneratorESP:CreateToggle({
 ShowTier = GeneratorESP:CreateToggle({
 	Name = 'Show Tier',
 	Tooltip = 'Shows each generator\'s tier'
+})
+ShowTierUp = GeneratorESP:CreateToggle({
+	Name = 'Tier Up Timer',
+	Tooltip = 'Time until diamond and emerald gens level up',
+	Default = true
 })
 ShowDistance = GeneratorESP:CreateToggle({
 	Name = 'Distance',
