@@ -846,6 +846,10 @@ NameTags = vain.Categories.Render:CreateModule({
 					Added[methodused](v)
 				end
 				NameTags:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
+					-- Entity events can run on a game thread that may not create instances.
+					if vain.ThreadFix then
+						setthreadidentity(8)
+					end
 					if Reference[ent] then
 						Removed[methodused](ent)
 					end

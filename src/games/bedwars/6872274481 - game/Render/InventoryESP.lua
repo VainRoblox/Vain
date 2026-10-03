@@ -424,6 +424,10 @@ local function refreshAll()
 end
 
 local function Added(ent)
+	-- Entity events can run on a game thread that may not create instances; raised first.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if not ent.Player or Entries[ent] then return end
 
 	--[[

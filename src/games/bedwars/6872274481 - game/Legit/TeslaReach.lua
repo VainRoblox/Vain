@@ -75,6 +75,10 @@ local function remove(trap)
 end
 
 local function add(trap)
+	-- Game events can call this on a thread that may not create instances.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if traps[trap] or not trap:IsA('PVInstance') then return end
 	local sphere = Instance.new('SphereHandleAdornment')
 	sphere.Radius = RANGE

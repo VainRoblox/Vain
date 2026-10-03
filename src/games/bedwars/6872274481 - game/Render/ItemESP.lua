@@ -63,6 +63,10 @@ local function remove(drop)
 end
 
 local function add(drop)
+	-- Game events can call this on a thread that may not create instances.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if drops[drop] then return end
 	local part = drop:IsA('BasePart') and drop or drop:FindFirstChildWhichIsA('BasePart', true)
 	if not part then return end

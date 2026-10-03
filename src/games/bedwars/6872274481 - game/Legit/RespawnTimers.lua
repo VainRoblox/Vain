@@ -100,6 +100,10 @@ local function forget(player)
 end
 
 local function onDeath(deathTable)
+	-- Game events can call this on a thread that may not create instances.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if type(deathTable) ~= 'table' then return end
 	local player = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
 	if not player or player == lplr then return end

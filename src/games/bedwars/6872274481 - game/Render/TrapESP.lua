@@ -94,6 +94,10 @@ local function remove(trap)
 end
 
 local function add(trap, info)
+	-- Game events can call this on a thread that may not create instances.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if traps[trap] then return end
 	local part = partOf(trap)
 	if not part then return end

@@ -35,6 +35,10 @@ local function styleHitbox(part)
 end
 
 local function createHitbox(ent)
+	-- Entity events can run on a game thread that may not create instances; raised first.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if ent.Targetable and ent.Player then
 		local hitbox = Instance.new('Part')
 		hitbox.Name = 'VainHitbox'

@@ -181,6 +181,10 @@ end
 	what changed.
 ]]
 local function add(part)
+	-- Game events can call this on a thread that may not create instances.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if generators[part] or not part:IsA('BasePart') then return end
 
 	local billboard = Instance.new('BillboardGui')
