@@ -14,7 +14,8 @@
 ]]
 local RespawnTimers
 local Teammates, ShowFinals, WorldMarkers, Corner, Background
-local panel, list
+local RespawnSound, WarnBefore, OnlyNearby, NearbyRange, AlwaysShow, PanelScale, FontOption
+local panel, list, title, scaler
 local dead = {}
 local rows = {}
 local Folder = Instance.new('Folder')
@@ -139,6 +140,7 @@ local function onDeath(deathTable)
 	}
 
 	local root = deathTable.entityInstance:FindFirstChild('HumanoidRootPart') or deathTable.entityInstance.PrimaryPart
+	entry.deathPosition = root and root.Position
 	if root then
 		local marker = Instance.new('BillboardGui')
 		marker.Size = UDim2.fromOffset(140, 20)
@@ -204,6 +206,16 @@ local function update()
 		end
 
 		local wanted = (on(Teammates) or not sameTeam(player)) and (on(ShowFinals) or not entry.final)
+		if wanted and on(OnlyNearby) and entry.deathPosition and entitylib.isAlive then
+			wanted = (entry.deathPosition - entitylib.character.RootPart.Position).Magnitude <= NearbyRange.Value
+		end
+		-- A ping just before an enemy is back, once per death.
+		if wanted and on(RespawnSound) and not entry.final and not entry.warned and remaining <= WarnBefore.Value and not sameTeam(player) then
+			entry.warned = true
+			pcall(function()
+				bedwars.SoundManager:playSound(bedwars.SoundList.PING_DANGER)
+			end)
+		end
 		local text = entry.final and 'FINAL' or string.format('%.1fs', math.max(remaining, 0))
 		if entry.marker then
 			entry.marker.Enabled = wanted and on(WorldMarkers)
@@ -219,8 +231,24 @@ local function update()
 		return a.remaining < b.remaining
 	end)
 
+	local font = FontOption and FontOption.Value or Font.fromEnum(Enum.Font.GothamBold)
+	if title then title.FontFace = font end
+	if scaler then scaler.Scale = PanelScale.Value end
+	-- Always Show keeps the panel up, saying so when nobody is dead.
+	if #shown == 0 and on(AlwaysShow) then
+		local label = row(1)
+		label.FontFace = font
+		label.TextColor3 = Color3.fromRGB(150, 150, 150)
+		label.Text = 'None'
+		label.Visible = true
+		for i = 2, #rows do rows[i].Visible = false end
+		panel.Visible = true
+		panel.Size = UDim2.fromOffset(190, 48)
+		return
+	end
 	for i, item in shown do
 		local label = row(i)
+		label.FontFace = font
 		local color = item.player.Team and item.player.TeamColor.Color or Color3.new(1, 1, 1)
 		label.TextColor3 = color
 		label.Text = item.player.DisplayName .. '  <font color="rgb(' .. (item.final and '255,90,90' or '230,230,230') .. ')">' .. item.text .. '</font>'
@@ -251,7 +279,10 @@ local function build()
 	padding.PaddingTop = UDim.new(0, 4)
 	padding.Parent = panel
 
-	local title = Instance.new('TextLabel')
+	scaler = Instance.new('UIScale')
+	scaler.Parent = panel
+
+	title = Instance.new('TextLabel')
 	title.BackgroundTransparency = 1
 	title.Size = UDim2.new(1, 0, 0, 20)
 	title.Font = Enum.Font.GothamBold
@@ -293,7 +324,7 @@ RespawnTimers = vain.Categories.Render:CreateModule({
 			for player in dead do forget(player) end
 			table.clear(rows)
 			table.clear(lastGround)
-			panel, list = nil, nil
+			panel, list, title, scaler = nil, nil, nil, nil
 		end
 	end
 })
@@ -310,6 +341,58 @@ WorldMarkers = RespawnTimers:CreateToggle({
 	Name = 'World Markers',
 	Tooltip = 'Marks where each one died',
 	Default = true
+})
+RespawnSound = RespawnTimers:CreateToggle({
+	Name = 'Respawn Sound',
+	Tooltip = 'Pings just before an enemy is back',
+	Function = function(callback)
+		if WarnBefore and WarnBefore.Object then WarnBefore.Object.Visible = callback end
+	end
+})
+WarnBefore = RespawnTimers:CreateSlider({
+	Name = 'Warn Before',
+	Tooltip = 'Seconds before they respawn',
+	Min = 0,
+	Max = 5,
+	Default = 1,
+	Decimal = 10,
+	Darker = true,
+	Visible = false,
+	Suffix = function() return 's' end
+})
+OnlyNearby = RespawnTimers:CreateToggle({
+	Name = 'Only Nearby',
+	Tooltip = 'Only players who died near you',
+	Function = function(callback)
+		if NearbyRange and NearbyRange.Object then NearbyRange.Object.Visible = callback end
+	end
+})
+NearbyRange = RespawnTimers:CreateSlider({
+	Name = 'Nearby Range',
+	Tooltip = 'How close they had to die',
+	Min = 10,
+	Max = 300,
+	Default = 80,
+	Darker = true,
+	Visible = false,
+	Suffix = function(val) return val == 1 and 'stud' or 'studs' end
+})
+AlwaysShow = RespawnTimers:CreateToggle({
+	Name = 'Always Show',
+	Tooltip = 'Keeps the panel up even when nobody is dead'
+})
+PanelScale = RespawnTimers:CreateSlider({
+	Name = 'Scale',
+	Tooltip = 'How big the panel is',
+	Min = 0.6,
+	Max = 2,
+	Default = 1,
+	Decimal = 10
+})
+FontOption = RespawnTimers:CreateFont({
+	Name = 'Font',
+	Tooltip = 'Font used for the panel',
+	Blacklist = 'GothamBold'
 })
 Corner = RespawnTimers:CreateDropdown({
 	Name = 'Position',
