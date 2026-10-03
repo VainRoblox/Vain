@@ -5,10 +5,15 @@
 	attributes (StatusEffectUtil:getAttributeName) - invisibility potions, smoke bombs, the
 	ninja's jutsu, the snake's agility - and the potion's fade as a Transparency attribute,
 	which InvisibilityPotionController applies. The cloak sets the character see-through
-	directly. Anyone showing any of these is outlined, with a tag saying so, through walls.
+	directly. Anyone showing any of these is outlined, with a tag saying so, through walls,
+	and can leave footsteps behind and have a line drawn to them.
 ]]
 local InvisibilityDetector
-local Teammates, ShowTag, Color
+local Teammates, ShowTag, Color, Footsteps, TrailLength, Tracer, ShowDuration
+local steps = {}
+local tracers = {}
+local lastStep = 0
+local STEP_EVERY = 0.2
 local Folder = Instance.new('Folder')
 Folder.Name = 'InvisibilityDetector'
 Folder.Parent = vain.gui
@@ -29,12 +34,77 @@ local function invisible(character)
 	return head ~= nil and head:IsA('BasePart') and math.max(head.Transparency, head.LocalTransparencyModifier) >= 0.85
 end
 
+-- Seconds left on a status effect, when its attribute holds the server time it ends.
+local function remaining(character)
+	local now = workspace:GetServerTimeNow()
+	for _, effect in EFFECTS do
+		local value = character:GetAttribute('StatusEffect_' .. effect)
+		if type(value) == 'number' and value > now and value - now < 600 then
+			return value - now
+		end
+	end
+	return nil
+end
+
 local function unmark(character)
 	local entry = marked[character]
 	if not entry then return end
 	entry.highlight:Destroy()
 	entry.billboard:Destroy()
 	marked[character] = nil
+	local line = tracers[character]
+	if line then
+		pcall(function() line:Remove() end)
+		tracers[character] = nil
+	end
+end
+
+-- A dot where their feet are, every fifth of a second, fading out along the trail.
+local function addStep(root, color)
+	local dot = Instance.new('SphereHandleAdornment')
+	dot.Adornee = workspace.Terrain
+	dot.Radius = 0.35
+	dot.CFrame = CFrame.new(root.Position - Vector3.new(0, 2.8, 0))
+	dot.AlwaysOnTop = true
+	dot.ZIndex = 1
+	dot.Color3 = color
+	dot.Parent = Folder
+	table.insert(steps, dot)
+	while #steps > TrailLength.Value / STEP_EVERY do
+		table.remove(steps, 1):Destroy()
+	end
+end
+
+local function fadeSteps()
+	local count = #steps
+	for i, dot in steps do
+		dot.Transparency = 0.2 + 0.75 * (1 - i / count)
+	end
+end
+
+local function clearSteps()
+	for _, dot in steps do dot:Destroy() end
+	table.clear(steps)
+end
+
+local function drawTracer(character, root, color)
+	local line = tracers[character]
+	if not Tracer.Enabled then
+		if line then line.Visible = false end
+		return
+	end
+	if not line then
+		line = Drawing.new('Line')
+		line.Thickness = 1.5
+		tracers[character] = line
+	end
+	local point, visible = gameCamera:WorldToViewportPoint(root.Position)
+	local viewport = gameCamera.ViewportSize
+	line.Visible = point.Z > 0
+	line.From = Vector2.new(viewport.X / 2, viewport.Y)
+	line.To = Vector2.new(point.X, point.Y)
+	line.Color = color
+	line.Transparency = 1
 end
 
 local function mark(character, head)
@@ -68,11 +138,16 @@ local function mark(character, head)
 	entry.highlight.OutlineColor = color
 	entry.highlight.FillTransparency = 1 - Color.Opacity
 	entry.label.TextColor3 = color
+	local left = ShowDuration.Enabled and remaining(character)
+	entry.label.Text = left and string.format('INVISIBLE %.1fs', left) or 'INVISIBLE'
 	entry.billboard.Enabled = ShowTag.Enabled
 end
 
 local function update()
 	local seen = {}
+	local stepNow = Footsteps.Enabled and os.clock() - lastStep >= STEP_EVERY
+	if stepNow then lastStep = os.clock() end
+	local color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 	for _, entity in entitylib.List do
 		local character = entity.Character
 		if entity.Player and character and entity.Player ~= lplr and (entity.Targetable or Teammates.Enabled) then
@@ -80,9 +155,16 @@ local function update()
 			if head and invisible(character) then
 				seen[character] = true
 				mark(character, head)
+				local root = entity.RootPart
+				if root then
+					if stepNow then addStep(root, color) end
+					drawTracer(character, root, color)
+				end
 			end
 		end
 	end
+	if not Footsteps.Enabled and #steps > 0 then clearSteps() end
+	fadeSteps()
 	for character in marked do
 		if not seen[character] then unmark(character) end
 	end
@@ -98,6 +180,7 @@ InvisibilityDetector = vain.Categories.Render:CreateModule({
 			end))
 		else
 			for character in marked do unmark(character) end
+			clearSteps()
 		end
 	end
 })
@@ -109,6 +192,32 @@ ShowTag = InvisibilityDetector:CreateToggle({
 	Name = 'Tag',
 	Tooltip = 'Writes INVISIBLE above them',
 	Default = true
+})
+ShowDuration = InvisibilityDetector:CreateToggle({
+	Name = 'Duration',
+	Tooltip = 'Shows how long they stay invisible, when known',
+	Default = true
+})
+Footsteps = InvisibilityDetector:CreateToggle({
+	Name = 'Footsteps',
+	Tooltip = 'Leaves dots where they walk',
+	Default = true,
+	Function = function(callback)
+		if TrailLength and TrailLength.Object then TrailLength.Object.Visible = callback end
+	end
+})
+TrailLength = InvisibilityDetector:CreateSlider({
+	Name = 'Trail Length',
+	Tooltip = 'How many seconds of footsteps stay',
+	Min = 1,
+	Max = 15,
+	Default = 5,
+	Darker = true,
+	Suffix = function() return 's' end
+})
+Tracer = InvisibilityDetector:CreateToggle({
+	Name = 'Tracer',
+	Tooltip = 'Draws a line to each of them'
 })
 Color = InvisibilityDetector:CreateColorSlider({
 	Name = 'Color',
