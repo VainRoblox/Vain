@@ -421,22 +421,27 @@ SmartCheck = AutoBuy:CreateToggle({
 	Tooltip = 'Saves everything for iron armor first\nNeeds Buy Armor on'
 })
 --[[
-	Custom items: priority/item/amount/after, where "after" (anything in the fourth field)
-	buys it after the sword, armor and tools instead of before.
+	Custom items: picked from a searchable item list and kept in the Buy List in the order
+	they should be bought, each with its own amount slider. The amounts live in a second,
+	hidden list (item=amount) so they save with the config. Lists in the old
+	priority/item/amount/after text format are converted the first time they load.
 
-	Topped up to the amount you set, a stack at a time: whatever is short is rounded up to
-	whole stacks - rounding down left it never topping up once you had used less than a
-	stack - and as many of those as you can afford are bought now, rather than nothing at
-	all until you could afford every one. Entries run in priority order, and two with the
-	same priority both run instead of one replacing the other.
+	Each item is topped up to its amount a stack at a time: whatever is short is rounded up
+	to whole stacks, and as many of those as you can afford are bought now.
 ]]
-local function customBuyer(itemType, amount)
+local BuyItem, BuyList, BuyAmounts, AfterTools, OldList
+local amountSliders, amounts = {}, {}
+local listBusy = false
+local DEFAULT_BUY_AMOUNT = 16
+
+local function customBuyer(itemType)
 	return function(currencytable, shop)
 		if not shop then return end
 		-- Held back too: these are bought with the same iron the armor needs, so buying
 		-- them first is why there was none left for it.
 		if savingForArmor() then return end
 
+		local amount = amounts[itemType]
 		local v = bedwars.Shop.getShopItem(itemType, lplr)
 		if not (v and amount) then return end
 		-- getTeamWool was renamed getTeamWoolById upstream; same signature (team id in,
@@ -455,25 +460,181 @@ local function customBuyer(itemType, amount)
 	end
 end
 
-AutoBuy:CreateTextList({
-	Name = 'Item',
-	Tooltip = 'Which items this applies to',
-	Placeholder = 'priority/item/amount/after',
-	Function = function(list)
-		table.clear(Custom)
-		table.clear(CustomPost)
-		local before, after = {}, {}
-		for _, entry in list do
-			local tab = entry:split('/')
-			local priority = tonumber(tab[1])
-			if priority and tab[2] then
-				table.insert(tab[4] and after or before, {priority = priority, buy = customBuyer(tab[2], tonumber(tab[3]))})
+local function storedAmounts()
+	local map = {}
+	for _, text in (BuyAmounts and BuyAmounts.List or {}) do
+		local itemType, amount = tostring(text):match('^(.-)=(%d+)$')
+		if itemType then map[itemType] = tonumber(amount) end
+	end
+	return map
+end
+
+local function writeAmounts(map)
+	local list = {}
+	for itemType, amount in map do list[#list + 1] = itemType .. '=' .. math.max(1, math.floor(amount)) end
+	table.sort(list)
+	listBusy = true
+	BuyAmounts:Load({List = list, ListEnabled = table.clone(list)})
+	listBusy = false
+end
+
+local function sliderName(itemType)
+	return itemAlerts.label(itemType) .. ' Amount'
+end
+
+local function removeSlider(itemType)
+	local slider = amountSliders[itemType]
+	amountSliders[itemType] = nil
+	if not slider then return end
+	if AutoBuy.Options and slider.Name and AutoBuy.Options[slider.Name] == slider then
+		AutoBuy.Options[slider.Name] = nil
+	end
+	if slider.Object then slider.Object:Destroy() end
+end
+
+local function addSlider(itemType, amount)
+	local name = sliderName(itemType)
+	local slider = AutoBuy:CreateSlider({
+		Name = name,
+		Tooltip = 'How many ' .. itemAlerts.label(itemType) .. ' to keep',
+		Min = 1,
+		Max = 128,
+		Default = amount,
+		Darker = true,
+		Function = function(value, final)
+			amounts[itemType] = value
+			if final and not listBusy then
+				local map = storedAmounts()
+				map[itemType] = value
+				writeAmounts(map)
 			end
 		end
-		for target, entries in {[Custom] = before, [CustomPost] = after} do
-			table.sort(entries, function(a, b) return a.priority < b.priority end)
-			for i, entry in entries do target[i] = entry.buy end
+	})
+	if slider then
+		slider.Name = name
+		amountSliders[itemType] = slider
+	end
+end
+
+-- Buyers rebuilt from the Buy List, in its order; sliders made or removed to match.
+local function syncCustom()
+	if listBusy or not (BuyList and BuyAmounts) then return end
+	local map = storedAmounts()
+	local seen = {}
+	table.clear(Custom)
+	table.clear(CustomPost)
+	local target = (AfterTools and AfterTools.Enabled) and CustomPost or Custom
+	for _, itemType in BuyList.List do
+		if bedwars.ItemMeta[itemType] and not seen[itemType] then
+			seen[itemType] = true
+			amounts[itemType] = map[itemType] or DEFAULT_BUY_AMOUNT
+			if not amountSliders[itemType] then addSlider(itemType, amounts[itemType]) end
+			if table.find(BuyList.ListEnabled, itemType) then
+				target[#target + 1] = customBuyer(itemType)
+			end
 		end
-		npctick = tick()
+	end
+	for itemType in table.clone(amountSliders) do
+		if not seen[itemType] then
+			removeSlider(itemType)
+			amounts[itemType] = nil
+		end
+	end
+	npctick = tick()
+end
+
+-- An old priority/item/amount/after list, moved into the new lists in priority order.
+local function migrate(list)
+	if listBusy or not list or #list == 0 then return end
+	local entries, after = {}, false
+	for _, text in list do
+		local tab = tostring(text):split('/')
+		local priority, itemType = tonumber(tab[1]), tab[2]
+		if priority and itemType and bedwars.ItemMeta[itemType] then
+			entries[#entries + 1] = {priority = priority, itemType = itemType, amount = tonumber(tab[3]) or DEFAULT_BUY_AMOUNT}
+			after = after or tab[4] ~= nil
+		end
+	end
+	if #entries == 0 then return end
+	table.sort(entries, function(a, b) return a.priority < b.priority end)
+	local items, map = table.clone(BuyList.List), storedAmounts()
+	for _, entry in entries do
+		if not table.find(items, entry.itemType) then items[#items + 1] = entry.itemType end
+		map[entry.itemType] = entry.amount
+	end
+	listBusy = true
+	BuyList:Load({List = items, ListEnabled = table.clone(items)})
+	OldList:Load({List = {}, ListEnabled = {}})
+	listBusy = false
+	writeAmounts(map)
+	if after and AfterTools and not AfterTools.Enabled then AfterTools:Toggle() end
+	syncCustom()
+end
+
+do
+	local names, labels = itemAlerts.items()
+	BuyItem = AutoBuy:CreateDropdown({
+		Name = 'Buy Item',
+		Tooltip = 'An item to keep stocked - type to search',
+		List = names,
+		Labels = labels,
+		Search = true
+	})
+end
+AutoBuy:CreateButton({
+	Name = 'Add Item',
+	Tooltip = 'Adds the item above to the Buy List',
+	Function = function()
+		local itemType = BuyItem.Value
+		if not (itemType and bedwars.ItemMeta[itemType]) or table.find(BuyList.List, itemType) then return end
+		local items = table.clone(BuyList.List)
+		local enabled = table.clone(BuyList.ListEnabled)
+		items[#items + 1] = itemType
+		enabled[#enabled + 1] = itemType
+		listBusy = true
+		BuyList:Load({List = items, ListEnabled = enabled})
+		listBusy = false
+		syncCustom()
+	end
+})
+BuyList = AutoBuy:CreateTextList({
+	Name = 'Buy List',
+	Tooltip = 'Bought top to bottom; untick to pause one',
+	Placeholder = 'item name (wool_white)',
+	Function = function()
+		syncCustom()
+	end
+})
+BuyAmounts = AutoBuy:CreateTextList({
+	Name = 'Buy Amounts',
+	Tooltip = 'Amount for each item, set by its slider',
+	Visible = false,
+	Function = function()
+		if listBusy then return end
+		local map = storedAmounts()
+		for itemType, slider in amountSliders do
+			if map[itemType] and slider.Value ~= map[itemType] and slider.SetValue then
+				listBusy = true
+				pcall(slider.SetValue, slider, map[itemType])
+				listBusy = false
+			end
+			amounts[itemType] = map[itemType] or amounts[itemType]
+		end
+	end
+})
+AfterTools = AutoBuy:CreateToggle({
+	Name = 'Buy List After Tools',
+	Tooltip = 'Buys the list after sword, armor and tools',
+	Function = function()
+		syncCustom()
+	end
+})
+-- The old text list, kept hidden only to carry an old config over.
+OldList = AutoBuy:CreateTextList({
+	Name = 'Item',
+	Tooltip = 'Old format list, converted on load',
+	Visible = false,
+	Function = function(list)
+		migrate(list)
 	end
 })
