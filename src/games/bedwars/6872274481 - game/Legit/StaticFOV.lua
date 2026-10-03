@@ -15,7 +15,7 @@
 	wrapped the method after it, as the FOV module wraps setFOV too.
 ]]
 local StaticFOV
-local SprintFOV
+local SprintFOV, BlockSprint, BlockItems, BlockMenus
 local hooks = {}
 
 local RUN_FOV_MULT = 1.1
@@ -45,8 +45,10 @@ local function unhookAll()
 	table.clear(hooks)
 end
 
+-- The sprint widening is only folded in while the sprint zoom itself is blocked;
+-- otherwise the game's own sprint tween still does it.
 local function sprintScale()
-	return SprintFOV.Enabled and RUN_FOV_MULT or 1
+	return (BlockSprint.Enabled and SprintFOV.Enabled) and RUN_FOV_MULT or 1
 end
 
 -- Puts the FOV back through the game's own setFOV, now that it ignores the multiplier.
@@ -67,7 +69,8 @@ StaticFOV = vain.Legit:CreateModule({
 			hook(fov, 'setFOV', function(original)
 				return function(self, value, ...)
 					local multiplier = self.fovMultiplier
-					self.fovMultiplier = sprintScale()
+					-- Item zoom left on keeps the game's multiplier.
+					self.fovMultiplier = (BlockItems.Enabled and 1 or (multiplier or 1)) * sprintScale()
 					local results = table.pack(pcall(original, self, value, ...))
 					self.fovMultiplier = multiplier
 					-- getFOV is read as the plain FOV by the sprint code, so it is kept so.
@@ -80,16 +83,18 @@ StaticFOV = vain.Legit:CreateModule({
 			end)
 
 			-- No sprint tween: the camera already sits where it should.
-			hook(sprint, 'tweenCameraFOV', function()
-				return function()
+			hook(sprint, 'tweenCameraFOV', function(original)
+				return function(...)
+					if not BlockSprint.Enabled then return original(...) end
 					return dummyMaid
 				end
 			end)
 
 			-- Menus get a tween that is never played.
 			for _, method in {'playUIOpenFOVTween', 'playUICloseFOVTween'} do
-				hook(fov, method, function()
-					return function()
+				hook(fov, method, function(original)
+					return function(...)
+						if not BlockMenus.Enabled then return original(...) end
 						return tweenService:Create(gameCamera, TweenInfo.new(0), {FieldOfView = gameCamera.FieldOfView})
 					end
 				end)
@@ -108,10 +113,33 @@ StaticFOV = vain.Legit:CreateModule({
 	end,
 	Tooltip = 'Stops the zoom when eating or drawing a bow'
 })
+BlockSprint = StaticFOV:CreateToggle({
+	Name = 'Block Sprint Zoom',
+	Tooltip = 'Stops the zoom when your sprint ends',
+	Default = true,
+	Function = function(callback)
+		if SprintFOV and SprintFOV.Object then SprintFOV.Object.Visible = callback end
+		if StaticFOV.Enabled then reapply() end
+	end
+})
+BlockItems = StaticFOV:CreateToggle({
+	Name = 'Block Item Zoom',
+	Tooltip = 'Stops FOV changes from items and kits',
+	Default = true,
+	Function = function()
+		if StaticFOV.Enabled then reapply() end
+	end
+})
+BlockMenus = StaticFOV:CreateToggle({
+	Name = 'Block Menu Zoom',
+	Tooltip = 'Stops the zoom when menus open',
+	Default = true
+})
 SprintFOV = StaticFOV:CreateToggle({
 	Name = 'Sprint FOV',
 	Tooltip = 'Keeps the wider sprinting FOV',
 	Default = true,
+	Darker = true,
 	Function = function()
 		if StaticFOV.Enabled then reapply() end
 	end
