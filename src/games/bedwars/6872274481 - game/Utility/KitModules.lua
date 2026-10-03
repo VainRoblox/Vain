@@ -3650,7 +3650,7 @@ kitRun(function()
     ]]
     local AutoLani
     local Mode, TargetMode, Teammate, TeammateHealth, Escape, SelfHealth
-    local MinDistance, FireDelay, SkipFalling, AutoBuyScepter, AlwaysTarget
+    local MinDistance, FireDelay, SkipFalling, AutoBuyScepter, RefreshButton
     local escaping = false
     local lastUse, lastBuy = 0, 0
     local wasAngel = false
@@ -3690,10 +3690,11 @@ kitRun(function()
         return list
     end
 
-    -- The teammate picked under Always Target, while alive and in the game - chosen over
-    -- every mode and filter.
-    local function alwaysTarget()
-        local name = AlwaysTarget and AlwaysTarget.Value
+    -- The teammate picked under Priority, while alive and in the game - chosen over every
+    -- filter; when they are not, the lowest on health stands in.
+    local function priorityTarget()
+        if TargetMode.Value ~= 'Priority' then return nil end
+        local name = Teammate and Teammate.Value
         if not name or name == 'None' then return nil end
         local player = playersService:FindFirstChild(name)
         local humanoid = player and player.Character and player.Character:FindFirstChildOfClass('Humanoid')
@@ -3703,17 +3704,12 @@ kitRun(function()
     end
 
     local function pickTarget()
-        local forced = alwaysTarget()
+        local forced = not escaping and priorityTarget()
         if forced then return forced end
         local list = candidates()
         if #list == 0 then return nil end
         local mode = escaping and 'Safest' or TargetMode.Value
-        if mode == 'Specific' then
-            for _, entry in list do
-                if entry.player.Name == Teammate.Value then return entry.player end
-            end
-            return nil
-        end
+        if mode == 'Priority' then mode = 'Lowest Health' end
         local best, bestScore
         for _, entry in list do
             local score
@@ -3734,14 +3730,13 @@ kitRun(function()
         return best
     end
 
-    -- Writes the pick into the controller and uses the ability; the game sends the request.
+    -- Pins the pick as the controller's target and uses the ability; the game sends the request.
     local function fire()
         local controller = bedwars.ScepterController
         if not (controller and controller.isAngel) then return end
         local target = pickTarget()
         if not (target and target.Character) then return end
-        controller.target = target.Character
-        bedwars.AbilityController:useAbility('PALADIN_ABILITY')
+        landLani(target.Character)
     end
 
     -- Auto: whether it is time to use the scepter, and whether that is to escape.
@@ -3807,7 +3802,7 @@ kitRun(function()
                     if on(AutoBuyScepter) then pcall(buyScepter) end
                     if Mode.Value == 'Auto' and not angel and os.clock() - lastUse >= USE_COOLDOWN then
                         local use, isEscape = shouldUse()
-                        if use and (#candidates() > 0 or alwaysTarget()) then
+                        if use and (#candidates() > 0 or priorityTarget()) then
                             escaping = isEscape
                             pcall(useScepter)
                         end
@@ -3836,16 +3831,18 @@ kitRun(function()
     })
     TargetMode = AutoLani:CreateDropdown({
         Name = 'Target',
-        List = {'Lowest Health', 'Closest', 'Furthest', 'Most Enemies', 'Specific'},
+        List = {'Lowest Health', 'Closest', 'Furthest', 'Most Enemies', 'Priority'},
         Tooltips = {
             ['Lowest Health'] = 'The teammate lowest on health',
             Closest = 'The nearest teammate',
             Furthest = 'The furthest teammate',
             ['Most Enemies'] = 'The teammate with the most enemies round them',
-            Specific = 'The teammate you pick below'
+            Priority = 'Always the teammate you pick, while alive'
         },
         Function = function(val)
-            if Teammate and Teammate.Object then Teammate.Object.Visible = val == 'Specific' end
+            for _, setting in {Teammate, RefreshButton} do
+                if setting and setting.Object then setting.Object.Visible = val == 'Priority' end
+            end
         end
     })
     local function teammateList()
@@ -3853,31 +3850,21 @@ kitRun(function()
         if #list == 0 then list = {'None'} end
         return list
     end
-    local function alwaysList()
-        local list = {'None'}
-        for _, name in getTeammates(true) do list[#list + 1] = name end
-        return list
-    end
     Teammate = AutoLani:CreateDropdown({
-        Tooltip = 'The teammate for Specific',
+        Tooltip = 'The teammate Priority goes to',
         Name = 'Teammate',
         List = teammateList(),
         Darker = true,
         Visible = false
     })
-    AutoLani:CreateButton({
+    RefreshButton = AutoLani:CreateButton({
         Name = 'Refresh Teammates',
         Tooltip = 'Updates the teammate list',
         Function = function()
             pcall(function() Teammate:Change(teammateList()) end)
-            pcall(function() AlwaysTarget:Change(alwaysList()) end)
         end
     })
-    AlwaysTarget = AutoLani:CreateDropdown({
-        Name = 'Always Target',
-        List = alwaysList(),
-        Tooltip = 'This teammate always gets it while alive'
-    })
+    if RefreshButton and RefreshButton.Object then RefreshButton.Object.Visible = TargetMode.Value == 'Priority' end
     TeammateHealth = AutoLani:CreateSlider({
         Name = 'Teammate Health',
         Tooltip = 'Uses it when a teammate drops below this',

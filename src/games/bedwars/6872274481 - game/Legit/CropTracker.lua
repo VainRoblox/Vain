@@ -18,7 +18,19 @@ local counts = {}
 local lastScan = 0
 
 local CROPS = {'carrot', 'melon', 'pumpkin'}
-local ROW_HEIGHT = 20
+-- The icon each crop is shown with. The melon item's own image is the old round melon,
+-- not the striped one Cletus grows, so it borrows the watermelon's.
+local ICONS = {carrot = {'carrot'}, melon = {'watermelon', 'melon_seeds', 'melon'}, pumpkin = {'pumpkin'}}
+local ROW_HEIGHT = 18
+local textService = cloneref(game:GetService('TextService'))
+
+local function cropIcon(crop)
+	for _, item in ICONS[crop] do
+		local meta = bedwars.ItemMeta[item]
+		if meta and meta.image then return meta.image end
+	end
+	return ''
+end
 
 local function on(setting)
 	return setting ~= nil and setting.Enabled
@@ -72,23 +84,23 @@ local function row(index)
 	if entry then return entry end
 	local frame = Instance.new('Frame')
 	frame.BackgroundTransparency = 1
-	frame.Size = UDim2.new(1, 0, 0, ROW_HEIGHT)
+	frame.AutomaticSize = Enum.AutomaticSize.X
+	frame.Size = UDim2.fromOffset(0, ROW_HEIGHT)
 	frame.LayoutOrder = index
 	frame.Parent = list
 	local layout = Instance.new('UIListLayout')
 	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
-	layout.Padding = UDim.new(0, 6)
+	layout.Padding = UDim.new(0, 5)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = frame
 
 	local name = Instance.new('TextLabel')
 	name.BackgroundTransparency = 1
-	name.Size = UDim2.fromOffset(52, ROW_HEIGHT)
+	name.Size = UDim2.fromOffset(40, ROW_HEIGHT)
 	name.Font = Enum.Font.GothamBold
-	name.TextSize = 12
+	name.TextSize = 11
 	name.TextXAlignment = Enum.TextXAlignment.Left
-	name.TextTruncate = Enum.TextTruncate.AtEnd
 	name.LayoutOrder = 0
 	name.Parent = frame
 
@@ -103,15 +115,14 @@ local function row(index)
 		local cellLayout = Instance.new('UIListLayout')
 		cellLayout.FillDirection = Enum.FillDirection.Horizontal
 		cellLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		cellLayout.Padding = UDim.new(0, 2)
+		cellLayout.Padding = UDim.new(0, 1)
 		cellLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		cellLayout.Parent = cell
 		local icon = Instance.new('ImageLabel')
 		icon.BackgroundTransparency = 1
-		icon.Size = UDim2.fromOffset(16, 16)
+		icon.Size = UDim2.fromOffset(14, 14)
 		icon.ScaleType = Enum.ScaleType.Fit
-		local meta = bedwars.ItemMeta[crop]
-		icon.Image = meta and meta.image or ''
+		icon.Image = cropIcon(crop)
 		icon.LayoutOrder = 1
 		icon.Parent = cell
 		local count = Instance.new('TextLabel')
@@ -119,7 +130,7 @@ local function row(index)
 		count.AutomaticSize = Enum.AutomaticSize.X
 		count.Size = UDim2.fromOffset(0, ROW_HEIGHT)
 		count.Font = Enum.Font.GothamBold
-		count.TextSize = 12
+		count.TextSize = 11
 		count.RichText = true
 		count.TextColor3 = Color3.new(1, 1, 1)
 		count.LayoutOrder = 2
@@ -165,15 +176,23 @@ local function update()
 		teams = {{team = 'preview', data = {crops = {carrot = 4, melon = 2}, ready = {carrot = 1}}, total = 6, preview = true}}
 	end
 
+	-- The name column is as wide as the longest team name, so the counts line up without
+	-- leaving room for names nobody has.
+	local nameWidth = 0
 	for i, item in teams do
 		local player = item.data.player
-		local name = item.preview and 'Preview' or (player and player.Team and player.Team.Name or ('Team ' .. item.team))
+		item.name = item.preview and 'Preview' or (player and player.Team and player.Team.Name or ('Team ' .. item.team))
+		nameWidth = math.max(nameWidth, textService:GetTextSize(item.name, 11, Enum.Font.GothamBold, Vector2.new(1000, ROW_HEIGHT)).X)
+	end
+	for i, item in teams do
+		local player = item.data.player
 		local color = item.preview and Color3.fromRGB(200, 200, 200) or (player and player.Team and player.TeamColor.Color or Color3.new(1, 1, 1))
-		render(row(i), name, color, item.data)
+		local entry = row(i)
+		entry.name.Size = UDim2.fromOffset(math.ceil(nameWidth), ROW_HEIGHT)
+		render(entry, item.name, color, item.data)
 	end
 	for i = #teams + 1, #rows do rows[i].frame.Visible = false end
 	card.Visible = #teams > 0
-	card.Size = UDim2.fromOffset(250, 24 + #teams * ROW_HEIGHT)
 	scaler.Scale = Scale.Value
 end
 
@@ -192,7 +211,7 @@ CropTracker = vain.Legit:CreateModule({
 			card.Visible = false
 		end
 	end,
-	Size = UDim2.fromOffset(250, 60),
+	Size = UDim2.fromOffset(170, 50),
 	Tooltip = 'How many crops each team is growing'
 })
 FadeEmpty = CropTracker:CreateToggle({
@@ -243,34 +262,43 @@ card = Instance.new('Frame')
 card.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 card.BackgroundTransparency = 0.4
 card.BorderSizePixel = 0
+card.AutomaticSize = Enum.AutomaticSize.XY
+card.Size = UDim2.fromOffset(0, 0)
 card.Visible = false
 card.Parent = CropTracker.Children
-Instance.new('UICorner', card).CornerRadius = UDim.new(0, 8)
+Instance.new('UICorner', card).CornerRadius = UDim.new(0, 6)
 local stroke = Instance.new('UIStroke')
 stroke.Color = Color3.new(1, 1, 1)
 stroke.Transparency = 0.9
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = card
 local padding = Instance.new('UIPadding')
-padding.PaddingLeft = UDim.new(0, 8)
-padding.PaddingRight = UDim.new(0, 8)
-padding.PaddingTop = UDim.new(0, 4)
+padding.PaddingLeft = UDim.new(0, 6)
+padding.PaddingRight = UDim.new(0, 6)
+padding.PaddingTop = UDim.new(0, 3)
+padding.PaddingBottom = UDim.new(0, 3)
 padding.Parent = card
+local cardLayout = Instance.new('UIListLayout')
+cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+cardLayout.Parent = card
 scaler = Instance.new('UIScale')
 scaler.Parent = card
 header = Instance.new('TextLabel')
 header.BackgroundTransparency = 1
-header.Size = UDim2.new(1, 0, 0, 16)
+header.Size = UDim2.fromOffset(0, 12)
+header.AutomaticSize = Enum.AutomaticSize.X
 header.Font = Enum.Font.GothamBold
-header.TextSize = 10
+header.TextSize = 9
+header.LayoutOrder = 0
 header.TextColor3 = Color3.fromRGB(150, 150, 150)
 header.TextXAlignment = Enum.TextXAlignment.Left
 header.Text = 'CROPS'
 header.Parent = card
 list = Instance.new('Frame')
 list.BackgroundTransparency = 1
-list.Position = UDim2.fromOffset(0, 18)
-list.Size = UDim2.new(1, 0, 1, -18)
+list.AutomaticSize = Enum.AutomaticSize.XY
+list.Size = UDim2.fromOffset(0, 0)
+list.LayoutOrder = 1
 list.Parent = card
 local layout = Instance.new('UIListLayout')
 layout.SortOrder = Enum.SortOrder.LayoutOrder

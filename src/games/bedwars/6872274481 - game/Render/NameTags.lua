@@ -15,6 +15,7 @@ local DistanceLimit
 local Rank
 local Enchants
 local Effects
+local KitStats
 local Strings, Sizes, Reference, Prefixes = {}, {}, {}, {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
@@ -58,6 +59,41 @@ local StatusSig, StatusNext = {}, 0
 -- that the entity events would catch, so this is polled rather than driven; a fifth of a
 -- second is quicker than anyone reacts and costs one table read per entity.
 local STATUS_POLL = 0.2
+
+--[[
+	Kit progress the server writes onto the player as an attribute, so it replicates to
+	everyone: Void Knight's tier, Kaida's claw and spell levels, Ragnar's rage and so on.
+	Read off the player (or the character) whichever kit they are on - the attribute only
+	exists for the kit that uses it - and only shown once it is above zero.
+]]
+local KIT_STATS = {
+	{'VoidKnightTier', 'Tier'},
+	{'Summoner_ClawLevel', 'Claw'},
+	{'Summoner_SpellLevel', 'Spell'},
+	{'SpiritSummonerTier', 'Tier'},
+	{'BountyHunterLevel', 'Lv'},
+	{'TinkerMachineLevel', 'Lv'},
+	{'BarbarianRageLevel', 'Rage'},
+	{'WarlockEnergy', 'Energy'},
+	{'InfernalShieldEnergy', 'Shield'},
+	{'AeryStacks', 'Stacks'},
+	{'BullyStack', 'Stacks'},
+	{'SkeletonCount', 'Skeletons'},
+	{'Vacuum_GhostCount', 'Ghosts'}
+}
+
+local function kitStatsOf(ent)
+	if not (KitStats and KitStats.Enabled and ent.Player) then return '' end
+	local parts = {}
+	for _, stat in KIT_STATS do
+		local value = ent.Player:GetAttribute(stat[1])
+		if value == nil and ent.Character then value = ent.Character:GetAttribute(stat[1]) end
+		if type(value) == 'number' and value > 0 then
+			parts[#parts + 1] = stat[2] .. ' ' .. math.floor(value)
+		end
+	end
+	return table.concat(parts, ' · ')
+end
 
 --[[
 	Worked out once, from the game's own enum rather than a list written out here, so an
@@ -331,7 +367,7 @@ end
 -- re-read that found exactly the same thing and skip the rebuild.
 local function statusSignature(ent)
 	local enchants, effects = statusOf(ent)
-	if not enchants then return '' end
+	if not enchants then return kitStatsOf(ent) end
 
 	local parts = {}
 	for _, entry in enchants do
@@ -341,6 +377,7 @@ local function statusSignature(ent)
 	for _, entry in effects do
 		parts[#parts + 1] = entry.label
 	end
+	parts[#parts + 1] = '|' .. kitStatsOf(ent)
 	return table.concat(parts, ',')
 end
 
@@ -486,6 +523,7 @@ local Added = {
 		rankicon.Parent = row
 		newPiece(row, 'NameLabel', 3)
 		newPiece(row, 'HealthLabel', 4)
+		newPiece(row, 'KitStat', 5)
 
 		if Equipment.Enabled then
 			for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
@@ -543,6 +581,8 @@ local Added = {
 		end
 
 		Strings[ent] = appendStatus(ent, Strings[ent], false)
+		local kitText = kitStatsOf(ent)
+		if kitText ~= '' then Strings[ent] = Strings[ent]..' ['..kitText..']' end
 
 		if Distance.Enabled then
 			Strings[ent] = '[%s] '..Strings[ent]
@@ -599,7 +639,7 @@ local Updated = {
 		local font = FontOption.Value
 		local height = textHeight()
 		row.Size = UDim2.fromOffset(0, height)
-		for _, piece in {row.Distance, row.NameLabel, row.HealthLabel} do
+		for _, piece in {row.Distance, row.NameLabel, row.HealthLabel, row.KitStat} do
 			piece.TextSize = size
 			piece.FontFace = font
 		end
@@ -613,6 +653,11 @@ local Updated = {
 			row.HealthLabel.Text = tostring(math.round(ent.Health))
 			row.HealthLabel.TextColor3 = Color3.fromHSV(math.clamp(ent.Health / math.max(ent.MaxHealth, 1), 0, 1) / 2.5, 0.89, 0.75)
 		end
+
+		local kitText = kitStatsOf(ent)
+		row.KitStat.Text = kitText
+		row.KitStat.TextColor3 = Color3.fromRGB(255, 200, 60)
+		row.KitStat.Visible = kitText ~= ''
 
 		local image = Rank and Rank.Enabled and ent.Player and divisionImage(ent.Player) or nil
 		row.RankIcon.Image = image or ''
@@ -652,6 +697,8 @@ local Updated = {
 			end
 
 			Strings[ent] = appendStatus(ent, Strings[ent], false)
+			local kitText = kitStatsOf(ent)
+			if kitText ~= '' then Strings[ent] = Strings[ent]..' ['..kitText..']' end
 
 			if Distance.Enabled then
 				Strings[ent] = '[%s] '..Strings[ent]
@@ -732,7 +779,7 @@ local Loop = {
 			pcall(function()
 				-- Text that was never built would fail every frame; build it now.
 				if not Strings[ent] then Updated[methodused](ent) end
-				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
+				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled) or (KitStats and KitStats.Enabled)) then
 					local sig = statusSignature(ent)
 					if StatusSig[ent] ~= sig then
 						StatusSig[ent] = sig
@@ -791,7 +838,7 @@ local Loop = {
 			pcall(function()
 				-- Text that was never built would fail every frame; build it now.
 				if not Strings[ent] then Updated[methodused](ent) end
-				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
+				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled) or (KitStats and KitStats.Enabled)) then
 					local sig = statusSignature(ent)
 					if StatusSig[ent] ~= sig then
 						StatusSig[ent] = sig
@@ -1041,6 +1088,16 @@ Enchants = NameTags:CreateToggle({
 Effects = NameTags:CreateToggle({
 	Name = 'Effects',
 	Tooltip = 'Shows their active effects like jump, pie or gloop, as icons',
+	Function = function()
+		if NameTags.Enabled then
+			NameTags:Toggle()
+			NameTags:Toggle()
+		end
+	end
+})
+KitStats = NameTags:CreateToggle({
+	Name = 'Kit Stats',
+	Tooltip = 'Shows kit levels like Void Knight tier or Kaida claw',
 	Function = function()
 		if NameTags.Enabled then
 			NameTags:Toggle()

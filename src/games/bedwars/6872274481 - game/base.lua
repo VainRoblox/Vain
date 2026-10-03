@@ -677,6 +677,55 @@ local function getVoidHeight()
 	return voidHeightCache
 end
 
+--[[
+	Lands the Lani angel on a character, for Auto Lani and Team Health.
+
+	The paladin ability is not predicted on the client: using it asks the server, and the
+	ScepterController only reads its target once the answer comes back. Until then its
+	Heartbeat keeps rewriting the target to whoever is nearest the crosshair, or nothing,
+	so writing the target once worked only when you happened to be looking at them. The
+	target is pinned until the angel is gone (the controller's metatable swapped for one
+	that always hands back this character and ignores writes to it), and the ability is
+	only used once the game has actually enabled it - isAngel goes true a moment before.
+]]
+local laniLanding = false
+local function landLani(character)
+	local controller = bedwars.ScepterController
+	local abilities = bedwars.AbilityController
+	if laniLanding or not (controller and abilities and controller.isAngel and character) then return false end
+	local class = getmetatable(controller)
+	if type(class) ~= 'table' then return false end
+	laniLanding = true
+
+	rawset(controller, 'target', nil)
+	setmetatable(controller, {
+		__index = function(_, key)
+			if key == 'target' then return character end
+			return class[key]
+		end,
+		__newindex = function(self, key, value)
+			if key ~= 'target' then rawset(self, key, value) end
+		end
+	})
+
+	local ok = pcall(function()
+		local started = os.clock()
+		repeat
+			if abilities:canUseAbility('PALADIN_ABILITY', {disableBlockedAbilityAlert = true}) then break end
+			task.wait()
+		until os.clock() - started > 1.5 or not controller.isAngel
+		if controller.isAngel and character.Parent then
+			abilities:useAbility('PALADIN_ABILITY')
+		end
+		started = os.clock()
+		repeat task.wait() until not controller.isAngel or os.clock() - started > 3
+	end)
+
+	setmetatable(controller, class)
+	laniLanding = false
+	return ok
+end
+
 local matchHistory = {cache = {}, waiting = {}, queued = 0}
 do
 	local TIMEOUT = 6
@@ -1973,8 +2022,31 @@ run(function()
 		return best or ''
 	end
 
+	--[[
+		Where the first guess can move between game updates, the other places the same call
+		has lived, and failing those the name it has gone by. Kaliyah's punch moved out of
+		onKitLocalActivated, so the scrape came back empty and warned about it every load.
+	]]
+	local remoteFallbacks = {
+		KaliyahPunch = {
+			function() return debug.getproto(debug.getproto(Knit.Controllers.DragonSlayerController.KnitStart, 2), 1) end,
+			'RequestDragonPunch'
+		}
+	}
+
 	for i, v in remoteNames do
 		local remote = dumpRemote(debug.getconstants(v))
+		if remote == '' and remoteFallbacks[i] then
+			for _, fallback in remoteFallbacks[i] do
+				if type(fallback) == 'string' then
+					remote = fallback
+				else
+					local ok, proto = pcall(fallback)
+					remote = ok and proto and dumpRemote(debug.getconstants(proto)) or ''
+				end
+				if remote ~= '' then break end
+			end
+		end
 		if remote == '' then
 			notif('Vain', 'Failed to grab remote ('..i..')', 10, 'alert')
 		end

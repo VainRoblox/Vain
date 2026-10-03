@@ -14,8 +14,8 @@ local using = false
 
 --[[
 	Click a teammate to send your Lani scepter to them: the scepter is used, and once the
-	angel is up the teammate is written into the ScepterController's target and the
-	ability used, so the game sends its own request (the way Auto Lani does it). Legit
+	angel is up the teammate is pinned as the ScepterController's target and the
+	ability used, so the game sends its own request (landLani, shared with Auto Lani). Legit
 	switches to the scepter first and leaves human-like pauses between the steps.
 ]]
 local function laniTo(player)
@@ -35,8 +35,7 @@ local function laniTo(player)
 			repeat task.wait() until controller.isAngel or os.clock() - started > 2.5
 			if not controller.isAngel or not player.Character then return end
 			if legit then task.wait(0.25 + math.random() * 0.25) end
-			controller.target = player.Character
-			bedwars.AbilityController:useAbility('PALADIN_ABILITY')
+			landLani(player.Character)
 		end)
 		using = false
 	end)
