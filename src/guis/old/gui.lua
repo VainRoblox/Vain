@@ -2122,7 +2122,8 @@ function mainapi:LoadOptions(object, savedoptions)
 	for i, v in savedoptions do
 		local option = object.Options[i]
 		if not option then continue end
-		option:Load(v)
+		-- One setting saved in a shape it no longer has must not stop the rest loading.
+		pcall(option.Load, option, v)
 	end
 end
 
