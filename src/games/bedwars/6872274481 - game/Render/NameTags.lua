@@ -154,8 +154,16 @@ local function statusOf(ent)
 			label = label .. ' x' .. stacks
 		end
 
-		local enchant = StatusEnchant[name]
-		if enchant == nil then
+		-- Whether it is an enchant comes from the game's enchant meta (the shared enchants
+		-- helper): its name and icon too. The enum guess is only the fallback.
+		local enchantInfo, enchantLevel = enchants.lookup(name)
+		local enchant = enchantInfo ~= nil
+		if enchantInfo then
+			label = enchantInfo.name .. (enchantLevel and enchantLevel > 1 and (' ' .. enchantLevel) or '')
+			if type(stacks) == 'number' and stacks > 1 then label = label .. ' x' .. stacks end
+		elseif StatusEnchant[name] ~= nil then
+			enchant = StatusEnchant[name]
+		else
 			enchant = name:find('enchant') ~= nil or STATUS_WEAPON_ENCHANT[name] or false
 		end
 
@@ -170,9 +178,9 @@ local function statusOf(ent)
 		]]
 		local ok, meta = pcall(function() return bedwars.StatusEffectMeta[name] end)
 		meta = ok and meta or nil
-		if meta and meta.noDisplay then continue end
+		if meta and meta.noDisplay and not enchantInfo then continue end
 
-		local image = meta and meta.image or nil
+		local image = (enchantInfo and enchantInfo.image) or (meta and meta.image) or nil
 		if not image and meta and meta.item then
 			local got, icon = pcall(function() return bedwars.getIcon({itemType = meta.item}, true) end)
 			image = got and icon or nil
@@ -708,10 +716,12 @@ local ColorFunc = {
 	character replaced without the event landing. There is nothing that ever looks again.
 
 	So the render loop checks as it goes. An entity whose character has left the world is
-	not one to draw a name over, whatever did or did not fire.
+	not one to draw a name over, whatever did or did not fire - and neither is one the
+	entity list has let go of: a respawn makes a new entity while the old body can linger
+	in the world, which left its tag frozen where the player died.
 ]]
-local function stale(ent)
-	if not ent then return true end
+local function stale(ent, listed)
+	if not ent or not listed[ent] then return true end
 	local char = ent.Character
 	if not (char and char.Parent) then return true end
 	local root = ent.RootPart
@@ -719,8 +729,10 @@ local function stale(ent)
 end
 
 local function sweep()
+	local listed = {}
+	for _, ent in entitylib.List do listed[ent] = true end
 	for ent in Reference do
-		if stale(ent) then
+		if stale(ent, listed) then
 			Removed[methodused](ent)
 		end
 	end
@@ -735,45 +747,51 @@ local Loop = {
 			if DivisionsChanged then
 				DivisionsChanged = false
 				for ent in Reference do
-					Updated[methodused](ent)
+					pcall(Updated[methodused], ent)
 				end
 			end
 		end
 		for ent, nametag in Reference do
-			if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
-				local sig = statusSignature(ent)
-				if StatusSig[ent] ~= sig then
-					StatusSig[ent] = sig
-					Updated[methodused](ent)
+			-- Each tag on its own, so one that errors does not stop the rest from being
+			-- moved - which froze every tag on screen.
+			pcall(function()
+				-- Text that was never built would fail every frame; build it now.
+				if not Strings[ent] then Updated[methodused](ent) end
+				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
+					local sig = statusSignature(ent)
+					if StatusSig[ent] ~= sig then
+						StatusSig[ent] = sig
+						Updated[methodused](ent)
+					end
 				end
-			end
 
-			if DistanceCheck.Enabled then
-				local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-				if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-					nametag.Visible = false
-					continue
+				if DistanceCheck.Enabled then
+					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
+						nametag.Visible = false
+						return
+					end
 				end
-			end
 
-			local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
-			nametag.Visible = headVis
-			if not headVis then
-				continue
-			end
-
-			if Distance.Enabled then
-				local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
-				if Sizes[ent] ~= mag then
-					nametag.Text = string.format(Strings[ent], mag)
-					local ize = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-					nametag.Size = UDim2.fromOffset(ize.X + 8, ize.Y + 7)
-					Sizes[ent] = mag
-					-- Only when the number changed, so the badge is not re-measured every frame.
-					placeRankIcon(nametag, ent, string.format(Prefixes[ent] or '', mag))
+				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
+				nametag.Visible = headVis
+				if not headVis then
+					return
 				end
-			end
-			nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
+
+				if Distance.Enabled then
+					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
+					if Sizes[ent] ~= mag then
+						nametag.Text = string.format(Strings[ent], mag)
+						local ize = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
+						nametag.Size = UDim2.fromOffset(ize.X + 8, ize.Y + 7)
+						Sizes[ent] = mag
+						-- Only when the number changed, so the badge is not re-measured every frame.
+						placeRankIcon(nametag, ent, string.format(Prefixes[ent] or '', mag))
+					end
+				end
+				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
+			end)
 		end
 	end,
 	Drawing = function()
@@ -784,45 +802,51 @@ local Loop = {
 			if DivisionsChanged then
 				DivisionsChanged = false
 				for ent in Reference do
-					Updated[methodused](ent)
+					pcall(Updated[methodused], ent)
 				end
 			end
 		end
 		for ent, nametag in Reference do
-			if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
-				local sig = statusSignature(ent)
-				if StatusSig[ent] ~= sig then
-					StatusSig[ent] = sig
-					Updated[methodused](ent)
+			-- Each tag on its own, so one that errors does not stop the rest from being
+			-- moved - which froze every tag on screen.
+			pcall(function()
+				-- Text that was never built would fail every frame; build it now.
+				if not Strings[ent] then Updated[methodused](ent) end
+				if due and ((Enchants and Enchants.Enabled) or (Effects and Effects.Enabled)) then
+					local sig = statusSignature(ent)
+					if StatusSig[ent] ~= sig then
+						StatusSig[ent] = sig
+						Updated[methodused](ent)
+					end
 				end
-			end
 
-			if DistanceCheck.Enabled then
-				local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-				if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-					nametag.Text.Visible = false
-					nametag.BG.Visible = false
-					continue
+				if DistanceCheck.Enabled then
+					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
+						nametag.Text.Visible = false
+						nametag.BG.Visible = false
+						return
+					end
 				end
-			end
 
-			local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
-			nametag.Text.Visible = headVis
-			nametag.BG.Visible = headVis
-			if not headVis then
-				continue
-			end
-
-			if Distance.Enabled then
-				local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
-				if Sizes[ent] ~= mag then
-					nametag.Text.Text = string.format(Strings[ent], mag)
-					nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
-					Sizes[ent] = mag
+				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
+				nametag.Text.Visible = headVis
+				nametag.BG.Visible = headVis
+				if not headVis then
+					return
 				end
-			end
-			nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
-			nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
+
+				if Distance.Enabled then
+					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
+					if Sizes[ent] ~= mag then
+						nametag.Text.Text = string.format(Strings[ent], mag)
+						nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
+						Sizes[ent] = mag
+					end
+				end
+				nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
+				nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
+			end)
 		end
 	end
 }
