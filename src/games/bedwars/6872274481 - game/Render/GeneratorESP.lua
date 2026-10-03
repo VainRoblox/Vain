@@ -71,7 +71,12 @@ end
 local function add(model)
 	if generators[model] then return end
 	if not (model:IsA('Model') and model.Name == 'GlobalOreGeneratorModel') and not collectionService:HasTag(model, 'Generator') then return end
-	local adornee = model:FindFirstChild('GeneratorAdornee') or model.PrimaryPart or model:FindFirstChildWhichIsA('BasePart', true)
+	local adornee
+	if model:IsA('BasePart') then
+		adornee = model
+	else
+		adornee = model:FindFirstChild('GeneratorAdornee') or model.PrimaryPart or model:FindFirstChildWhichIsA('BasePart', true)
+	end
 	if not adornee then return end
 
 	local billboard = Instance.new('BillboardGui')
@@ -196,7 +201,9 @@ GeneratorESP = vain.Categories.Render:CreateModule({
 					task.defer(add, descendant)
 				end
 			end))
-			for _, part in collectionService:GetTagged('Generator') do addTeam(part) end
+			for _, part in collectionService:GetTagged('Generator') do
+				task.spawn(addTeam, part)
+			end
 			GeneratorESP:Clean(collectionService:GetInstanceAddedSignal('Generator'):Connect(function(part)
 				task.defer(addTeam, part)
 			end))
