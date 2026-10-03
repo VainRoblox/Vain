@@ -80,20 +80,6 @@ local function setIcon(index, image)
 	icon.Visible = image ~= nil and image ~= ''
 end
 
--- "ARMOR_ENCHANT_FROST" style status names, read as "Frost".
-local function enchantsOf(character)
-	local list = {}
-	for name in character:GetAttributes() do
-		local effect = name:match('^StatusEffect_(.+)$')
-		if effect and not effect:find('_stacks$') and not effect:find('_extra') and effect:lower():find('enchant', 1, true) then
-			local word = effect:lower():gsub('armor_enchant_', ''):gsub('_enchant', ''):gsub('enchant_', ''):gsub('_', ' ')
-			list[#list + 1] = word:gsub('^%l', string.upper)
-		end
-	end
-	table.sort(list)
-	return list
-end
-
 local function layout()
 	local compact = on(Compact)
 	avatar.Visible = not compact
@@ -105,39 +91,100 @@ local function layout()
 	barBack.Size = UDim2.new(1, -left - 8, 0, 8)
 	infoLabel.Position = UDim2.fromOffset(left, 38)
 	infoLabel.Size = UDim2.new(1, -left - 8, 0, 16)
-	local extra = not compact and (on(ShowKitName) or on(ShowEnchants))
+	local extra = not compact and on(ShowKitName)
 	extraLabel.Visible = extra
 	extraLabel.Position = UDim2.fromOffset(left, 54)
-	equipment.Visible = not compact and on(ShowEquipment)
+	equipment.Visible = not compact and (on(ShowEquipment) or on(ShowEnchants))
 	equipment.Position = UDim2.fromOffset(8, extra and 74 or 58)
-	local height = compact and 42 or (58 + (extra and 16 or 0) + (on(ShowEquipment) and 20 or 0))
+	local height = compact and 42 or (58 + (extra and 16 or 0) + ((on(ShowEquipment) or on(ShowEnchants)) and 20 or 0))
 	card.Size = UDim2.new(1, 0, 0, height)
 end
 
 --[[
-	The win check: how many hits each of you needs to finish the other. Your own health is
-	read straight off your character (Health plus any shield) - the entity list's copy of it
-	did not follow your own damage, which is why it said winning while losing. Damage is the
-	sword damage of what each of you holds, from the item meta; anything that is not a sword
-	counts as a fist.
+	The win check: how many hits each of you needs to finish the other.
+
+	- Health: yours is read straight off your character (Health plus any shield) - the
+	  entity list's copy did not follow your own damage, which is why it said winning while
+	  losing. A Sound Barrier above half health counts its 50 shield on top.
+	- Damage: the sword damage of what each of you holds, from the item meta (a fist when
+	  it is not a sword), through the other's armor the way the game's ArmorUtil works it
+	  out: damage x (1 - the summed damageReductionMultiplier of the armor worn).
+	- Enchants (from the shared enchants helper, i.e. the game's enchant meta): Absorption
+	  takes its 10% off the damage taken and Blocking stops one hit. The weapon enchants'
+	  numbers live on the server, so those are estimates - Critical Strike, Fire, Static,
+	  Forest and Execute as a bit more damage, Berserker more again at low health.
 ]]
 local FIST_DAMAGE = 1
+local WEAPON_BONUS = {
+	critical_strike = 1.2, fire = 1.15, static = 1.15, forest = 1.1, execute = 1.1, berserker = 1.1
+}
 
 local function swordDamage(itemType)
 	local meta = itemType and bedwars.ItemMeta[itemType]
 	return meta and meta.sword and tonumber(meta.sword.damage) or FIST_DAMAGE
 end
 
+local function armorReduction(pieces)
+	local total = 0
+	for _, piece in (type(pieces) == 'table' and pieces or {}) do
+		local itemType = type(piece) == 'table' and piece.itemType
+		local meta = itemType and bedwars.ItemMeta[itemType]
+		if meta and meta.armor and tonumber(meta.armor.damageReductionMultiplier) then
+			total += meta.armor.damageReductionMultiplier
+		end
+	end
+	return math.clamp(total, 0, 0.95)
+end
+
+local function enchantSet(character)
+	local set = {}
+	for _, enchant in enchants.of(character) do
+		-- Tool enchants share names with weapon ones (Shatter Strike is critical_strike)
+		-- and do nothing in a fight.
+		if enchant.kind ~= 'tool' then
+			set[tostring(enchant.type):lower()] = enchant
+		end
+	end
+	return set
+end
+
+-- Damage one side's hit does to the other.
+local function hitDamage(itemType, attackerEnchants, defenderArmor, defenderEnchants, defenderFraction)
+	local damage = swordDamage(itemType)
+	for name, bonus in WEAPON_BONUS do
+		if attackerEnchants[name] then damage *= bonus end
+	end
+	if attackerEnchants.berserker and defenderFraction and defenderFraction < 0.5 then damage *= 1.15 end
+	damage *= 1 - armorReduction(defenderArmor)
+	if defenderEnchants.absorption then damage *= 0.9 end
+	return math.max(damage, 0.1)
+end
+
+local function effectiveHealth(health, maxHealth, set)
+	if set.safeguard and maxHealth > 0 and health / maxHealth > 0.5 then health += 50 end
+	return health
+end
+
 hitsToKill = function(player, theirHealth)
 	local character = lplr.Character
-	if not (entitylib.isAlive and character) then return nil end
+	if not (entitylib.isAlive and character and player.Character) then return nil end
 	local myHealth = (character:GetAttribute('Health') or 0) + getShieldAttribute(character)
+	local myMax = character:GetAttribute('MaxHealth') or 100
+	local theirMax = player.Character:GetAttribute('MaxHealth') or 100
+
+	local mySet, theirSet = enchantSet(character), enchantSet(player.Character)
 	local myTool = store.hand and store.hand.tool
 	local inventory = store.inventories[player]
 	local theirItem = inventory and inventory.hand and inventory.hand.itemType
-	local mine = math.max(math.ceil(theirHealth / swordDamage(myTool and myTool.Name)), 1)
-	local theirs = math.max(math.ceil(myHealth / swordDamage(theirItem)), 1)
-	return mine, theirs
+	local myArmor = store.inventory and store.inventory.inventory and store.inventory.inventory.armor
+	local theirArmor = inventory and inventory.armor
+
+	local mine = math.ceil(effectiveHealth(theirHealth, theirMax, theirSet) / hitDamage(myTool and myTool.Name, mySet, theirArmor, theirSet, theirHealth / math.max(theirMax, 1)))
+	local theirs = math.ceil(effectiveHealth(myHealth, myMax, mySet) / hitDamage(theirItem, theirSet, myArmor, mySet, myHealth / math.max(myMax, 1)))
+	-- Blocking stops the first hit.
+	if theirSet.blocking then mine += 1 end
+	if mySet.blocking then theirs += 1 end
+	return math.max(mine, 1), math.max(theirs, 1)
 end
 
 local function show(entity, player)
@@ -176,13 +223,18 @@ local function show(entity, player)
 	local kitMeta = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit]
 	local extra = {}
 	if on(ShowKitName) and kitMeta then extra[#extra + 1] = kitMeta.name or kit end
-	if on(ShowEnchants) and entity.Character then
-		local enchants = enchantsOf(entity.Character)
-		if #enchants > 0 then extra[#extra + 1] = table.concat(enchants, ', ') end
-	end
 	extraLabel.Text = table.concat(extra, '  ·  ')
 
-	if on(ShowEquipment) then
+	-- Their enchants as the game's own enchant icons, after the equipment.
+	local list = (on(ShowEnchants) and entity.Character) and enchants.of(entity.Character) or {}
+	for i = 6, #icons do
+		local enchant = list[i - 5]
+		setIcon(i, enchant and enchant.image or nil)
+	end
+
+	if not on(ShowEquipment) then
+		for i = 1, 5 do setIcon(i, nil) end
+	else
 		local inventory = store.inventories[player]
 		setIcon(1, kitMeta and kitMeta.renderImage or nil)
 		setIcon(2, inventory and inventory.hand and bedwars.getIcon(inventory.hand, true) or nil)
@@ -297,7 +349,7 @@ ShowKitName = TargetHUD:CreateToggle({
 })
 ShowEnchants = TargetHUD:CreateToggle({
 	Name = 'Enchants',
-	Tooltip = 'Lists their active enchants'
+	Tooltip = 'Shows their enchants\' icons'
 })
 Background = TargetHUD:CreateColorSlider({
 	Name = 'Background',
@@ -394,8 +446,8 @@ equipmentLayout.FillDirection = Enum.FillDirection.Horizontal
 equipmentLayout.Padding = UDim.new(0, 4)
 equipmentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 equipmentLayout.Parent = equipment
--- Kit, held item, helmet, chestplate, boots.
-for i = 1, 5 do
+-- Kit, held item, helmet, chestplate, boots, then up to four enchants.
+for i = 1, 9 do
 	local icon = Instance.new('ImageLabel')
 	icon.BackgroundTransparency = 1
 	icon.Size = UDim2.fromOffset(16, 16)
