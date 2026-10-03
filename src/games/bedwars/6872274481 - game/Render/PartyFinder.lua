@@ -15,11 +15,11 @@
 	For more certainty, more matches can be compared: a pair then has to have queued or
 	teamed together in at least the required number of them, and the tags show how many.
 
-	Partied players get a tag over their head in their party's colour, and a panel lists each
+	Parties are numbered next to names in the game's tab list, and a panel can list each
 	team's parties, marking a team that is one whole party as a full queue.
 ]]
 local PartyFinder
-local Matches, Required, ShowTags, ShowPanel, Teammates, Corner, ShowLeaderboard
+local Matches, Required, ShowPanel, Teammates, Corner, ShowLeaderboard
 local badges = setmetatable({}, {__mode = 'k'})
 local panel, list, rows = nil, nil, {}
 local mates = {}
@@ -28,10 +28,6 @@ local mates = {}
 local status = {asked = 0, loaded = 0, withParty = 0, withTeams = 0, empty = 0}
 local groups = {}
 local confidence = {}
-local tags = {}
-local Folder = Instance.new('Folder')
-Folder.Name = 'PartyFinder'
-Folder.Parent = vain.gui
 
 local COLORS = {
 	Color3.fromRGB(255, 200, 70), Color3.fromRGB(110, 220, 255), Color3.fromRGB(255, 120, 200),
@@ -250,57 +246,6 @@ local function regroup()
 	end
 end
 
-local function clearTags()
-	for _, tag in tags do tag:Destroy() end
-	table.clear(tags)
-end
-
-local function updateTags()
-	local wanted = {}
-	if on(ShowTags) then
-		for index, group in groups do
-			local own = teamOf(lplr) ~= nil and group.team == teamOf(lplr)
-			if not own or on(Teammates) then
-				for _, player in group.members do
-					local head = player.Character and player.Character:FindFirstChild('Head')
-					if head then
-						wanted[player] = true
-						local tag = tags[player]
-						if not tag or tag.Adornee ~= head then
-							if tag then tag:Destroy() end
-							tag = Instance.new('BillboardGui')
-							tag.Size = UDim2.fromOffset(120, 18)
-							tag.StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0)
-							tag.AlwaysOnTop = true
-							tag.Adornee = head
-							tag.Parent = Folder
-							local label = Instance.new('TextLabel')
-							label.Name = 'Label'
-							label.Size = UDim2.fromScale(1, 1)
-							label.BackgroundTransparency = 1
-							label.Font = Enum.Font.GothamBold
-							label.TextSize = 12
-							label.TextStrokeTransparency = 0.4
-							label.Parent = tag
-							tags[player] = tag
-						end
-						tag.Label.Text = (Matches.Value > 1 and not group.exact)
-							and string.format('Party %d (%d)  %d/%d', index, #group.members, group.seen, Matches.Value)
-							or string.format('Party %d (%d)', index, #group.members)
-						tag.Label.TextColor3 = group.color
-					end
-				end
-			end
-		end
-	end
-	for player, tag in tags do
-		if not wanted[player] then
-			tag:Destroy()
-			tags[player] = nil
-		end
-	end
-end
-
 --[[
 	Party numbers in the game's tab list. Each player row shows its name in a PlayerName
 	label inside PlayerNameContainer (a horizontal list), so a small numbered badge in the
@@ -502,12 +447,10 @@ PartyFinder = vain.Categories.Render:CreateModule({
 				if os.clock() - last < 0.5 then return end
 				last = os.clock()
 				pcall(regroup)
-				pcall(updateTags)
 				pcall(updatePanel)
 				pcall(updateLeaderboard)
 			end))
 		else
-			clearTags()
 			clearBadges()
 			table.clear(rows)
 			panel, list = nil, nil
@@ -540,10 +483,6 @@ ShowLeaderboard = PartyFinder:CreateToggle({
 	Name = 'Leaderboard',
 	Tooltip = 'Numbers each party next to names in the tab list',
 	Default = true
-})
-ShowTags = PartyFinder:CreateToggle({
-	Name = 'Tags',
-	Tooltip = 'Tags partied players with their party'
 })
 ShowPanel = PartyFinder:CreateToggle({
 	Name = 'Panel',
