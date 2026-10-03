@@ -21,6 +21,7 @@
 local PartyFinder
 local Matches, Required, ShowPanel, Teammates, Corner, ShowLeaderboard, Source
 local badges = setmetatable({}, {__mode = 'k'})
+local cachedTabList
 local panel, list, rows = nil, nil, {}
 local mates = {}
 -- What came back, for the panel to explain an empty result: histories answered, and
@@ -274,8 +275,13 @@ end
 
 local function updateLeaderboard()
 	local gui = lplr:FindFirstChildOfClass('PlayerGui')
-	local tabList = gui and gui:FindFirstChild('TabListFrame', true)
-	if not tabList then return end
+	-- Found once and kept while it exists, rather than searching all of PlayerGui each time.
+	if not (cachedTabList and cachedTabList:IsDescendantOf(gui or game)) then
+		cachedTabList = gui and gui:FindFirstChild('TabListFrame', true)
+	end
+	local tabList = cachedTabList
+	-- Only while the tab list is actually up; nothing to number otherwise.
+	if not (tabList and tabList:IsA('GuiObject') and tabList.Visible and tabList.AbsoluteSize.X > 0) then return end
 
 	local byName = {}
 	for _, player in playersService:GetPlayers() do
