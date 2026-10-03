@@ -426,7 +426,8 @@ RespawnTimers = vain.Legit:CreateModule({
 			end))
 			RespawnTimers:Clean(runService.RenderStepped:Connect(function()
 				pcall(trackGround)
-				pcall(update)
+				-- A failed update hides the panel rather than leaving it frozen on screen.
+				if not pcall(update) and panel then panel.Visible = false end
 			end))
 		else
 			for player in dead do forget(player) end
