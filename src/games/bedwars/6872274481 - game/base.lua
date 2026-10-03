@@ -580,6 +580,91 @@ local kitorder = {
 -- (see the event wiring below) and cleared when a match ends.
 local brokenbeds = {}
 
+--[[
+	Match histories, shared by everything that reads them (Kit Render, Party Finder), so a
+	player is only ever asked for once per session.
+
+	Asked for the way the game's Match History app does it -
+	MatchHistoryController:requestMatchHistory with the player's name, resolving to
+	{player, matchHistory} - which answers for any player, private profiles included; then
+	the user id as text, then the profile's own history (RequestProfileData). Each request
+	has a time limit, and requests for many players at once are spread out a little.
+	Callbacks get the list of matches, newest first, or an empty list.
+]]
+local matchHistory = {cache = {}, waiting = {}, queued = 0}
+do
+	local TIMEOUT = 6
+
+	local function within(seconds, request)
+		local result, finished = nil, false
+		local thread = task.spawn(function()
+			local ok, value = pcall(request)
+			result = ok and value or nil
+			finished = true
+		end)
+		local started = os.clock()
+		while not finished and os.clock() - started < seconds do
+			task.wait(0.1)
+		end
+		if not finished then pcall(task.cancel, thread) end
+		return result
+	end
+
+	local function listFrom(data)
+		if type(data) == 'table' and type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
+			return data.matchHistory
+		end
+	end
+
+	local function request(player)
+		for _, query in {player.Name, tostring(player.UserId)} do
+			local list = listFrom(within(TIMEOUT, function()
+				local ok, value = bedwars.MatchHistoryController:requestMatchHistory(query):await()
+				return ok and value or nil
+			end))
+			if list then return list end
+		end
+		return listFrom(within(TIMEOUT, function()
+			return bedwars.Client:Get('RequestProfileData'):CallServer(player)
+		end))
+	end
+
+	function matchHistory.fetch(player, callback)
+		local userId = player.UserId
+		local cached = matchHistory.cache[userId]
+		if type(cached) == 'table' then
+			callback(cached)
+			return
+		end
+		matchHistory.waiting[userId] = matchHistory.waiting[userId] or {}
+		table.insert(matchHistory.waiting[userId], callback)
+		if cached == 'pending' then return end
+		matchHistory.cache[userId] = 'pending'
+
+		matchHistory.queued += 1
+		task.delay((matchHistory.queued - 1) * 0.15, function()
+			matchHistory.queued = math.max(matchHistory.queued - 1, 0)
+			local list = table.clone(request(player) or {})
+			table.sort(list, function(a, b)
+				return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
+			end)
+			matchHistory.cache[userId] = list
+			for _, waiting in matchHistory.waiting[userId] or {} do
+				task.spawn(pcall, waiting, list)
+			end
+			matchHistory.waiting[userId] = nil
+		end)
+	end
+
+	-- A player's own entry in a match: the one whose playerInfo.userId is theirs.
+	function matchHistory.entryFor(match, userId)
+		for _, entry in (type(match.players) == 'table' and match.players or {}) do
+			local info = type(entry) == 'table' and entry.playerInfo
+			if info and tonumber(info.userId) == userId then return entry end
+		end
+	end
+end
+
 -- Total damage reduction from everything the player is wearing. Mirrors getStrength,
 -- but reads the armor list instead of held swords, so it answers "who dies fastest".
 local function getArmor(plr)
