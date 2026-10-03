@@ -166,9 +166,7 @@ local function onDeath(deathTable)
 
 	-- Back in the game: off the list.
 	entry.connection = player.CharacterAdded:Connect(function()
-		task.delay(0.5, function()
-			if dead[player] == entry then forget(player) end
-		end)
+		if dead[player] == entry then forget(player) end
 	end)
 	dead[player] = entry
 end
@@ -283,7 +281,8 @@ local function update()
 		local respawnAt = player:GetAttribute('RespawningAtTime')
 		if type(respawnAt) == 'number' and respawnAt > entry.diedAt then entry.respawnAt = respawnAt end
 		local remaining = entry.respawnAt - now
-		if (entry.final and now - entry.diedAt > FINAL_HOLD) or (not entry.final and remaining < -1) then
+		-- Gone the moment the timer runs out, not a second later.
+		if (entry.final and now - entry.diedAt > FINAL_HOLD) or (not entry.final and remaining <= 0) then
 			forget(player)
 			continue
 		end
