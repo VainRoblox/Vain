@@ -10,6 +10,7 @@
 ]]
 local TeslaReach
 local Mode, ShowTeam, TeamColor, Fill, ThroughWalls, Pulse, Color, DangerColor, Thickness
+local ArmingCountdown, OwnerName
 local Folder = Instance.new('Folder')
 Folder.Name = 'TeslaReach'
 Folder.Parent = vain.gui
@@ -68,6 +69,7 @@ local function remove(trap)
 	if not entry then return end
 	entry.sphere:Destroy()
 	entry.disc:Destroy()
+	entry.billboard:Destroy()
 	for _, line in entry.lines do line:Destroy() end
 	traps[trap] = nil
 end
@@ -100,10 +102,28 @@ local function add(trap)
 		line.Parent = Folder
 		lines[i] = line
 	end
-	traps[trap] = {sphere = sphere, disc = disc, lines = lines}
+	-- The owner and the arming countdown, over the trap.
+	local billboard = Instance.new('BillboardGui')
+	billboard.Adornee = trap:IsA('BasePart') and trap or trap:FindFirstChildWhichIsA('BasePart', true)
+	billboard.Size = UDim2.fromOffset(160, 34)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Enabled = false
+	billboard.Parent = Folder
+	local label = Instance.new('TextLabel')
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 13
+	label.TextStrokeTransparency = 0.4
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.Parent = billboard
+
+	traps[trap] = {sphere = sphere, disc = disc, lines = lines, billboard = billboard, label = label}
 end
 
 local function hide(entry)
+	entry.billboard.Enabled = false
 	entry.sphere.Visible = false
 	entry.disc.Visible = false
 	for _, line in entry.lines do line.Visible = false end
@@ -147,6 +167,15 @@ local function update()
 		end
 		local transparency = 1 - opacity
 		local onTop = ThroughWalls.Enabled
+
+		local text = {}
+		if OwnerName.Enabled and owner then text[#text + 1] = owner.DisplayName end
+		if ArmingCountdown.Enabled and activation and now < activation then
+			text[#text + 1] = string.format('Arming %.1fs', activation - now)
+		end
+		entry.billboard.Enabled = #text > 0
+		entry.label.Text = table.concat(text, '\n')
+		entry.label.TextColor3 = color
 
 		if Mode.Value == 'Sphere' then
 			for _, line in entry.lines do line.Visible = false end
@@ -228,6 +257,15 @@ TeamColor = TeslaReach:CreateToggle({
 	Name = 'Team Color',
 	Tooltip = 'Colours each trap by its team',
 	Default = true
+})
+ArmingCountdown = TeslaReach:CreateToggle({
+	Name = 'Arming Countdown',
+	Tooltip = 'Shows the seconds until it goes live',
+	Default = true
+})
+OwnerName = TeslaReach:CreateToggle({
+	Name = 'Owner Name',
+	Tooltip = 'Shows who placed it'
 })
 Fill = TeslaReach:CreateToggle({
 	Name = 'Fill',
