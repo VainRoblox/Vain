@@ -8,7 +8,7 @@
 ]]
 local ItemESP
 local Diamonds, Emeralds, Iron, Gold, Pearls, TNT, Others, OtherList
-local SkipGenerators, Range, ShowDistance, Outline, TextSize
+local SkipGenerators, Range, ShowDistance, Outline, TextSize, Group, GroupRadius
 local Folder = Instance.new('Folder')
 Folder.Name = 'ItemESP'
 Folder.Parent = vain.gui
@@ -106,8 +106,41 @@ local function add(drop)
 	drops[drop] = {billboard = billboard, label = label, part = part}
 end
 
+--[[
+	Drops of the same item lying close together share one label with their total, on the
+	first of them, so a scattered pile reads "x12" once rather than twelve times.
+]]
+local function show(entry, drop, amount, distance, here)
+	local color = COLORS[drop.Name] or Color3.new(1, 1, 1)
+	entry.label.Text = 'x' .. amount .. (on(ShowDistance) and here and string.format('  %dm', math.floor(distance)) or '')
+	entry.label.TextColor3 = color
+	entry.label.TextSize = TextSize.Value
+	entry.billboard.Size = UDim2.fromOffset(TextSize.Value * 9, TextSize.Value + 6)
+	entry.billboard.Enabled = true
+	if on(Outline) then
+		if not entry.highlight then
+			entry.highlight = Instance.new('Highlight')
+			entry.highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			entry.highlight.FillTransparency = 0.6
+			entry.highlight.Adornee = drop
+			entry.highlight.Parent = Folder
+		end
+		entry.highlight.FillColor = color
+		entry.highlight.OutlineColor = color
+		entry.highlight.Enabled = true
+	elseif entry.highlight then
+		entry.highlight.Enabled = false
+	end
+end
+
+local function hide(entry)
+	entry.billboard.Enabled = false
+	if entry.highlight then entry.highlight.Enabled = false end
+end
+
 local function update()
 	local here = entitylib.isAlive and entitylib.character.RootPart.Position
+	local wantedDrops = {}
 	for drop, entry in drops do
 		if not (drop.Parent and entry.part.Parent) then
 			remove(drop)
@@ -115,32 +148,33 @@ local function update()
 		end
 		local position = entry.part.Position
 		local distance = here and (position - here).Magnitude or 0
-		local show = wanted(drop.Name) and distance <= Range.Value
-			and not (on(SkipGenerators) and onGenerator(position))
-		entry.billboard.Enabled = show
-		if show then
-			local color = COLORS[drop.Name] or Color3.new(1, 1, 1)
-			local amount = tonumber(drop:GetAttribute('Amount')) or 1
-			entry.label.Text = 'x' .. amount .. (on(ShowDistance) and here and string.format('  %dm', math.floor(distance)) or '')
-			entry.label.TextColor3 = color
-			entry.label.TextSize = TextSize.Value
-			entry.billboard.Size = UDim2.fromOffset(TextSize.Value * 9, TextSize.Value + 6)
-			if on(Outline) then
-				if not entry.highlight then
-					entry.highlight = Instance.new('Highlight')
-					entry.highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-					entry.highlight.FillTransparency = 0.6
-					entry.highlight.Adornee = drop
-					entry.highlight.Parent = Folder
+		if wanted(drop.Name) and distance <= Range.Value and not (on(SkipGenerators) and onGenerator(position)) then
+			wantedDrops[#wantedDrops + 1] = {drop = drop, entry = entry, position = position, distance = distance,
+				amount = tonumber(drop:GetAttribute('Amount')) or 1}
+		else
+			hide(entry)
+		end
+	end
+
+	if not on(Group) then
+		for _, item in wantedDrops do show(item.entry, item.drop, item.amount, item.distance, here) end
+		return
+	end
+	-- Nearest first, so each group's label sits on the drop closest to you.
+	table.sort(wantedDrops, function(a, b) return a.distance < b.distance end)
+	local taken = {}
+	for i, leader in wantedDrops do
+		if not taken[i] then
+			local total = leader.amount
+			for j = i + 1, #wantedDrops do
+				local other = wantedDrops[j]
+				if not taken[j] and other.drop.Name == leader.drop.Name and (other.position - leader.position).Magnitude <= GroupRadius.Value then
+					taken[j] = true
+					total += other.amount
+					hide(other.entry)
 				end
-				entry.highlight.FillColor = color
-				entry.highlight.OutlineColor = color
-				entry.highlight.Enabled = true
-			elseif entry.highlight then
-				entry.highlight.Enabled = false
 			end
-		elseif entry.highlight then
-			entry.highlight.Enabled = false
+			show(leader.entry, leader.drop, total, leader.distance, here)
 		end
 	end
 end
@@ -190,6 +224,23 @@ SkipGenerators = ItemESP:CreateToggle({
 	Name = 'Skip Generators',
 	Tooltip = 'Leaves out drops piled on generators',
 	Default = true
+})
+Group = ItemESP:CreateToggle({
+	Name = 'Group Nearby',
+	Tooltip = 'One label with the total for close drops',
+	Default = true,
+	Function = function(callback)
+		if GroupRadius and GroupRadius.Object then GroupRadius.Object.Visible = callback end
+	end
+})
+GroupRadius = ItemESP:CreateSlider({
+	Name = 'Group Radius',
+	Tooltip = 'How close drops have to be to share a label',
+	Min = 1,
+	Max = 20,
+	Default = 5,
+	Darker = true,
+	Suffix = function(val) return val == 1 and 'stud' or 'studs' end
 })
 ShowDistance = ItemESP:CreateToggle({Name = 'Distance', Tooltip = 'Shows how far away each one is', Default = true})
 Outline = ItemESP:CreateToggle({Name = 'Outline', Tooltip = 'Outlines the item itself'})
