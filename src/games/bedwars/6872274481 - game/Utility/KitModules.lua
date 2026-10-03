@@ -5109,6 +5109,75 @@ kitRun(function()
     local AutoSell, SellIron, MinIron, SellEmerald, MinEmerald, Keep
     local BuyEggs, MaxEggPrice, MaxEggs, KeepIron
     local AutoNest, PriceAlert, Notify
+    local EggESP, EnemyEggs, AutoCollectEggs
+    local eggFolder, eggLabels = nil, {}
+    local lastEggScan = 0
+
+    --[[
+        Taliyah's eggs: placed chicken_egg_block crops carrying PlacedByUserId, tagged
+        HarvestableCrop once ready (crop-meta, CropController). Egg ESP labels each one in
+        its owner's team colour, saying when it is ready; Auto Collect picks your own ready
+        ones near you with the same CropHarvest request the game's prompt sends.
+    ]]
+    local function eggOwner(block)
+        return playersService:GetPlayerByUserId(tonumber(block:GetAttribute('PlacedByUserId')) or 0)
+    end
+
+    local function clearEggs()
+        for block, label in eggLabels do label:Destroy() end
+        table.clear(eggLabels)
+    end
+
+    local function updateEggs()
+        if os.clock() - lastEggScan < 1 then return end
+        lastEggScan = os.clock()
+        local ready = {}
+        for _, block in collectionService:GetTagged('HarvestableCrop') do ready[block] = true end
+        local seen = {}
+        local here = entitylib.isAlive and entitylib.character.RootPart.Position
+        local store = bedwars.BlockController:getStore()
+        for _, position in store:getAllBlockPositions() do
+            local block = store:getBlockAt(position)
+            if block and block.Name == 'chicken_egg_block' then
+                local owner = eggOwner(block)
+                local mine = owner == lplr or (owner and tostring(owner:GetAttribute('Team')) == tostring(lplr:GetAttribute('Team')))
+                if on(AutoCollectEggs) and owner == lplr and ready[block] and here and (block.Position - here).Magnitude <= 18 then
+                    task.spawn(pcall, function()
+                        bedwars.Client:Get('CropHarvest'):CallServer({position = position})
+                    end)
+                end
+                if on(EggESP) and (mine or on(EnemyEggs)) then
+                    seen[block] = true
+                    local label = eggLabels[block]
+                    if not label then
+                        label = Instance.new('BillboardGui')
+                        label.Adornee = block
+                        label.Size = UDim2.fromOffset(90, 18)
+                        label.StudsOffsetWorldSpace = Vector3.new(0, 2, 0)
+                        label.AlwaysOnTop = true
+                        label.Parent = eggFolder
+                        local text = Instance.new('TextLabel')
+                        text.Name = 'Text'
+                        text.BackgroundTransparency = 1
+                        text.Size = UDim2.fromScale(1, 1)
+                        text.Font = Enum.Font.GothamBold
+                        text.TextSize = 12
+                        text.TextStrokeTransparency = 0.4
+                        text.Parent = label
+                        eggLabels[block] = label
+                    end
+                    label.Text.Text = ready[block] and 'Egg READY' or 'Egg'
+                    label.Text.TextColor3 = owner and owner.Team and owner.TeamColor.Color or Color3.new(1, 1, 1)
+                end
+            end
+        end
+        for block, label in eggLabels do
+            if not seen[block] then
+                label:Destroy()
+                eggLabels[block] = nil
+            end
+        end
+    end
     local busyUntil = 0
     local lastAlerted
 
@@ -5241,6 +5310,18 @@ kitRun(function()
                     end
                 end))
 
+                eggFolder = Instance.new('Folder')
+                eggFolder.Name = 'TaliyahEggs'
+                eggFolder.Parent = vain.gui
+                AutoTaliyah:Clean(eggFolder)
+                AutoTaliyah:Clean(runService.Heartbeat:Connect(function()
+                    if (on(EggESP) or on(AutoCollectEggs)) then
+                        pcall(updateEggs)
+                    elseif next(eggLabels) then
+                        clearEggs()
+                    end
+                end))
+
                 repeat
                     pcall(function()
                         if store.equippedKit ~= 'taliyah' or os.clock() < busyUntil then return end
@@ -5251,6 +5332,7 @@ kitRun(function()
                 until not AutoTaliyah.Enabled
             else
                 busyUntil, lastAlerted = 0, nil
+                clearEggs()
             end
         end
     })
@@ -5348,6 +5430,24 @@ kitRun(function()
     Notify = AutoTaliyah:CreateToggle({
         Name = 'Notify',
         Tooltip = 'Tells you about each sale and purchase'
+    })
+    EggESP = AutoTaliyah:CreateToggle({
+        Name = 'Egg ESP',
+        Tooltip = 'Labels chicken eggs and says when they are ready',
+        Default = true,
+        Function = function(callback)
+            if EnemyEggs and EnemyEggs.Object then EnemyEggs.Object.Visible = callback end
+        end
+    })
+    EnemyEggs = AutoTaliyah:CreateToggle({
+        Name = 'Enemy Eggs',
+        Tooltip = 'Also labels other teams\' eggs',
+        Default = true,
+        Darker = true
+    })
+    AutoCollectEggs = AutoTaliyah:CreateToggle({
+        Name = 'Auto Collect Eggs',
+        Tooltip = 'Picks up your ready eggs when you are near them'
     })
 end)
 
