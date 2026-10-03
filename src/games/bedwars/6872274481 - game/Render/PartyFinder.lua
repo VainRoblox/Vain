@@ -7,8 +7,13 @@
 	by the shared matchHistory helper - and anyone who shared their partyId there and is on
 	their team now is taken as their party. Parties formed only this match cannot show.
 
-	For more certainty, more matches can be compared: a pair then has to have queued together
-	in at least the required number of them, and the tags show how many it was.
+	When the history carries no party ids, the teams do the job: every match lists each
+	team's members (match.teams[].members), and random matchmaking almost never puts the
+	same two players on one team twice - so being teammates again in recent matches is
+	read as a party too.
+
+	For more certainty, more matches can be compared: a pair then has to have queued or
+	teamed together in at least the required number of them, and the tags show how many.
 
 	Partied players get a tag over their head in their party's colour, and a panel lists each
 	team's parties, marking a team that is one whole party as a full queue.
@@ -19,7 +24,7 @@ local panel, list, rows = nil, nil, {}
 local mates = {}
 -- What came back, for the panel to explain an empty result: histories answered, and
 -- how many of those carried any party data at all.
-local status = {asked = 0, loaded = 0, withParty = 0, empty = 0}
+local status = {asked = 0, loaded = 0, withParty = 0, withTeams = 0, empty = 0}
 local groups = {}
 local confidence = {}
 local tags = {}
@@ -67,10 +72,29 @@ local function learn(player)
 	matchHistory.fetch(player, function(matches)
 		status.loaded += 1
 		if #matches == 0 then status.empty += 1 end
-		local hadParty = false
+		local hadParty, hadTeams = false, false
 		local found = {}
 		for i = 1, math.min(10, #matches) do
 			local match = matches[i]
+			-- Teammates in that match, from its team list.
+			for _, team in (type(match.teams) == 'table' and match.teams or {}) do
+				local members = type(team) == 'table' and type(team.members) == 'table' and team.members
+				local size = 0
+				for _ in (members or {}) do size += 1 end
+				-- Big teams (20v20 and up) share players by chance, so they say nothing.
+				if members and size <= 8 and (members[player.UserId] ~= nil or members[tostring(player.UserId)] ~= nil) then
+					hadTeams = true
+					for key in members do
+						local userId = tonumber(key)
+						if userId and userId ~= player.UserId then
+							found[userId] = found[userId] or {}
+							found[userId][i] = true
+						end
+					end
+					break
+				end
+			end
+
 			local mine = matchHistory.entryFor(match, player.UserId)
 			local partyId = partyOf(mine)
 			if partyId ~= nil then
@@ -86,6 +110,7 @@ local function learn(player)
 			end
 		end
 		if hadParty then status.withParty += 1 end
+		if hadTeams then status.withTeams += 1 end
 		mates[player.UserId] = found
 	end)
 end
@@ -292,12 +317,12 @@ local function updatePanel()
 			why = string.format('Loading histories %d/%d', status.loaded, status.asked)
 		elseif status.loaded > 0 and status.empty == status.loaded then
 			why = 'No match history came back'
-		elseif status.loaded > 0 and status.withParty == 0 then
-			why = 'Histories have no party data'
+		elseif status.loaded > 0 and status.withParty == 0 and status.withTeams == 0 then
+			why = 'Histories have no party or team data'
 		elseif not teamOf(lplr) then
 			why = 'Waiting for teams'
 		else
-			why = string.format('No parties found (%d/%d with party data)', status.withParty, status.loaded)
+			why = string.format('No parties found (%d/%d histories)', status.loaded, status.asked)
 		end
 		lines[1] = {color = Color3.fromRGB(150, 150, 150), text = why}
 	end
@@ -375,7 +400,7 @@ PartyFinder = vain.Categories.Render:CreateModule({
 			panel, list = nil, nil
 			-- Answers stay in the shared cache, so turning it back on asks nobody again.
 			table.clear(mates)
-			status = {asked = 0, loaded = 0, withParty = 0, empty = 0}
+			status = {asked = 0, loaded = 0, withParty = 0, withTeams = 0, empty = 0}
 		end
 	end
 })
@@ -391,7 +416,7 @@ Matches = PartyFinder:CreateSlider({
 })
 Required = PartyFinder:CreateSlider({
 	Name = 'Required Matches',
-	Tooltip = 'How many of those they must have queued together in',
+	Tooltip = 'How many of those they must have teamed in',
 	Min = 1,
 	Max = 10,
 	Default = 1,
