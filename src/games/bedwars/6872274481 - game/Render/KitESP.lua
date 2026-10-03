@@ -357,7 +357,6 @@ KitESP = vain.Categories.Render:CreateModule({
 								addKit(entry[1], entry[2], entry[3], entry[4])
 							end
 							if on(Notify) then
-								notif('KitESP', 'Tracking objects for ' .. kit, 4, 'check')
 							end
 						elseif kit ~= '' and on(Notify) then
 							notif('KitESP', kit .. ' has nothing to track', 4, 'alert')

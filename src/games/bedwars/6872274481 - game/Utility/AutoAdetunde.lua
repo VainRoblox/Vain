@@ -155,7 +155,6 @@ AutoAdetunde = vain.Categories.Kit:CreateModule({
 					upgradingUntil = tick() + JUMP_WINDOW
 					bedwars.Client:Get('UpgradeFrostyHammer'):CallServerAsync(upgrade):andThen(function(result)
 						if result ~= false and Notify.Enabled then
-							notif('Adetunde', 'Upgraded '..tostring(upgrade):lower()..' to '..level, 3)
 						end
 					end)
 				end)

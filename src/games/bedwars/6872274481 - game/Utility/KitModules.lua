@@ -2819,7 +2819,6 @@ kitRun(function()
     							and now > (collectDebounce[drill] or 0)
     						then
     							if collectDrill(drill) and Notify.Enabled then
-    								notif('Auto Drill', 'Collected drill resources', 4, 'info')
     							end
     							collectDebounce[drill] = now + CollectDelay.Value
     						end
@@ -4074,7 +4073,6 @@ kitRun(function()
     end
 
     local function sendNotification(count)
-        notif("Metal ESP", string.format("%d metals spawned", count), 3)
     end
 
     local function processSpawnQueue()
@@ -4553,7 +4551,6 @@ kitRun(function()
     									if suc then
     										v.Data.Following.Value = player.UserId
     										if Notify.Enabled then
-    											notif('AutoNoelle', `Directed {v.Name} to {player.DisplayName} ({player.Name})`, 5, 'info')
     										end
     									end
     								end)
@@ -5821,7 +5818,6 @@ kitRun(function()
                     end)
                 end
                 
-                notif("Auto Whisper", string.format("Refreshed teammate list (%d teammates)", #newList), 2)
             end)
         end,
         Tooltip = "Manually refresh the teammate list"
@@ -7970,7 +7966,6 @@ kitRun(function()
     local collectionRunning = false
 
     local function sendNotification(count)
-        notif("Star ESP", string.format("%d stars spawned", count), 3)
     end
 
     local function processSpawnQueue()
@@ -8621,7 +8616,6 @@ kitRun(function()
     local originalCheckForPickup
     
     local function sendNotification(count)
-        notif("Spirit ESP", string.format("%d spirit orbs spawned", count), 3)
     end
 
     local function processSpawnQueue()
@@ -10384,7 +10378,6 @@ kitRun(function()
 	end
 
     local function sendNotification(count)
-        notif("Crop ESP", string.format("%d crops spawned", count), 3)
     end
 
     local function processSpawnQueue()
@@ -11135,7 +11128,6 @@ kitRun(function()
             remote:SendToServer({petrifyId = statue:GetAttribute('PetrifyId')})
         end)
         if ok and on(Notify) then
-            notif('Auto Miner', label .. "'s statue dug", 3)
         end
         return ok
     end

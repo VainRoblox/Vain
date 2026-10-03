@@ -119,7 +119,6 @@ end
 
 local function buyItem(item, currencytable)
 	if not id then return end
-	notif('AutoBuy', 'Bought '..bedwars.ItemMeta[item.itemType].displayName, 3)
 	bedwars.Client:Get('BedwarsPurchaseItem'):CallServerAsync({
 		shopItem = item,
 		shopId = id
@@ -187,7 +186,6 @@ local function buyUpgrade(upgradeType, currencytable)
 		if tier.availableOnlyInQueue and not table.find(tier.availableOnlyInQueue, store.queueType) then return false end
 
 		if canBuy({currency = 'diamond', price = tier.cost}, currencytable) then
-			notif('AutoBuy', 'Bought '..(upgrade.name == 'Armor' and 'Protection' or upgrade.name)..' '..currentTier, 3)
 			bedwars.Client:Get('RequestPurchaseTeamUpgrade'):CallServerAsync(upgradeType)
 			currencytable.diamond -= tier.cost
 			return true
