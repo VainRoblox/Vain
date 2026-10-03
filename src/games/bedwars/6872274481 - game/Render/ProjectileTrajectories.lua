@@ -63,31 +63,7 @@ local function on(setting)
 	return setting ~= nil and setting.Enabled
 end
 
---[[
-	The void height: AntiFall's floor when it has one, otherwise worked out the same way -
-	2 studs under the lowest block with nothing on top of it. Read from the local block
-	store, kept for 5 seconds as walking every block each frame would be wasteful.
-]]
-local voidHeight, voidCheckedAt = nil, 0
-local function getVoidHeight()
-	if AntiFallPart and AntiFallPart.Parent then
-		return AntiFallPart.Position.Y
-	end
-	if os.clock() - voidCheckedAt < 5 then return voidHeight end
-	voidCheckedAt = os.clock()
-	local ok, low = pcall(function()
-		local lowest = math.huge
-		for _, pos in bedwars.BlockController:getStore():getAllBlockPositions() do
-			pos *= 3
-			if pos.Y < lowest and not getPlacedBlock(pos + Vector3.new(0, 3, 0)) then
-				lowest = pos.Y
-			end
-		end
-		return lowest
-	end)
-	voidHeight = ok and low ~= math.huge and (low - 2) or voidHeight
-	return voidHeight
-end
+-- The void height comes from the shared getVoidHeight in the game base.
 
 local function colorOf(setting, fallback)
 	if not setting then return fallback end

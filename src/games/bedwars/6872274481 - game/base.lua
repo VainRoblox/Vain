@@ -651,6 +651,32 @@ do
 	end
 end
 
+--[[
+	The void height, shared: AntiFall's floor when it has one, otherwise 2 studs under the
+	lowest block with nothing on top of it. Walking every block is the costly part, so it
+	is worked out once for everything that needs it and kept for 10 seconds.
+]]
+local voidHeightCache, voidHeightAt = nil, 0
+local function getVoidHeight()
+	if AntiFallPart and AntiFallPart.Parent then
+		return AntiFallPart.Position.Y
+	end
+	if os.clock() - voidHeightAt < 10 then return voidHeightCache end
+	voidHeightAt = os.clock()
+	local ok, low = pcall(function()
+		local lowest = math.huge
+		for _, pos in bedwars.BlockController:getStore():getAllBlockPositions() do
+			pos *= 3
+			if pos.Y < lowest and not getPlacedBlock(pos + Vector3.new(0, 3, 0)) then
+				lowest = pos.Y
+			end
+		end
+		return lowest
+	end)
+	voidHeightCache = ok and low ~= math.huge and (low - 2) or voidHeightCache
+	return voidHeightCache
+end
+
 local matchHistory = {cache = {}, waiting = {}, queued = 0}
 do
 	local TIMEOUT = 6

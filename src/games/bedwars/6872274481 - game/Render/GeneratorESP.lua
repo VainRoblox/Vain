@@ -31,9 +31,27 @@ local function on(setting)
 	return setting ~= nil and setting.Enabled
 end
 
+--[[
+	The game's labels, found once and remembered: a recursive search for each of them on
+	every generator every frame was the costly part of this module. A label that is not
+	there yet is looked for again every couple of seconds rather than every frame.
+]]
+local labelCache = setmetatable({}, {__mode = 'k'})
 local function textOf(model, name)
-	local label = model:FindFirstChild(name, true)
-	return label and label:IsA('TextLabel') and label.Text or nil
+	local cache = labelCache[model]
+	if not cache then
+		cache = {}
+		labelCache[model] = cache
+	end
+	local label = cache[name]
+	if label and not label:IsDescendantOf(model) then label = nil end
+	if not label and os.clock() >= (cache[name .. '#retry'] or 0) then
+		label = model:FindFirstChild(name, true)
+		label = label and label:IsA('TextLabel') and label or nil
+		if not label then cache[name .. '#retry'] = os.clock() + 2 end
+	end
+	cache[name] = label
+	return label and label.Text or nil
 end
 
 local function iconOf(itemType)
@@ -387,7 +405,11 @@ GeneratorESP = vain.Categories.Render:CreateModule({
 			for _, part in collectionService:GetTagged('Generator') do add(part) end
 			GeneratorESP:Clean(collectionService:GetInstanceAddedSignal('Generator'):Connect(add))
 			GeneratorESP:Clean(collectionService:GetInstanceRemovedSignal('Generator'):Connect(remove))
+			-- Ten times a second is plenty: the timers only change once a second.
+			local lastUpdate = 0
 			GeneratorESP:Clean(runService.RenderStepped:Connect(function()
+				if os.clock() - lastUpdate < 0.1 then return end
+				lastUpdate = os.clock()
 				pcall(update)
 			end))
 		else
