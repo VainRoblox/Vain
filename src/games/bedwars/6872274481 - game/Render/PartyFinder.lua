@@ -13,7 +13,7 @@
 	read as a party too.
 
 	For more certainty, more matches can be compared: a pair then has to have queued or
-	teamed together in at least the required number of them, and the tags show how many.
+	teamed together in at least the required number of them.
 
 	Parties are numbered next to names in the game's tab list, and a panel can list each
 	team's parties, marking a team that is one whole party as a full queue.
