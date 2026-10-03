@@ -591,6 +591,66 @@ local brokenbeds = {}
 	has a time limit, and requests for many players at once are spread out a little.
 	Callbacks get the list of matches, newest first, or an empty list.
 ]]
+--[[
+	Enchants, read the way the game defines them. enchant-meta lists every weapon, armor
+	and tool enchant with its name, its icon and the status effect it shows up as on the
+	character (statusEffect), so a StatusEffect_<type> attribute is an enchant exactly when
+	its type is one of those - no guessing from the word "enchant" in the name. A trailing
+	level (_2) is taken off before looking it up and kept as the level.
+]]
+local enchants = {}
+do
+	local byEffect
+
+	local function build()
+		if byEffect then return byEffect end
+		byEffect = {}
+		local ok, meta = pcall(function()
+			return require(replicatedStorage.TS.enchant['enchant-meta'])
+		end)
+		if not ok or type(meta) ~= 'table' then return byEffect end
+		for kind, list in {weapon = meta.EnchantMeta, armor = meta.ArmorEnchantMeta, tool = meta.ToolEnchantMeta} do
+			for enchantType, info in (type(list) == 'table' and list or {}) do
+				if type(info) == 'table' and info.statusEffect then
+					byEffect[tostring(info.statusEffect)] = {type = enchantType, name = info.name, image = info.image, kind = kind}
+				end
+			end
+		end
+		return byEffect
+	end
+
+	-- The enchant behind a status effect type, and its level if it carries one.
+	function enchants.lookup(effect)
+		local map = build()
+		if map[effect] then return map[effect], nil end
+		local base, level = effect:match('^(.-)_(%d+)$')
+		if base and map[base] then return map[base], tonumber(level) end
+		return nil
+	end
+
+	-- Every enchant on a character: {type, name, image, kind, level, stacks}.
+	function enchants.of(character)
+		local list = {}
+		if not character then return list end
+		local ok, attributes = pcall(character.GetAttributes, character)
+		if not ok then return list end
+		for key in attributes do
+			local effect = key:match('^StatusEffect_(.+)$')
+			if effect and not effect:find('_stacks$') and not effect:find('_extra') then
+				local info, level = enchants.lookup(effect)
+				if info then
+					list[#list + 1] = {
+						type = info.type, name = info.name, image = info.image, kind = info.kind,
+						level = level, stacks = tonumber(attributes[key .. '_stacks']) or 0
+					}
+				end
+			end
+		end
+		table.sort(list, function(a, b) return a.name < b.name end)
+		return list
+	end
+end
+
 local matchHistory = {cache = {}, waiting = {}, queued = 0}
 do
 	local TIMEOUT = 6
