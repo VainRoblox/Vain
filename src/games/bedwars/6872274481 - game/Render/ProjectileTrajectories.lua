@@ -32,7 +32,9 @@
 ]]
 local Trajectories
 local ShowOwn, ShowTeam, PearlOnly, Marker, Danger, AimPreview, AimHighlight, MaxTime, Thickness
-local LineColor, DangerColor, PearlColor, AimColor, HighlightColor
+local LineStyle, MarkerStyle, MarkerSize, ChargingOnly, ImpactHighlight, TypeColors
+local LineColor, DangerColor, PearlColor, AimColor, HighlightColor, ArrowColor, FireballColor, SnowballColor
+local impactBox
 local tracked = {}
 local pools = {}
 local highlights = {}
@@ -126,15 +128,22 @@ end
 local function pool(key)
 	local entry = pools[key]
 	if not entry then
-		entry = {lines = {}, circle = nil}
+		entry = {lines = {}, circle = nil, cross = nil}
 		pools[key] = entry
 	end
 	return entry
 end
 
+local function hideMarker(entry)
+	if entry.circle then entry.circle.Visible = false end
+	if entry.cross then
+		for _, line in entry.cross do line.Visible = false end
+	end
+end
+
 local function hidePool(entry)
 	for _, line in entry.lines do line.Visible = false end
-	if entry.circle then entry.circle.Visible = false end
+	hideMarker(entry)
 end
 
 local function destroyPool(key)
@@ -142,6 +151,7 @@ local function destroyPool(key)
 	if not entry then return end
 	for _, line in entry.lines do pcall(function() line:Remove() end) end
 	if entry.circle then pcall(function() entry.circle:Remove() end) end
+	for _, line in entry.cross or {} do pcall(function() line:Remove() end) end
 	pools[key] = nil
 end
 
@@ -195,7 +205,7 @@ local function simulate(origin, velocity, gravity, checkBodies)
 		end
 		if hit then
 			points[#points + 1] = hit.Position
-			return points, hit.Position
+			return points, hit.Position, nil, hit.Instance
 		end
 		points[#points + 1] = point
 		previous = point
@@ -220,12 +230,20 @@ local function screenSegment(a, b)
 	return Vector2.new(sa.X, sa.Y), Vector2.new(sb.X, sb.Y)
 end
 
+--[[
+	Lines in the chosen style - solid, dashed (every other stretch left out) or fading out
+	towards the end - and a marker where it comes down: a circle, a cross or a dot.
+]]
 local function draw(key, points, landing, color)
 	local entry = pool(key)
 	local thickness = Thickness and Thickness.Value or 2
+	local style = LineStyle and LineStyle.Value or 'Solid'
 	local viewport = gameCamera.ViewportSize
+	local count = #points - 1
 	local used = 0
-	for i = 1, #points - 1 do
+	for i = 1, count do
+		-- Dashes of three steps on, three off.
+		if style == 'Dashed' and math.floor((i - 1) / 3) % 2 == 1 then continue end
 		local from, to = screenSegment(points[i], points[i + 1])
 		-- Skipped only when wholly off one side of the screen.
 		if from and not ((from.X < 0 and to.X < 0) or (from.Y < 0 and to.Y < 0)
@@ -240,29 +258,54 @@ local function draw(key, points, landing, color)
 			line.To = to
 			line.Color = color
 			line.Thickness = thickness
+			-- Drawing transparency runs the other way: 1 is solid.
+			line.Transparency = style == 'Fade' and math.clamp(1 - (i / count) * 0.85, 0.15, 1) or 1
 			line.Visible = true
 		end
 	end
 	for i = used + 1, #entry.lines do entry.lines[i].Visible = false end
 
-	if landing and on(Marker) then
-		local point, visible = gameCamera:WorldToViewportPoint(landing)
-		if visible and point.Z > 0 then
-			if not entry.circle then
-				entry.circle = Drawing.new('Circle')
-				entry.circle.NumSides = 24
-				entry.circle.Filled = false
-			end
-			entry.circle.Position = Vector2.new(point.X, point.Y)
-			entry.circle.Radius = 7
-			entry.circle.Thickness = thickness
-			entry.circle.Color = color
-			entry.circle.Visible = true
-		elseif entry.circle then
-			entry.circle.Visible = false
+	if not (landing and on(Marker)) then
+		hideMarker(entry)
+		return
+	end
+	local point, visible = gameCamera:WorldToViewportPoint(landing)
+	if not (visible and point.Z > 0) then
+		hideMarker(entry)
+		return
+	end
+	local center = Vector2.new(point.X, point.Y)
+	local size = MarkerSize and MarkerSize.Value or 7
+	local mstyle = MarkerStyle and MarkerStyle.Value or 'Circle'
+	if mstyle == 'Cross' then
+		if entry.circle then entry.circle.Visible = false end
+		if not entry.cross then
+			entry.cross = {Drawing.new('Line'), Drawing.new('Line')}
 		end
-	elseif entry.circle then
-		entry.circle.Visible = false
+		local a, b = entry.cross[1], entry.cross[2]
+		a.From, a.To = center + Vector2.new(-size, -size), center + Vector2.new(size, size)
+		b.From, b.To = center + Vector2.new(-size, size), center + Vector2.new(size, -size)
+		for _, line in entry.cross do
+			line.Color = color
+			line.Thickness = thickness
+			line.Transparency = 1
+			line.Visible = true
+		end
+	else
+		if entry.cross then
+			for _, line in entry.cross do line.Visible = false end
+		end
+		if not entry.circle then
+			entry.circle = Drawing.new('Circle')
+			entry.circle.NumSides = 24
+		end
+		entry.circle.Filled = mstyle == 'Dot'
+		entry.circle.Position = center
+		entry.circle.Radius = mstyle == 'Dot' and math.max(size * 0.6, 2) or size
+		entry.circle.Thickness = thickness
+		entry.circle.Color = color
+		entry.circle.Transparency = 1
+		entry.circle.Visible = true
 	end
 end
 
@@ -388,22 +431,50 @@ local function clearHighlights()
 	table.clear(highlights)
 end
 
+-- Shades the block the shot lands on.
+local function setImpact(part, color)
+	if not (part and on(ImpactHighlight) and part:IsA('BasePart')) then
+		if impactBox then impactBox.Visible = false end
+		return
+	end
+	if not impactBox then
+		impactBox = Instance.new('BoxHandleAdornment')
+		impactBox.AlwaysOnTop = true
+		impactBox.ZIndex = 1
+		impactBox.Parent = HighlightFolder
+	end
+	impactBox.Adornee = part
+	impactBox.Size = part.Size + Vector3.new(0.05, 0.05, 0.05)
+	impactBox.Color3 = color
+	impactBox.Transparency = 0.6
+	impactBox.Visible = true
+end
+
+-- Whether the game is aiming a shot right now (the bow drawn, the pearl wound up).
+local function charging()
+	local controller = bedwars.ProjectileController
+	return controller ~= nil and controller.isTargeting == true
+end
+
 local function aimPreview()
-	if not (on(AimPreview) and entitylib.isAlive) then
+	if not (on(AimPreview) and entitylib.isAlive) or (on(ChargingOnly) and not charging()) then
 		destroyPool('aim')
+		setImpact(nil)
 		return
 	end
 	local start, velocity, gravity, name = aimLaunch()
 	if not start or (on(PearlOnly) and not isPearl(name)) then
 		local entry = pools.aim
 		if entry then hidePool(entry) end
+		setImpact(nil)
 		return
 	end
 
-	local points, landing, character = simulate(start, velocity, gravity, true)
+	local points, landing, character, part = simulate(start, velocity, gravity, true)
 	if character and on(AimHighlight) then markHit(character) end
 	local color = isPearl(name) and colorOf(PearlColor, Color3.fromRGB(200, 120, 255)) or colorOf(AimColor, Color3.fromRGB(120, 220, 255))
 	draw('aim', points, landing, color)
+	setImpact(not character and part or nil, color)
 end
 
 local function step()
@@ -430,10 +501,17 @@ local function step()
 
 		local points, landing = simulate(root.Position, velocity, projectileGravity(root))
 		local color
+		local lower = model.Name:lower()
 		if isPearl(model.Name) then
 			color = colorOf(PearlColor, Color3.fromRGB(200, 120, 255))
 		elseif on(Danger) and threatens(points) then
 			color = colorOf(DangerColor, Color3.fromRGB(255, 70, 70))
+		elseif on(TypeColors) and lower:find('arrow', 1, true) then
+			color = colorOf(ArrowColor, Color3.fromRGB(255, 255, 255))
+		elseif on(TypeColors) and lower:find('fireball', 1, true) then
+			color = colorOf(FireballColor, Color3.fromRGB(255, 140, 40))
+		elseif on(TypeColors) and lower:find('snowball', 1, true) then
+			color = colorOf(SnowballColor, Color3.fromRGB(170, 220, 255))
 		else
 			color = colorOf(LineColor, Color3.fromRGB(255, 220, 120))
 		end
@@ -457,6 +535,10 @@ Trajectories = vain.Categories.Render:CreateModule({
 			for key in pools do destroyPool(key) end
 			table.clear(tracked)
 			clearHighlights()
+			if impactBox then
+				impactBox:Destroy()
+				impactBox = nil
+			end
 		end
 	end
 })
@@ -474,8 +556,32 @@ PearlOnly = Trajectories:CreateToggle({
 })
 Marker = Trajectories:CreateToggle({
 	Name = 'Landing Marker',
-	Tooltip = 'Circles where each one comes down',
-	Default = true
+	Tooltip = 'Marks where each one comes down',
+	Default = true,
+	Function = function(callback)
+		for _, setting in {MarkerStyle, MarkerSize} do
+			if setting and setting.Object then setting.Object.Visible = callback end
+		end
+	end
+})
+MarkerStyle = Trajectories:CreateDropdown({
+	Name = 'Marker Style',
+	List = {'Circle', 'Cross', 'Dot'},
+	Tooltips = {Circle = 'A ring', Cross = 'An X', Dot = 'A filled dot'},
+	Darker = true
+})
+MarkerSize = Trajectories:CreateSlider({
+	Name = 'Marker Size',
+	Tooltip = 'How big the marker is',
+	Min = 3,
+	Max = 20,
+	Default = 7,
+	Darker = true
+})
+LineStyle = Trajectories:CreateDropdown({
+	Name = 'Line Style',
+	List = {'Solid', 'Dashed', 'Fade'},
+	Tooltips = {Solid = 'One unbroken line', Dashed = 'A dashed line', Fade = 'Fades out towards the end'}
 })
 Danger = Trajectories:CreateToggle({
 	Name = 'Danger Color',
@@ -490,7 +596,9 @@ AimPreview = Trajectories:CreateToggle({
 	Tooltip = 'Draws where what you are holding will land',
 	Function = function(callback)
 		if AimColor and AimColor.Object then AimColor.Object.Visible = callback end
-		if AimHighlight and AimHighlight.Object then AimHighlight.Object.Visible = callback end
+		for _, setting in {AimHighlight, ChargingOnly, ImpactHighlight} do
+			if setting and setting.Object then setting.Object.Visible = callback end
+		end
 		if HighlightColor and HighlightColor.Object then
 			HighlightColor.Object.Visible = callback and on(AimHighlight)
 		end
@@ -506,6 +614,25 @@ AimHighlight = Trajectories:CreateToggle({
 			HighlightColor.Object.Visible = callback and on(AimPreview)
 		end
 		if not callback then clearHighlights() end
+	end
+})
+ChargingOnly = Trajectories:CreateToggle({
+	Name = 'Only While Aiming',
+	Tooltip = 'Aim preview only while drawing or winding up',
+	Visible = false
+})
+ImpactHighlight = Trajectories:CreateToggle({
+	Name = 'Impact Highlight',
+	Tooltip = 'Shades the block your shot lands on',
+	Visible = false
+})
+TypeColors = Trajectories:CreateToggle({
+	Name = 'Type Colors',
+	Tooltip = 'Own colours for arrows, fireballs and snowballs',
+	Function = function(callback)
+		for _, setting in {ArrowColor, FireballColor, SnowballColor} do
+			if setting and setting.Object then setting.Object.Visible = callback end
+		end
 	end
 })
 MaxTime = Trajectories:CreateSlider({
@@ -562,6 +689,32 @@ HighlightColor = Trajectories:CreateColorSlider({
 	DefaultSat = 0.7,
 	DefaultValue = 1,
 	DefaultOpacity = 0.5,
+	Darker = true,
+	Visible = false
+})
+ArrowColor = Trajectories:CreateColorSlider({
+	Name = 'Arrow Color',
+	Tooltip = 'Colour of arrows',
+	DefaultSat = 0,
+	DefaultValue = 1,
+	Darker = true,
+	Visible = false
+})
+FireballColor = Trajectories:CreateColorSlider({
+	Name = 'Fireball Color',
+	Tooltip = 'Colour of fireballs',
+	DefaultHue = 0.07,
+	DefaultSat = 0.85,
+	DefaultValue = 1,
+	Darker = true,
+	Visible = false
+})
+SnowballColor = Trajectories:CreateColorSlider({
+	Name = 'Snowball Color',
+	Tooltip = 'Colour of snowballs',
+	DefaultHue = 0.57,
+	DefaultSat = 0.35,
+	DefaultValue = 1,
 	Darker = true,
 	Visible = false
 })
