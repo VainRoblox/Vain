@@ -2,6 +2,8 @@ local KitDisplay
 local RankedOnly
 local KitHistory
 local HistoryCount
+local ShowTeam, MostPlayed, IconSize, RowPosition, WinTint
+local showsPlayer
 
 --[[
 	The kits someone played in their last matches, from their match history.
@@ -56,6 +58,20 @@ local function requestMatches(player)
 	end))
 end
 
+-- Whether they won: their team in match.teams is the one placed first (placement 0).
+-- Nil when the match does not say.
+local function wonMatch(match, userId)
+	for _, team in (type(match.teams) == 'table' and match.teams or {}) do
+		local members = type(team) == 'table' and team.members
+		if type(members) == 'table' and (members[userId] ~= nil or members[tostring(userId)] ~= nil) then
+			local placement = tonumber(team.placement)
+			if placement == nil then return nil end
+			return placement == 0
+		end
+	end
+	return nil
+end
+
 local historyCache, historyWaiters = {}, {}
 local historyQueue = 0
 
@@ -89,7 +105,7 @@ local function fetchHistory(player, callback)
 					if info and tonumber(info.userId) == userId then
 						local kit = entry.bedwars and entry.bedwars.kit
 						if type(kit) == 'string' and kit ~= '' then
-							kits[#kits + 1] = kit
+							kits[#kits + 1] = {kit = kit, won = wonMatch(match, userId)}
 						end
 						break
 					end
@@ -106,20 +122,27 @@ end
 
 -- A small row of kit icons in the bottom right of a player's card, newest on the right
 -- edge. Kept inside the card, as anything hanging off it is clipped by the draft list.
+local POSITIONS = {
+	['Bottom Right'] = {Vector2.new(1, 1), UDim2.new(1, -4, 1, -4), Enum.HorizontalAlignment.Right},
+	['Top Right'] = {Vector2.new(1, 0), UDim2.new(1, -4, 0, 4), Enum.HorizontalAlignment.Right},
+	['Bottom Left'] = {Vector2.new(0, 1), UDim2.new(0, 4, 1, -4), Enum.HorizontalAlignment.Left}
+}
+
 local function newRow(card)
+	local place = POSITIONS[RowPosition and RowPosition.Value or 'Bottom Right'] or POSITIONS['Bottom Right']
 	local row = Instance.new('Frame')
 	row.Name = 'KitHistory'
 	row.BackgroundTransparency = 1
-	row.AnchorPoint = Vector2.new(1, 1)
-	row.Position = UDim2.new(1, -4, 1, -4)
-	row.Size = UDim2.new(0.62, 0, 0.2, 0)
+	row.AnchorPoint = place[1]
+	row.Position = place[2]
+	row.Size = UDim2.new(0.62, 0, IconSize and IconSize.Value / 100 or 0.2, 0)
 	row.ZIndex = 10
 	row.Parent = card
 	KitDisplay:Clean(row)
 
 	local layout = Instance.new('UIListLayout')
 	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	layout.HorizontalAlignment = place[3]
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Padding = UDim.new(0, 2)
@@ -136,9 +159,35 @@ local function rowText(row, text)
 	label.Font = Enum.Font.GothamBold
 	label.TextColor3 = Color3.fromRGB(200, 200, 200)
 	label.TextStrokeTransparency = 0.5
-	label.TextXAlignment = Enum.TextXAlignment.Right
+	label.TextXAlignment = RowPosition and RowPosition.Value == 'Bottom Left' and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right
 	label.ZIndex = 10
 	label.Parent = row
+end
+
+-- Show Team off leaves your own team's cards, yours included, alone.
+showsPlayer = function(player)
+	if not ShowTeam or ShowTeam.Enabled then return true end
+	if player == lplr then return false end
+	local mine, theirs = lplr:GetAttribute('Team'), player:GetAttribute('Team')
+	return not (mine ~= nil and theirs ~= nil and tostring(mine) == tostring(theirs))
+end
+
+local function kitIcon(row, kit, order, transparency)
+	local meta = bedwars.BedwarsKitMeta[kit]
+	local icon = Instance.new('ImageLabel')
+	icon.Name = kit
+	icon.LayoutOrder = order
+	icon.BackgroundColor3 = Color3.new(0, 0, 0)
+	icon.BackgroundTransparency = 0.45
+	icon.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.ScaleType = Enum.ScaleType.Crop
+	icon.Image = meta and meta.renderImage or ''
+	icon.ImageTransparency = transparency
+	icon.ZIndex = 10
+	icon.Parent = row
+	Instance.new('UICorner', icon).CornerRadius = UDim.new(0.25, 0)
+	return icon
 end
 
 local function drawHistory(card, player)
@@ -146,6 +195,7 @@ local function drawHistory(card, player)
 	local old = card:FindFirstChild('KitHistory')
 	if old then old:Destroy() end
 	if not (KitHistory and KitHistory.Enabled and player) then return end
+	if not showsPlayer(player) then return end
 
 	-- Cards are reused as the list reorders, so the answer is only drawn if the card still
 	-- shows the player it was asked for.
@@ -162,22 +212,52 @@ local function drawHistory(card, player)
 			rowText(row, 'No history')
 			return
 		end
+		local leftAligned = RowPosition and RowPosition.Value == 'Bottom Left'
 		for i = 1, shown do
-			local meta = bedwars.BedwarsKitMeta[kits[i]]
-			local icon = Instance.new('ImageLabel')
-			icon.Name = kits[i]
-			-- Laid out right to left: the newest sits on the edge.
-			icon.LayoutOrder = shown - i
-			icon.BackgroundColor3 = Color3.new(0, 0, 0)
-			icon.BackgroundTransparency = 0.45
-			icon.SizeConstraint = Enum.SizeConstraint.RelativeYY
-			icon.Size = UDim2.fromScale(1, 1)
-			icon.ScaleType = Enum.ScaleType.Crop
-			icon.Image = meta and meta.renderImage or ''
-			icon.ImageTransparency = math.clamp((i - 1) * 0.05, 0, 0.45)
-			icon.ZIndex = 10
-			icon.Parent = row
-			Instance.new('UICorner', icon).CornerRadius = UDim.new(0.25, 0)
+			-- The newest sits on the outer edge of the card.
+			local order = leftAligned and i or (shown - i)
+			local icon = kitIcon(row, kits[i].kit, order, math.clamp((i - 1) * 0.05, 0, 0.45))
+			if WinTint and WinTint.Enabled and kits[i].won ~= nil then
+				local stroke = Instance.new('UIStroke')
+				stroke.Thickness = 1.5
+				stroke.Color = kits[i].won and Color3.fromRGB(90, 220, 110) or Color3.fromRGB(235, 80, 80)
+				stroke.Parent = icon
+			end
+		end
+
+		-- Their most played kit across those matches, with how many times.
+		if MostPlayed and MostPlayed.Enabled then
+			local counts, best, bestCount = {}, nil, 0
+			for i = 1, shown do
+				local kit = kits[i].kit
+				counts[kit] = (counts[kit] or 0) + 1
+				if counts[kit] > bestCount then best, bestCount = kit, counts[kit] end
+			end
+			if best and bestCount > 1 then
+				local order = leftAligned and -2 or (shown + 2)
+				local spacer = Instance.new('Frame')
+				spacer.BackgroundTransparency = 1
+				spacer.Size = UDim2.fromOffset(4, 0)
+				spacer.LayoutOrder = leftAligned and -1 or (shown + 1)
+				spacer.Parent = row
+				local icon = kitIcon(row, best, order, 0)
+				local count = Instance.new('TextLabel')
+				count.BackgroundTransparency = 1
+				count.AnchorPoint = Vector2.new(1, 1)
+				count.Position = UDim2.fromScale(1.1, 1.1)
+				count.Size = UDim2.fromScale(0.7, 0.55)
+				count.Text = 'x' .. bestCount
+				count.TextScaled = true
+				count.Font = Enum.Font.GothamBold
+				count.TextColor3 = Color3.new(1, 1, 1)
+				count.TextStrokeTransparency = 0.2
+				count.ZIndex = 11
+				count.Parent = icon
+				local mark = Instance.new('UIStroke')
+				mark.Thickness = 1.5
+				mark.Color = Color3.fromRGB(255, 210, 90)
+				mark.Parent = icon
+			end
 		end
 	end)
 end
@@ -274,11 +354,13 @@ local function callback5v5(v, plr)
 		end
 
 		roact.Image = kitImage.renderImage
+		roact.Visible = showsPlayer(player)
 		roact.Position = UDim2.fromScale(1.05, 0)
 		tweenService:Create(roact, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Position = UDim2.fromScale(1.05, 0.4)}):Play()
 
 		local function update()
 			roact.Image = getKitMeta(player).renderImage
+			roact.Visible = showsPlayer(player)
 		end
 
 		-- Re-bind the kit listener to whichever player the card currently shows.
@@ -332,6 +414,7 @@ local function callbacksquad(v)
 
 		local function update()
 			Roact.Image = getKitMeta(player).renderImage
+			Roact.Visible = showsPlayer(player)
 		end
 
 		-- Keep the kit listener bound to whichever player this card now shows.
@@ -508,4 +591,45 @@ HistoryCount = KitDisplay:CreateSlider({
 	Default = 10,
 	Darker = true,
 	Visible = false
+})
+ShowTeam = KitDisplay:CreateToggle({
+	Name = 'Show Team',
+	Tooltip = 'Also shows your own team\'s cards',
+	Default = true,
+	Function = function()
+		if KitDisplay.Enabled then
+			KitDisplay:Toggle()
+			KitDisplay:Toggle()
+		end
+	end
+})
+MostPlayed = KitDisplay:CreateToggle({
+	Name = 'Most Played',
+	Tooltip = 'Marks their most played kit with a count',
+	Default = true,
+	Darker = true
+})
+WinTint = KitDisplay:CreateToggle({
+	Name = 'Win Tint',
+	Tooltip = 'Rings each kit green for a win, red for a loss',
+	Darker = true
+})
+IconSize = KitDisplay:CreateSlider({
+	Name = 'Icon Size',
+	Tooltip = 'How big the history icons are',
+	Min = 10,
+	Max = 40,
+	Default = 20,
+	Darker = true,
+	Suffix = function() return '%' end
+})
+RowPosition = KitDisplay:CreateDropdown({
+	Name = 'History Position',
+	List = {'Bottom Right', 'Top Right', 'Bottom Left'},
+	Tooltips = {
+		['Bottom Right'] = 'Bottom right of the card',
+		['Top Right'] = 'Top right of the card',
+		['Bottom Left'] = 'Bottom left of the card'
+	},
+	Darker = true
 })
