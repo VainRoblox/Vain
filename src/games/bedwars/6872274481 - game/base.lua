@@ -2757,6 +2757,35 @@ run(function()
 		})
 	end))
 
+	--[[
+		Who was hit last, for Target HUD's Last Hit mode, from every way you hit someone:
+		the sword path records it where the attack is sent, damage of any kind you deal
+		comes through EntityDamageEvent (fromEntity is you), and your projectiles report
+		what they hit through the game's LocalProjectileImpact - which covers a lasso or
+		anything else that lands without dealing damage.
+	]]
+	local function recordHit(character)
+		if character and character ~= lplr.Character then
+			store.lastHitCharacter = character
+			store.lastHitAt = tick()
+		end
+	end
+	vain:Clean(vainEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+		if type(damageTable) == 'table' and lplr.Character and damageTable.fromEntity == lplr.Character then
+			recordHit(damageTable.entityInstance)
+		end
+	end))
+	pcall(function()
+		local ClientSyncEvents = require(lplr.PlayerScripts.TS['client-sync-events']).ClientSyncEvents
+		local connection = ClientSyncEvents.LocalProjectileImpact:connect(function(_, _, entity)
+			local character = entity and entity.getInstance and entity:getInstance()
+			recordHit(character)
+		end)
+		vain:Clean(function()
+			pcall(function() connection:Disconnect() end)
+		end)
+	end)
+
 	for _, event in {'PlaceBlockEvent', 'BreakBlockEvent'} do
 		vain:Clean(bedwars.ZapNetworking[event..'Zap'].On(function(...)
 			local data = {
