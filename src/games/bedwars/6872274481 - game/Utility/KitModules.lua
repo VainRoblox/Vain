@@ -3649,7 +3649,7 @@ kitRun(function()
     ]]
     local AutoLani
     local Mode, TargetMode, Teammate, TeammateHealth, Escape, SelfHealth
-    local MinDistance, FireDelay, SkipFalling, AutoBuyScepter
+    local MinDistance, FireDelay, SkipFalling, AutoBuyScepter, AlwaysTarget
     local escaping = false
     local lastUse, lastBuy = 0, 0
     local wasAngel = false
@@ -3689,7 +3689,21 @@ kitRun(function()
         return list
     end
 
+    -- The teammate picked under Always Target, while alive and in the game - chosen over
+    -- every mode and filter.
+    local function alwaysTarget()
+        local name = AlwaysTarget and AlwaysTarget.Value
+        if not name or name == 'None' then return nil end
+        local player = playersService:FindFirstChild(name)
+        local humanoid = player and player.Character and player.Character:FindFirstChildOfClass('Humanoid')
+        if player and player ~= lplr and humanoid and humanoid.Health > 0 and player.Character:FindFirstChild('HumanoidRootPart') then
+            return player
+        end
+    end
+
     local function pickTarget()
+        local forced = alwaysTarget()
+        if forced then return forced end
         local list = candidates()
         if #list == 0 then return nil end
         local mode = escaping and 'Safest' or TargetMode.Value
@@ -3792,7 +3806,7 @@ kitRun(function()
                     if on(AutoBuyScepter) then pcall(buyScepter) end
                     if Mode.Value == 'Auto' and not angel and os.clock() - lastUse >= USE_COOLDOWN then
                         local use, isEscape = shouldUse()
-                        if use and #candidates() > 0 then
+                        if use and (#candidates() > 0 or alwaysTarget()) then
                             escaping = isEscape
                             pcall(useScepter)
                         end
@@ -3838,6 +3852,11 @@ kitRun(function()
         if #list == 0 then list = {'None'} end
         return list
     end
+    local function alwaysList()
+        local list = {'None'}
+        for _, name in getTeammates(true) do list[#list + 1] = name end
+        return list
+    end
     Teammate = AutoLani:CreateDropdown({
         Name = 'Teammate',
         List = teammateList(),
@@ -3849,7 +3868,13 @@ kitRun(function()
         Tooltip = 'Updates the teammate list',
         Function = function()
             pcall(function() Teammate:Change(teammateList()) end)
+            pcall(function() AlwaysTarget:Change(alwaysList()) end)
         end
+    })
+    AlwaysTarget = AutoLani:CreateDropdown({
+        Name = 'Always Target',
+        List = alwaysList(),
+        Tooltip = 'This teammate always gets it while alive'
     })
     TeammateHealth = AutoLani:CreateSlider({
         Name = 'Teammate Health',
