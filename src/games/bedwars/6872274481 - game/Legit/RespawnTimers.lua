@@ -259,8 +259,15 @@ local function update()
 	panel.Size = UDim2.fromOffset(190, #shown * 18 + 30)
 end
 
+-- Inside the module's draggable frame where the GUI gives it one; pinned to a corner of
+-- the screen otherwise.
 local function place()
 	if not panel then return end
+	if RespawnTimers.Children then
+		panel.AnchorPoint = Vector2.zero
+		panel.Position = UDim2.fromOffset(0, 0)
+		return
+	end
 	local corner = CORNERS[Corner.Value] or CORNERS['Top Right']
 	panel.AnchorPoint = corner[1]
 	panel.Position = corner[2]
@@ -271,7 +278,7 @@ local function build()
 	panel.Name = 'RespawnTimers'
 	panel.BorderSizePixel = 0
 	panel.Visible = false
-	panel.Parent = vain.gui
+	panel.Parent = RespawnTimers.Children or vain.gui
 	Instance.new('UICorner', panel).CornerRadius = UDim.new(0, 6)
 	local padding = Instance.new('UIPadding')
 	padding.PaddingLeft = UDim.new(0, 8)
@@ -306,9 +313,10 @@ local function build()
 	place()
 end
 
-RespawnTimers = vain.Categories.Render:CreateModule({
+RespawnTimers = vain.Legit:CreateModule({
 	Name = 'Respawn Timers',
 	Tooltip = 'Shows when dead players respawn',
+	Size = UDim2.fromOffset(190, 48),
 	Function = function(callback)
 		if callback then
 			build()
@@ -403,7 +411,9 @@ Corner = RespawnTimers:CreateDropdown({
 		['Bottom Right'] = 'Bottom right of the screen',
 		['Bottom Left'] = 'Bottom left of the screen'
 	},
-	Function = place
+	Function = place,
+	-- Only needed where there is no draggable frame to put it in.
+	Visible = RespawnTimers.Children == nil
 })
 Background = RespawnTimers:CreateColorSlider({
 	Name = 'Background',
