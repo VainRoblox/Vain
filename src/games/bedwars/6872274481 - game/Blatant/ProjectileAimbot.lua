@@ -14,6 +14,15 @@ local CircleColor
 local CircleTransparency
 local CircleFilled
 local CircleObject
+local CircleHeldOnly
+
+-- Whether what is in hand fires or throws anything - bows, crossbows, fireballs, pearls,
+-- kit items.
+local function holdingAimDevice()
+	local tool = store.hand and store.hand.tool
+	local meta = tool and bedwars.ItemMeta[tool.Name]
+	return meta ~= nil and meta.projectileSource ~= nil
+end
 local rayCheck = RaycastParams.new()
 rayCheck.FilterType = Enum.RaycastFilterType.Include
 local mapfolder
@@ -368,6 +377,7 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 			local function placeCircle()
 				if CircleObject then
 					CircleObject.Position = mousePosition()
+					CircleObject.Visible = ProjectileAimbot.Enabled and not (CircleHeldOnly and CircleHeldOnly.Enabled and not holdingAimDevice())
 				end
 			end
 
@@ -566,7 +576,14 @@ ProjectileAimbot:CreateToggle({
 		CircleColor.Object.Visible = callback
 		CircleTransparency.Object.Visible = callback
 		CircleFilled.Object.Visible = callback
+		if CircleHeldOnly and CircleHeldOnly.Object then CircleHeldOnly.Object.Visible = callback end
 	end
+})
+CircleHeldOnly = ProjectileAimbot:CreateToggle({
+	Name = 'Only When Holding',
+	Tooltip = 'Only shows the circle while holding something to shoot',
+	Darker = true,
+	Visible = false
 })
 CircleColor = ProjectileAimbot:CreateColorSlider({
 	Name = 'Circle Color',
