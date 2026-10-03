@@ -1,7 +1,25 @@
 local ChinaHat
 local Material
 local Color
-local hat
+local Height
+local hat, weld
+
+-- Sits on the top of the head: the head's own half height, plus the hat's half height so
+-- its rim rests there, plus whatever Height adds.
+local function hatCFrame(head)
+	return head.CFrame * CFrame.new(0, head.Size.Y / 2 + (hat and hat.Size.Y / 2 or 0.35) - 0.25 + (Height and Height.Value or 0), 0)
+end
+
+local function attach(head)
+	if weld then weld:Destroy() end
+	hat.Parent = gameCamera
+	hat.CFrame = hatCFrame(head)
+	hat.AssemblyLinearVelocity = Vector3.zero
+	weld = Instance.new('WeldConstraint')
+	weld.Part0 = hat
+	weld.Part1 = head
+	weld.Parent = hat
+end
 
 ChinaHat = vain.Legit:CreateModule({
 	Name = 'China Hat',
@@ -22,24 +40,11 @@ ChinaHat = vain.Legit:CreateModule({
 			hat.MeshId = 'http://www.roblox.com/asset/?id=1778999'
 			hat.Transparency = 1 - Color.Opacity
 			hat.Parent = gameCamera
-			hat.CFrame = entitylib.isAlive and entitylib.character.Head.CFrame + Vector3.new(0, 1, 0) or CFrame.identity
-			local weld = Instance.new('WeldConstraint')
-			weld.Part0 = hat
-			weld.Part1 = entitylib.isAlive and entitylib.character.Head or nil
-			weld.Parent = hat
+			if entitylib.isAlive then attach(entitylib.character.Head) end
 
 			ChinaHat:Clean(hat)
 			ChinaHat:Clean(entitylib.Events.LocalAdded:Connect(function(char)
-				if weld then
-					weld:Destroy()
-				end
-				hat.Parent = gameCamera
-				hat.CFrame = char.Head.CFrame + Vector3.new(0, 1, 0)
-				hat.Velocity = Vector3.zero
-				weld = Instance.new('WeldConstraint')
-				weld.Part0 = hat
-				weld.Part1 = char.Head
-				weld.Parent = hat
+				attach(char.Head)
 			end))
 
 			repeat
@@ -47,7 +52,7 @@ ChinaHat = vain.Legit:CreateModule({
 				task.wait()
 			until not ChinaHat.Enabled
 		else
-			hat = nil
+			hat, weld = nil, nil
 		end
 	end,
 	Tooltip = 'Puts a china hat on your character (ty mastadawn)'
@@ -75,5 +80,16 @@ Color = ChinaHat:CreateColorSlider({
 			hat.Color = Color3.fromHSV(hue, sat, val)
 			hat.Transparency = 1 - opacity
 		end
+	end
+})
+Height = ChinaHat:CreateSlider({
+	Name = 'Height',
+	Tooltip = 'Moves the hat up or down',
+	Min = -1,
+	Max = 2,
+	Default = 0,
+	Decimal = 100,
+	Function = function()
+		if hat and entitylib.isAlive then attach(entitylib.character.Head) end
 	end
 })
