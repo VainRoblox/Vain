@@ -13,7 +13,6 @@ local Teammates
 local DistanceCheck
 local DistanceLimit
 local Rank
-local Device
 local Enchants
 local Effects
 local Strings, Sizes, Reference, Prefixes = {}, {}, {}, {}
@@ -281,31 +280,6 @@ local MEASURE = Vector2.new(100000, 100000)
 	held open in the text. The gap is measured in spaces at the tag's own font and size, so
 	it stays the right width at any Scale rather than being a fixed guess.
 ]]
---[[
-	The ranked badge sits just outside the tag's left edge, centred on it, rather than in
-	a run of spaces cut into the text. Placing it inside meant measuring the text in front
-	of it, and the measurement and the rendered rich text never quite agreed - which put
-	the badge over the middle of the name.
-]]
-local function rankGap()
-	return ''
-end
-
-local function placeRankIcon(nametag, ent)
-	local icon = nametag:FindFirstChild('RankIcon')
-	if not icon then return end
-
-	local image = (Rank and Rank.Enabled) and ent.Player and divisionImage(ent.Player) or nil
-	icon.Image = image or ''
-	icon.Visible = image ~= nil
-	if not image then return end
-
-	local height = nametag.Size.Y.Offset
-	icon.AnchorPoint = Vector2.new(1, 0.5)
-	icon.Size = UDim2.fromOffset(height, height)
-	icon.Position = UDim2.new(0, -2, 0.5, 0)
-end
-
 local function fetchDivisions()
 	if DivisionFetching or not (Rank and Rank.Enabled) then return end
 
@@ -436,7 +410,7 @@ local function drawEffects(nametag, ent)
 			word.TextColor3 = Color3.new(1, 1, 1)
 			word.TextStrokeTransparency = 0.4
 			word.TextSize = math.max(8, math.floor(size * 0.6))
-			word.FontFace = nametag.FontFace
+			word.FontFace = FontOption.Value
 			word.LayoutOrder = shown
 			word.Parent = strip
 		end
@@ -446,82 +420,99 @@ local function drawEffects(nametag, ent)
 	strip.Visible = shown > 0
 end
 
+--[[
+	A tag is a row of separate pieces - the distance, the ranked badge, the name and the
+	health - laid out side by side by a UIListLayout inside a Row frame, with the tag's
+	background sized to that row. Nothing is measured: each piece takes its own room, so
+	a badge or an icon can never end up over the text. The equipment icons and the status
+	strip sit above the tag, outside the row.
+]]
+local function newPiece(row, name, order)
+	local label = Instance.new('TextLabel')
+	label.Name = name
+	label.BackgroundTransparency = 1
+	label.AutomaticSize = Enum.AutomaticSize.X
+	label.Size = UDim2.fromScale(0, 1)
+	label.RichText = true
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.LayoutOrder = order
+	label.Parent = row
+	return label
+end
+
+local function textHeight()
+	return math.floor(14 * Scale.Value) + 3
+end
+
 local Added = {
 	Normal = function(ent)
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
 		if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
 
-		local nametag = Instance.new('TextLabel')
-		Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+		local height = textHeight()
+		local nametag = Instance.new('Frame')
+		nametag.Name = ent.Player and ent.Player.Name or ent.Character.Name
+		nametag.AnchorPoint = Vector2.new(0.5, 1)
+		nametag.BackgroundColor3 = Color3.new()
+		nametag.BackgroundTransparency = Background.Value
+		nametag.BorderSizePixel = 0
+		nametag.Size = UDim2.fromOffset(60, height + 4)
+		nametag.Visible = false
+		Instance.new('UICorner', nametag).CornerRadius = UDim.new(0, 4)
 
-		if Device.Enabled and ent.Player then
-			local executor = (identifyexecutor and identifyexecutor() or {'Unknown'})[1] or 'Unknown'
-			local deviceIcon = executor:find('Mobile') and '📱' or '💻'
-			Strings[ent] = Strings[ent]..' '..deviceIcon
-		end
+		local row = Instance.new('Frame')
+		row.Name = 'Row'
+		row.BackgroundTransparency = 1
+		row.AutomaticSize = Enum.AutomaticSize.X
+		row.Size = UDim2.fromOffset(0, height)
+		row.Position = UDim2.fromOffset(4, 2)
+		row.Parent = nametag
+		local layout = Instance.new('UIListLayout')
+		layout.FillDirection = Enum.FillDirection.Horizontal
+		layout.VerticalAlignment = Enum.VerticalAlignment.Center
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Padding = UDim.new(0, 4)
+		layout.Parent = row
 
-		if Health.Enabled then
-			local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-			Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
-		end
-
-		Strings[ent] = appendStatus(ent, Strings[ent], true)
-
-		-- The badge sits between the distance and the name, so the distance is kept aside
-		-- as the run of text the badge has to clear.
-		Prefixes[ent] = Distance.Enabled and '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> ' or ''
-		Strings[ent] = Prefixes[ent]..rankGap(ent, 14 * Scale.Value, FontOption.Value)..Strings[ent]
+		newPiece(row, 'Distance', 1)
+		local rankicon = Instance.new('ImageLabel')
+		rankicon.Name = 'RankIcon'
+		rankicon.BackgroundTransparency = 1
+		rankicon.Size = UDim2.fromOffset(height, height)
+		rankicon.ScaleType = Enum.ScaleType.Fit
+		rankicon.LayoutOrder = 2
+		rankicon.Visible = false
+		rankicon.Parent = row
+		newPiece(row, 'NameLabel', 3)
+		newPiece(row, 'HealthLabel', 4)
 
 		if Equipment.Enabled then
 			for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
 				local Icon = Instance.new('ImageLabel')
 				Icon.Name = v
 				Icon.Size = UDim2.fromOffset(30, 30)
-				Icon.Position = UDim2.fromOffset(-60 + (i * 30), -30)
+				Icon.AnchorPoint = Vector2.new(0.5, 1)
+				Icon.Position = UDim2.new(0.5, (i - 3) * 30, 0, -2)
 				Icon.BackgroundTransparency = 1
 				Icon.Image = ''
 				Icon.Parent = nametag
 			end
 		end
 
-		nametag.TextSize = 14 * Scale.Value
-		nametag.FontFace = FontOption.Value
-		local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-		nametag.Name = ent.Player and ent.Player.Name or ent.Character.Name
-		nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
-		nametag.AnchorPoint = Vector2.new(0.5, 1)
-		nametag.BackgroundColor3 = Color3.new()
-		nametag.BackgroundTransparency = Background.Value
-		nametag.BorderSizePixel = 0
-		nametag.Visible = false
-		nametag.Text = Strings[ent]
-
 		local strip = Instance.new('Frame')
 		strip.Name = 'Effects'
 		strip.AnchorPoint = Vector2.new(0.5, 1)
-		strip.Position = UDim2.new(0.5, 0, 0, -2)
+		strip.Position = UDim2.new(0.5, 0, 0, Equipment.Enabled and -34 or -2)
 		strip.Size = UDim2.fromOffset(0, 0)
 		strip.AutomaticSize = Enum.AutomaticSize.X
 		strip.BackgroundTransparency = 1
 		strip.Visible = false
 		strip.Parent = nametag
-		drawEffects(nametag, ent)
 
-		local rankicon = Instance.new('ImageLabel')
-		rankicon.Name = 'RankIcon'
-		rankicon.AnchorPoint = Vector2.new(0, 0.5)
-		rankicon.BackgroundTransparency = 1
-		rankicon.ScaleType = Enum.ScaleType.Fit
-		rankicon.Image = ''
-		rankicon.Visible = false
-		rankicon.Parent = nametag
-		placeRankIcon(nametag, ent)
-
-		nametag.TextColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
-		nametag.RichText = true
 		nametag.Parent = Folder
 		Reference[ent] = nametag
+		-- Filled in by Updated, which the loop runs for any tag not built yet.
 	end,
 	Drawing = function(ent)
 		if not Targets.Players.Enabled and ent.Player then return end
@@ -545,12 +536,6 @@ local Added = {
 			if division then
 				Strings[ent] = Strings[ent]..' '..division
 			end
-		end
-
-		if Device.Enabled and ent.Player then
-			local executor = (identifyexecutor and identifyexecutor() or {'Unknown'})[1] or 'Unknown'
-			local deviceIcon = executor:find('Mobile') and '📱' or '💻'
-			Strings[ent] = Strings[ent]..' '..deviceIcon
 		end
 
 		if Health.Enabled then
@@ -603,43 +588,48 @@ local Removed = {
 local Updated = {
 	Normal = function(ent)
 		local nametag = Reference[ent]
-		if nametag then
-			Sizes[ent] = nil
-			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+		if not nametag then return end
+		local row = nametag:FindFirstChild('Row')
+		if not row then return end
+		Sizes[ent] = nil
+		-- Marks the tag as built, for the loop's rebuild check.
+		Strings[ent] = true
 
-			if Device.Enabled and ent.Player then
-				local executor = (identifyexecutor and identifyexecutor() or {'Unknown'})[1] or 'Unknown'
-				local deviceIcon = executor:find('Mobile') and '📱' or '💻'
-				Strings[ent] = Strings[ent]..' '..deviceIcon
-			end
-
-			if Health.Enabled then
-				local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-				Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
-			end
-
-			Strings[ent] = appendStatus(ent, Strings[ent], true)
-
-			Prefixes[ent] = Distance.Enabled and '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> ' or ''
-			Strings[ent] = Prefixes[ent]..rankGap(ent, nametag.TextSize, nametag.FontFace)..Strings[ent]
-
-			if Equipment.Enabled and store.inventories[ent.Player] then
-				local kit = ent.Player:GetAttribute('PlayingAsKit')
-				local inventory = store.inventories[ent.Player]
-				nametag.Hand.Image = bedwars.getIcon(inventory.hand or {itemType = ''}, true)
-				nametag.Helmet.Image = bedwars.getIcon(inventory.armor[4] or {itemType = ''}, true)
-				nametag.Chestplate.Image = bedwars.getIcon(inventory.armor[5] or {itemType = ''}, true)
-				nametag.Boots.Image = bedwars.getIcon(inventory.armor[6] or {itemType = ''}, true)
-				nametag.Kit.Image = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit].renderImage or ''
-			end
-
-			local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-			nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
-			nametag.Text = Strings[ent]
-			drawEffects(nametag, ent)
-			-- Outside the tag, so nothing in the text has to be measured first.
-			placeRankIcon(nametag, ent)
+		local size = math.floor(14 * Scale.Value)
+		local font = FontOption.Value
+		local height = textHeight()
+		row.Size = UDim2.fromOffset(0, height)
+		for _, piece in {row.Distance, row.NameLabel, row.HealthLabel} do
+			piece.TextSize = size
+			piece.FontFace = font
 		end
+
+		row.Distance.Visible = Distance.Enabled
+		row.NameLabel.Text = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+		row.NameLabel.TextColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+
+		row.HealthLabel.Visible = Health.Enabled
+		if Health.Enabled then
+			row.HealthLabel.Text = tostring(math.round(ent.Health))
+			row.HealthLabel.TextColor3 = Color3.fromHSV(math.clamp(ent.Health / math.max(ent.MaxHealth, 1), 0, 1) / 2.5, 0.89, 0.75)
+		end
+
+		local image = Rank and Rank.Enabled and ent.Player and divisionImage(ent.Player) or nil
+		row.RankIcon.Image = image or ''
+		row.RankIcon.Visible = image ~= nil
+		row.RankIcon.Size = UDim2.fromOffset(height, height)
+
+		if Equipment.Enabled and store.inventories[ent.Player] and nametag:FindFirstChild('Hand') then
+			local kit = ent.Player:GetAttribute('PlayingAsKit')
+			local inventory = store.inventories[ent.Player]
+			nametag.Hand.Image = bedwars.getIcon(inventory.hand or {itemType = ''}, true)
+			nametag.Helmet.Image = bedwars.getIcon(inventory.armor[4] or {itemType = ''}, true)
+			nametag.Chestplate.Image = bedwars.getIcon(inventory.armor[5] or {itemType = ''}, true)
+			nametag.Boots.Image = bedwars.getIcon(inventory.armor[6] or {itemType = ''}, true)
+			nametag.Kit.Image = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit] and bedwars.BedwarsKitMeta[kit].renderImage or ''
+		end
+
+		drawEffects(nametag, ent)
 	end,
 	Drawing = function(ent)
 		local nametag = Reference[ent]
@@ -655,12 +645,6 @@ local Updated = {
 				if division then
 					Strings[ent] = Strings[ent]..' '..division
 				end
-			end
-
-			if Device.Enabled and ent.Player then
-				local executor = (identifyexecutor and identifyexecutor() or {'Unknown'})[1] or 'Unknown'
-				local deviceIcon = executor:find('Mobile') and '📱' or '💻'
-				Strings[ent] = Strings[ent]..' '..deviceIcon
 			end
 
 			if Health.Enabled then
@@ -686,7 +670,8 @@ local ColorFunc = {
 	Normal = function(hue, sat, val)
 		local color = Color3.fromHSV(hue, sat, val)
 		for i, v in Reference do
-			v.TextColor3 = entitylib.getEntityColor(i) or color
+			local row = v:FindFirstChild('Row')
+			if row then row.NameLabel.TextColor3 = entitylib.getEntityColor(i) or color end
 		end
 	end,
 	Drawing = function(hue, sat, val)
@@ -769,15 +754,19 @@ local Loop = {
 					return
 				end
 
-				if Distance.Enabled then
+				local row = nametag:FindFirstChild('Row')
+				if Distance.Enabled and row then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
 					if Sizes[ent] ~= mag then
-						nametag.Text = string.format(Strings[ent], mag)
-						local ize = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-						nametag.Size = UDim2.fromOffset(ize.X + 8, ize.Y + 7)
+						row.Distance.Text = '<font color="rgb(85, 255, 85)">[</font>' .. mag .. '<font color="rgb(85, 255, 85)">]</font>'
 						Sizes[ent] = mag
-						-- The tag's height can change with the text; the badge follows it.
-						placeRankIcon(nametag, ent)
+					end
+				end
+				-- The background follows the row, which lays itself out.
+				if row then
+					local width = row.AbsoluteSize.X + 8
+					if nametag.Size.X.Offset ~= width then
+						nametag.Size = UDim2.fromOffset(width, row.AbsoluteSize.Y + 4)
 					end
 				end
 				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
@@ -1055,13 +1044,5 @@ Effects = NameTags:CreateToggle({
 		end
 	end
 })
-Device = NameTags:CreateToggle({
-	Name = 'Device',
-	Tooltip = 'Shows executor type with an icon',
-	Function = function()
-		if NameTags.Enabled then
-			NameTags:Toggle()
-			NameTags:Toggle()
-		end
-	end
-})
+-- Device was removed: the game tells no client what device anyone else is on, so it
+-- showed your own executor's device for every player.
