@@ -15,7 +15,7 @@
 ]]
 local TargetHUD
 local Mode, Range, Angle, Linger, ShowEquipment, WinIndicator, Compact, Accent, ShowKitName, ShowEnchants, Background
-local WinMode
+local WinMode, ShowCombo, ShowLastHit, HudScale
 local card, stroke, avatar, nameLabel, winLabel, infoLabel, extraLabel, barBack, barFill, barGhost, equipment
 local icons = {}
 local target, lastSeen = nil, 0
@@ -261,6 +261,30 @@ local function liveTrack(player)
 end
 
 -- Damage a second from a log, and how many hits it is based on.
+--[[
+	Combo and last hit, from the same health watchers: the combo is how many hits in a row
+	the target has taken without you taking one back, with no more than 3 seconds between
+	them; the last hit is how much the latest of those took off.
+]]
+local COMBO_GAP = 3
+local function comboAndLast()
+	-- Kept short: nothing older than the window matters here.
+	for _, log in {live.taken, live.dealt} do
+		while log[1] and os.clock() - log[1].time > 10 do table.remove(log, 1) end
+	end
+	local lastTaken = live.taken[#live.taken]
+	local since = lastTaken and lastTaken.time or 0
+	local combo, previous = 0, os.clock()
+	for i = #live.dealt, 1, -1 do
+		local hit = live.dealt[i]
+		if hit.time <= since or previous - hit.time > COMBO_GAP then break end
+		combo += 1
+		previous = hit.time
+	end
+	local last = live.dealt[#live.dealt]
+	return combo, last and last.amount or nil
+end
+
 local function liveRate(log)
 	local now = os.clock()
 	local total, hits, first = 0, 0, nil
@@ -344,7 +368,14 @@ local function show(entity, player)
 	end
 
 	local distance = (entitylib.isAlive and entity.RootPart) and (entity.RootPart.Position - entitylib.character.RootPart.Position).Magnitude or 0
-	infoLabel.Text = string.format('%d / %d HP   %dm', math.ceil(health), math.ceil(maxHealth), math.floor(distance))
+	local info = string.format('%d / %d HP   %dm', math.ceil(health), math.ceil(maxHealth), math.floor(distance))
+	if player ~= lplr and (on(ShowCombo) or on(ShowLastHit)) then
+		liveTrack(player)
+		local combo, last = comboAndLast()
+		if on(ShowCombo) and combo > 1 then info ..= '   ' .. combo .. ' combo' end
+		if on(ShowLastHit) and last then info ..= string.format('   -%.1f', last) end
+	end
+	infoLabel.Text = info
 
 	local kit = player:GetAttribute('PlayingAsKit')
 	local kitMeta = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit]
@@ -412,7 +443,7 @@ TargetHUD = vain.Legit:CreateModule({
 			liveReset()
 		end
 	end,
-	Size = UDim2.fromOffset(240, 96),
+	Size = UDim2.fromOffset(204, 82),
 	Tooltip = 'Shows who you are fighting'
 })
 Mode = TargetHUD:CreateDropdown({
@@ -486,6 +517,14 @@ ShowEquipment = TargetHUD:CreateToggle({
 	Tooltip = 'Shows their kit, held item and armour',
 	Default = true
 })
+ShowCombo = TargetHUD:CreateToggle({
+	Name = 'Combo',
+	Tooltip = 'Hits in a row they took without hitting back'
+})
+ShowLastHit = TargetHUD:CreateToggle({
+	Name = 'Last Hit',
+	Tooltip = 'How much your last hit took off'
+})
 ShowKitName = TargetHUD:CreateToggle({
 	Name = 'Kit Name',
 	Tooltip = 'Writes out their kit'
@@ -493,6 +532,18 @@ ShowKitName = TargetHUD:CreateToggle({
 ShowEnchants = TargetHUD:CreateToggle({
 	Name = 'Enchants',
 	Tooltip = 'Shows their enchants\' icons'
+})
+HudScale = TargetHUD:CreateSlider({
+	Name = 'Scale',
+	Tooltip = 'How big the card is',
+	Min = 0.5,
+	Max = 1.5,
+	Default = 0.85,
+	Decimal = 100,
+	Function = function(val)
+		local scaler = card and card:FindFirstChildOfClass('UIScale')
+		if scaler then scaler.Scale = val end
+	end
 })
 Background = TargetHUD:CreateColorSlider({
 	Name = 'Background',
@@ -514,6 +565,9 @@ card.BackgroundTransparency = 0.3
 card.BorderSizePixel = 0
 card.Visible = false
 card.Parent = TargetHUD.Children
+local cardScale = Instance.new('UIScale')
+cardScale.Scale = HudScale.Value
+cardScale.Parent = card
 Instance.new('UICorner', card).CornerRadius = UDim.new(0, 8)
 stroke = Instance.new('UIStroke')
 stroke.Thickness = 1
