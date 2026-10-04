@@ -87,6 +87,45 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_POST(self) -> None:  # noqa: N802 - name fixed by the base class
+        if self.path == "/debug":
+            # Printed rather than stored, and kept to one line: this is for watching a
+            # module misbehave in real time, not for keeping.
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                row = json.loads(self.rfile.read(length))
+            except json.JSONDecodeError:
+                return self._reply(400, "bad json")
+
+            stamp = time.strftime("%H:%M:%S")
+            lines = []
+            if not row.get("alive", True):
+                lines.append(f"[dbg {stamp}] dead")
+            else:
+                d = row.get("decision") or {}
+                outs = row.get("outputs") or {}
+                on = ",".join(k for k, v in outs.items() if v) or "none"
+                lines.append(
+                    f"[dbg {stamp}] {row.get('mode')} ctrl={row.get('controlled')} out={on} "
+                    f"enemy={'y' if row.get('enemy') else 'n'} "
+                    f"fwd={d.get('forward', 0):+.2f} rt={d.get('right', 0):+.2f} "
+                    f"yaw={d.get('dYaw', 0):+.2f} jmp={d.get('jump', 0):.2f} atk={d.get('attack', 0):.2f} "
+                    f"speed={row.get('speed', 0):.1f} moving={row.get('moving')}"
+                )
+            if row.get("error"):
+                lines.append(f"[dbg {stamp}] ERROR SWALLOWED: {row['error']}")
+
+            # Printed for whoever is watching the window, and appended to a file so it can
+            # be read from elsewhere - the person testing and the person debugging are not
+            # always looking at the same screen.
+            for line in lines:
+                print(line)
+            try:
+                with (self.writer.directory / "debug.log").open("a", encoding="utf-8") as log:
+                    log.write("\n".join(lines) + "\n")
+            except OSError:
+                pass
+            return self._reply(200)
+
         if self.path != "/ingest":
             return self._reply(404, "not found")
 
