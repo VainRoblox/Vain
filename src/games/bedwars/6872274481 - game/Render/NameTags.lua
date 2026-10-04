@@ -525,16 +525,36 @@ local Added = {
 		newPiece(row, 'HealthLabel', 4)
 		newPiece(row, 'KitStat', 5)
 
+		--[[
+			The equipment as one centred row, laid out by a UIListLayout. Each icon used to
+			sit at a fixed slot around the tag's middle, so an empty hand or missing armour
+			left a hole and pushed the rest off centre; empty slots are hidden now and the
+			row closes up around what is there.
+		]]
 		if Equipment.Enabled then
+			local gear = Instance.new('Frame')
+			gear.Name = 'Gear'
+			gear.AnchorPoint = Vector2.new(0.5, 1)
+			gear.Position = UDim2.new(0.5, 0, 0, -2)
+			gear.Size = UDim2.fromOffset(0, 30)
+			gear.AutomaticSize = Enum.AutomaticSize.X
+			gear.BackgroundTransparency = 1
+			gear.Parent = nametag
+			local gearLayout = Instance.new('UIListLayout')
+			gearLayout.FillDirection = Enum.FillDirection.Horizontal
+			gearLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			gearLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+			gearLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			gearLayout.Parent = gear
 			for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
 				local Icon = Instance.new('ImageLabel')
 				Icon.Name = v
 				Icon.Size = UDim2.fromOffset(30, 30)
-				Icon.AnchorPoint = Vector2.new(0.5, 1)
-				Icon.Position = UDim2.new(0.5, (i - 3) * 30, 0, -2)
 				Icon.BackgroundTransparency = 1
 				Icon.Image = ''
-				Icon.Parent = nametag
+				Icon.Visible = false
+				Icon.LayoutOrder = i
+				Icon.Parent = gear
 			end
 		end
 
@@ -664,14 +684,21 @@ local Updated = {
 		row.RankIcon.Visible = image ~= nil
 		row.RankIcon.Size = UDim2.fromOffset(height, height)
 
-		if Equipment.Enabled and store.inventories[ent.Player] and nametag:FindFirstChild('Hand') then
+		if Equipment.Enabled and store.inventories[ent.Player] and nametag:FindFirstChild('Gear') then
 			local kit = ent.Player:GetAttribute('PlayingAsKit')
 			local inventory = store.inventories[ent.Player]
-			nametag.Hand.Image = bedwars.getIcon(inventory.hand or {itemType = ''}, true)
-			nametag.Helmet.Image = bedwars.getIcon(inventory.armor[4] or {itemType = ''}, true)
-			nametag.Chestplate.Image = bedwars.getIcon(inventory.armor[5] or {itemType = ''}, true)
-			nametag.Boots.Image = bedwars.getIcon(inventory.armor[6] or {itemType = ''}, true)
-			nametag.Kit.Image = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit] and bedwars.BedwarsKitMeta[kit].renderImage or ''
+			local gear = nametag.Gear
+			local function setSlot(name, image)
+				local icon = gear:FindFirstChild(name)
+				if not icon then return end
+				icon.Image = image or ''
+				icon.Visible = image ~= nil and image ~= ''
+			end
+			setSlot('Hand', inventory.hand and bedwars.getIcon(inventory.hand, true) or nil)
+			setSlot('Helmet', inventory.armor[4] and bedwars.getIcon(inventory.armor[4], true) or nil)
+			setSlot('Chestplate', inventory.armor[5] and bedwars.getIcon(inventory.armor[5], true) or nil)
+			setSlot('Boots', inventory.armor[6] and bedwars.getIcon(inventory.armor[6], true) or nil)
+			setSlot('Kit', kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit] and bedwars.BedwarsKitMeta[kit].renderImage or nil)
 		end
 
 		drawEffects(nametag, ent)
@@ -742,6 +769,20 @@ local ColorFunc = {
 	entity list has let go of: a respawn makes a new entity while the old body can linger
 	in the world, which left its tag frozen where the player died.
 ]]
+--[[
+	Nobody to name: dead (at zero health, or the game's Dead mark on the character, while
+	the body waits to respawn) or a spectator. Both can keep a character in the world - a
+	spectator's flies round unseen - and their tags floated over empty ground, which is what
+	showed up after you died and started watching. Invisible players are not hidden: seeing
+	them is the point.
+]]
+local function nobodyThere(ent)
+	if (ent.Health or 0) <= 0 then return true end
+	local char = ent.Character
+	if char and char:GetAttribute('Dead') == true then return true end
+	return ent.Player ~= nil and ent.Player:GetAttribute('Spectator') == true
+end
+
 local function stale(ent, listed)
 	if not ent or not listed[ent] then return true end
 	local char = ent.Character
@@ -796,7 +837,7 @@ local Loop = {
 				end
 
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
-				nametag.Visible = headVis
+				nametag.Visible = headVis and not nobodyThere(ent)
 				if not headVis then
 					return
 				end
@@ -856,6 +897,7 @@ local Loop = {
 				end
 
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
+				headVis = headVis and not nobodyThere(ent)
 				nametag.Text.Visible = headVis
 				nametag.BG.Visible = headVis
 				if not headVis then
