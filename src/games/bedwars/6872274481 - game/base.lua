@@ -745,30 +745,29 @@ do
 		return result
 	end
 
-	-- The matches out of an answer, and whether there was an answer at all: a server that
-	-- replied with nothing is a player with no history, one that never replied is not.
+	-- The matches out of an answer, and whether it plainly said there are none: an answer
+	-- carrying an empty match list. Anything else that comes back without matches - an
+	-- error, a refusal, a private profile, nothing at all - says nothing either way.
 	local function listFrom(data)
-		if type(data) ~= 'table' then return nil, false end
-		if type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
-			return data.matchHistory, true
-		end
+		if type(data) ~= 'table' or type(data.matchHistory) ~= 'table' then return nil, false end
+		if #data.matchHistory > 0 then return data.matchHistory, false end
 		return nil, true
 	end
 
 	local function request(player)
-		local answered = false
+		local none = false
 		for _, query in {player.Name, tostring(player.UserId)} do
-			local list, replied = listFrom(within(TIMEOUT, function()
+			local list, empty = listFrom(within(TIMEOUT, function()
 				local ok, value = bedwars.MatchHistoryController:requestMatchHistory(query):await()
 				return ok and value or nil
 			end))
-			if list then return list, true end
-			answered = answered or replied
+			if list then return list, false end
+			none = none or empty
 		end
-		local list, replied = listFrom(within(TIMEOUT, function()
+		local list, empty = listFrom(within(TIMEOUT, function()
 			return bedwars.Client:Get('RequestProfileData'):CallServer(player)
 		end))
-		return list, answered or replied
+		return list, none or empty
 	end
 
 	--[[
@@ -776,9 +775,10 @@ do
 
 		Every card at the start of a match asks at once, and any of those that timed out or
 		was turned away used to be stored as "no matches" for the rest of the session. Now a
-		failure is tried again RETRIES more times, RETRY_GAP apart (half a minute in all),
-		with whoever asked still waiting; only when the last of those fails is it given up
-		on, for good, and reported as unavailable rather than as empty.
+		lookup that brings back no matches - for whatever reason, since a refusal usually
+		still comes back as an answer - is tried again RETRIES more times, RETRY_GAP apart
+		(half a minute in all), with whoever asked still waiting; only when the last of those
+		fails is it given up on, for good.
 	]]
 	local RETRIES, RETRY_GAP = 3, 10
 
@@ -806,10 +806,12 @@ do
 			matchHistory.waiting[userId] = nil
 		end
 
+		-- Anything short of matches is tried again; after the last try it is "no history"
+		-- only if the server plainly said so, and unavailable otherwise.
 		local function attempt(try)
-			local found, answered = request(player)
-			if found or answered then
-				local list = table.clone(found or {})
+			local found, none = request(player)
+			if found then
+				local list = table.clone(found)
 				table.sort(list, function(a, b)
 					return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
 				end)
@@ -817,7 +819,7 @@ do
 			elseif try <= RETRIES and player.Parent then
 				task.delay(RETRY_GAP, attempt, try + 1)
 			else
-				finish({}, true)
+				finish({}, not none)
 			end
 		end
 
