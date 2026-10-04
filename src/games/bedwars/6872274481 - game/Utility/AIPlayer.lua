@@ -32,6 +32,7 @@ local DoAim
 local DoJump
 local DoAttack
 local AimSpeed
+local TakeKeys
 local Rate
 local Debug
 local Notify
@@ -458,8 +459,20 @@ local function drive(dt)
 	end
 end
 
+--[[
+	The panel, which is allowed to fail.
+
+	Writing a TextLabel needs an identity the module's own thread does not always have -
+	toggling from a keybind runs this whole function on the input signal's thread - and the
+	write throwing took the rest of the tick with it, so the readout was stopping the thing
+	it was meant to be reporting on. The policy does not need the panel, so the panel is
+	wrapped and ignored when it cannot draw.
+]]
 local function drawUI(decision, hasEnemy)
 	if not ui then return end
+	if vain.ThreadFix then
+		pcall(setthreadidentity, 8)
+	end
 	labels.Move.Text = string.format('move  %+.2f fwd  %+.2f right', decision.forward, decision.right)
 	labels.Look.Text = string.format('turn  %+.2f rad/s  %+.2f pitch', decision.dYaw, decision.dPitch)
 	labels.Jump.Text = string.format('jump  %.0f%%   attack  %.0f%%', decision.jump * 100, decision.attack * 100)
@@ -541,12 +554,15 @@ AIPlayer = vain.Categories.Utility:CreateModule({
 						local decision = think(buildInput(state))
 
 						local controlling = Mode.Value == 'Control'
-						takeControl(controlling and DoMove.Enabled)
+						-- Only when explicitly asked for. The policy sits near zero when
+						-- nothing is happening, so taking the keyboard by default leaves
+						-- you unable to move while it declines to move you.
+						takeControl(controlling and DoMove.Enabled and TakeKeys.Enabled)
 						if controlling then
 							apply(decision)
 						end
 						remember(decision, controlling)
-						drawUI(decision, hasEnemy)
+						pcall(drawUI, decision, hasEnemy)
 						report({
 							decision = decision,
 							enemy = hasEnemy,
@@ -615,6 +631,10 @@ DoJump = AIPlayer:CreateToggle({
 DoAttack = AIPlayer:CreateToggle({
 	Name = 'Attack',
 	Tooltip = 'Lets it swing\nWeakest of the four outputs'
+})
+TakeKeys = AIPlayer:CreateToggle({
+	Name = 'Take Keyboard',
+	Tooltip = 'Stops your keys fighting it\nYou cannot move while it idles'
 })
 AimSpeed = AIPlayer:CreateSlider({
 	Name = 'Aim Speed',
