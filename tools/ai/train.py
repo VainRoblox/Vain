@@ -232,7 +232,37 @@ def featurise(rows: list[dict], vocab: dict[str, int]) -> tuple[np.ndarray, dict
     }
 
 
-def stack_history(rows: list[dict], x: np.ndarray) -> np.ndarray:
+def action_features(rows: list[dict]) -> np.ndarray:
+    """What an actor was doing, as input rather than as a target.
+
+    Swinging is held down across frames and turning carries from one to the next, so the
+    strongest clue about this frame's action is the last one's. The state alone cannot
+    express 'already mid swing', which is why the attack head has lost to always guessing
+    'no' in every run so far.
+
+    Only ever used for frames BEFORE the one being predicted - the current row's own action
+    is the label, and feeding it back as a feature would score perfectly and mean nothing.
+
+    Attack is unknown for observed players, so it carries a flag saying whether the zero is
+    a real 'not attacking' or an absence.
+    """
+    out = np.zeros((len(rows), 7), dtype=np.float32)
+    for i, row in enumerate(rows):
+        action = row.get("action") or {}
+        known = action.get("attack") is not None
+        out[i] = (
+            number(action.get("forward")),
+            number(action.get("right")),
+            number(action.get("dYaw")),
+            number(action.get("dPitch")),
+            1.0 if action.get("jump") else 0.0,
+            1.0 if (known and action["attack"]) else 0.0,
+            1.0 if known else 0.0,
+        )
+    return out
+
+
+def stack_history(rows: list[dict], x: np.ndarray, past: np.ndarray | None = None) -> np.ndarray:
     """Widen each example to include the frames before it, per actor.
 
     A single frame cannot express 'already turning', 'mid swing' or 'running away', and the
@@ -244,31 +274,46 @@ def stack_history(rows: list[dict], x: np.ndarray) -> np.ndarray:
     standing still a moment ago', which is a different claim and a false one.
     """
     width = x.shape[1]
-    out = np.zeros((len(rows), width * HISTORY), dtype=np.float32)
+    extra = past.shape[1] if past is not None else 0
+    # Each step contributes its state, and every step but the current one also contributes
+    # the action taken there.
+    out = np.zeros((len(rows), width * HISTORY + extra * (HISTORY - 1)), dtype=np.float32)
     seen: dict[tuple, list[int]] = {}
 
     for i, row in enumerate(rows):
         key = (row.get("session"), row.get("player"))
-        past = seen.setdefault(key, [])
+        history = seen.setdefault(key, [])
         for step in range(HISTORY):
             # step 0 is now, step 1 is the frame before, and so on back.
-            source = past[-step] if step and len(past) >= step else i
+            source = history[-step] if step and len(history) >= step else i
             out[i, (HISTORY - 1 - step) * width : (HISTORY - step) * width] = x[source]
-        past.append(i)
-        if len(past) > HISTORY:
-            past.pop(0)
+
+            if past is not None and step:
+                # Actions from earlier frames only. The current frame's action is the
+                # answer being asked for.
+                base = width * HISTORY + (step - 1) * extra
+                out[i, base : base + extra] = past[source]
+
+        history.append(i)
+        if len(history) > HISTORY:
+            history.pop(0)
 
     return out
 
 
 class Policy(nn.Module):
-    def __init__(self, n_features: int, width: int = 256):
+    def __init__(self, n_features: int, width: int = 256, dropout: float = 0.2):
         super().__init__()
+        # Dropout and a narrower trunk than the first attempt: train loss fell from 0.69
+        # to 0.46 while validation did not move at all, which is the shape of a network
+        # memorising 27,000 rows rather than learning anything from them.
         self.trunk = nn.Sequential(
             nn.Linear(n_features, width),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(width, width),
             nn.ReLU(),
+            nn.Dropout(dropout),
         )
         # Movement is bounded by construction, so the head is too - a tanh cannot predict
         # a run speed that does not exist.
@@ -303,6 +348,7 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--width", type=int, default=256)
     parser.add_argument("--out", type=Path, default=Path(__file__).parent / "model.pt")
     args = parser.parse_args()
 
@@ -313,7 +359,7 @@ def main() -> int:
 
     vocab = {name: i for i, (name, _) in enumerate(held_counts.most_common(HELD_SLOTS - 1))}
     x, y = featurise(rows, vocab)
-    x = stack_history(rows, x)
+    x = stack_history(rows, x, action_features(rows))
 
     # Held out in time order, not at random: neighbouring frames are near-duplicates and a
     # random split would score the model on rows it has effectively already seen.
@@ -329,8 +375,8 @@ def main() -> int:
     x_val = (x_val - mean) / std
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = Policy(x.shape[1]).to(device)
-    optimiser = torch.optim.Adam(model.parameters(), lr=args.lr)
+    model = Policy(x.shape[1], width=args.width).to(device)
+    optimiser = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
 
     tensors = {k: torch.tensor(v[:split], device=device) for k, v in y.items()}
     xt = torch.tensor(x_train, device=device)
@@ -386,12 +432,29 @@ def main() -> int:
         jump = torch.sigmoid(jump).cpu().numpy()
         attack = torch.sigmoid(attack).cpu().numpy()
 
+    #[[ Turning, asked as a question that can actually be answered.
+    #
+    # How fast somebody flicks is partly intent and partly mouse noise, and regressing it
+    # lost to predicting the average twice over. Which way they turned is a far better posed
+    # question, and it is the one an agent needs: an aim that knows left from right and
+    # roughly how hard is worth more than one that predicts a precise number badly.
+    def direction(values, threshold=0.35):
+        return np.sign(values) * (np.abs(values) > threshold)
+
+    turn_pred = direction(look[:, 0])
+    turn_true = direction(truth_look[:, 0]) if False else None
+
     print("\nvalidation, against the trivial predictor each head has to beat:")
     truth_move = y["move"][split:]
     truth_look = y["look"][split:]
     report("move", move, truth_move, np.tile(y["move"][:split].mean(axis=0), (len(truth_move), 1)), "regression")
     report("look", look, truth_look, np.tile(y["look"][:split].mean(axis=0), (len(truth_look), 1)), "regression")
     report("jump", jump, y["jump"][split:], np.zeros(len(jump)), "binary")
+
+    turn_true = direction(truth_look[:, 0])
+    agree = float(np.mean(turn_pred == turn_true))
+    common = float(max(np.mean(turn_true == v) for v in (-1.0, 0.0, 1.0)))
+    print(f"  turn dir acc {agree:9.3f} | always the common case {common:9.3f} | {(agree - common) * 100:+5.1f}pp")
 
     val_mask = y["attack_mask"][split:] > 0
     if val_mask.sum() > 50:
@@ -415,6 +478,8 @@ def main() -> int:
             "vocab": vocab,
             "look_mean": look_mean.cpu().numpy(),
             "look_std": look_std.cpu().numpy(),
+            "width": args.width,
+            "history": HISTORY,
             "numeric": NUMERIC,
             "held_slots": HELD_SLOTS,
         },
