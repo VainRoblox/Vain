@@ -102,8 +102,20 @@ def load_csv(path: Path) -> list[dict]:
                 value = raw.get(key, "")
                 return None if value == "" else float(value)
 
+            #[[ Prefer the enemy the player was facing, where the file records one.
+            #
+            # The nearest-in-space enemy sits a median of 55 degrees off the crosshair, so
+            # three quarters of those rows describe somebody the player was not fighting.
+            # Older recordings only have that column and still load - they are fine for
+            # movement, which is what they taught.
             enemy = None
-            if get("enemy"):
+            if get("tenemy"):
+                enemy = {
+                    "x": get("tex"), "y": get("tey"), "z": get("tez"),
+                    "dist": get("tedist"), "health": get("tehealth"),
+                    "visible": bool(get("tevisible")), "closing": get("eclosing") or 0.0,
+                }
+            elif get("enemy"):
                 enemy = {
                     "x": get("ex"), "y": get("ey"), "z": get("ez"),
                     "dist": get("edist"), "health": get("ehealth"),
