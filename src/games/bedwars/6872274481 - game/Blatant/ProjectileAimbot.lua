@@ -547,27 +547,38 @@ ProjectileAimbot = vain.Categories.Blatant:CreateModule({
 				end)
 			end)
 
-			old = bedwars.ProjectileController.calculateImportantLaunchValues
 			--[[
-				Kept in a name, so putting it back can be conditional.
+				Each wrapper keeps the original it was built with.
 
-				Fisherman's auto cast wraps this same method, so the two have to stack in
-				either order. Restoring blindly on the way out throws away whatever wrapped
-				after us, and clearing what our own wrapper calls leaves a nil call inside
-				the game's bow for anyone still holding it.
+				Fisherman's auto cast and Fast Charge wrap this same method, so the wrappers
+				have to stack in any order. This one used to call through a shared old, which
+				every switch-on pointed at whatever was installed then. With auto cast
+				wrapped on top of an earlier one of ours, switching back on pointed old at
+				auto cast's wrapper - and that earlier one, still inside auto cast, called
+				auto cast, which called it, round and round until the stack ran out ("error
+				in error handling"). Closed over per wrapper, each one calls exactly what it
+				was put on top of, and one that has been switched off only passes through.
 			]]
-			hook = function(...)
-				-- Guarded because the game calls this, not us. Anything that throws in
-				-- here used to surface inside the game's own bow logic and take the bow
-				-- with it; now a failure just hands the shot back untouched. old() stays
-				-- outside so its own errors still behave exactly as the game expects.
-				local ok, result = pcall(solve, ...)
-				if ok and result then
-					return result
+			local original = bedwars.ProjectileController.calculateImportantLaunchValues
+			if type(original) == 'function' then
+				old = original
+				local wrapper
+				wrapper = function(...)
+					-- Guarded because the game calls this, not us. Anything that throws in
+					-- here used to surface inside the game's own bow logic and take the bow
+					-- with it; now a failure just hands the shot back untouched. original()
+					-- stays outside so its own errors behave exactly as the game expects.
+					if hook == wrapper then
+						local ok, result = pcall(solve, ...)
+						if ok and result then
+							return result
+						end
+					end
+					return original(...)
 				end
-				return old(...)
+				hook = wrapper
+				bedwars.ProjectileController.calculateImportantLaunchValues = wrapper
 			end
-			bedwars.ProjectileController.calculateImportantLaunchValues = hook
 		else
 			-- Only when ours is still the installed one, and old is left alone so a
 			-- wrapper that captured ours keeps working.
