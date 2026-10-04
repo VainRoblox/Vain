@@ -11201,25 +11201,30 @@ kitRun(function()
         end
 
         -- Held the way the prompt holds: given up if the statue goes or, when asked, if
-        -- you walk out of reach before the time is up.
+        -- you walk out of reach before the time is up. Guarded, because the dig
+        -- animation loops: anything throwing in here used to skip the stop below and
+        -- leave it playing for good.
         local finished = true
         local started = os.clock()
-        while os.clock() - started < hold do
-            task.wait()
-            if not (AutoMiner.Enabled and statue.Parent and entitylib.isAlive) then
-                finished = false
-                break
-            end
-            if on(StayInRange) then
-                local position = statuePosition(statue)
-                if not position or (position - entitylib.character.RootPart.Position).Magnitude > Range.Value then
+        local ok = pcall(function()
+            while os.clock() - started < hold do
+                task.wait()
+                if not (AutoMiner.Enabled and statue.Parent and entitylib.isAlive) then
                     finished = false
                     break
                 end
+                if on(StayInRange) then
+                    local position = statuePosition(statue)
+                    if not position or (position - entitylib.character.RootPart.Position).Magnitude > Range.Value then
+                        finished = false
+                        break
+                    end
+                end
             end
-        end
+        end)
+        if not ok then finished = false end
 
-        if track then pcall(function() track:Stop() end) end
+        if track then pcall(function() track:Stop(0.15) end) end
         if not finished then
             attempted[statue] = nil
             return false
