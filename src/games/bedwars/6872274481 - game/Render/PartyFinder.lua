@@ -77,8 +77,14 @@ local function learn(player)
 	if mates[player.UserId] ~= nil then return end
 	mates[player.UserId] = false
 	status.asked += 1
-	matchHistory.fetch(player, function(matches)
+	matchHistory.fetch(player, function(matches, failed)
 		status.loaded += 1
+		-- Already retried for half a minute by the helper; nothing more to learn here.
+		if failed then
+			status.empty += 1
+			mates[player.UserId] = {}
+			return
+		end
 		if #matches == 0 then status.empty += 1 end
 		local hadParty, hadTeams = false, false
 		local found = {}

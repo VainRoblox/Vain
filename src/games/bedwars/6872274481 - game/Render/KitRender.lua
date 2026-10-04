@@ -27,7 +27,7 @@ end
 
 local function fetchHistory(player, callback)
 	local userId = player.UserId
-	matchHistory.fetch(player, function(matches)
+	matchHistory.fetch(player, function(matches, failed)
 		local kits = {}
 		for _, match in matches do
 			if #kits >= 10 then break end
@@ -37,7 +37,7 @@ local function fetchHistory(player, callback)
 				kits[#kits + 1] = {kit = kit, won = wonMatch(match, userId)}
 			end
 		end
-		callback(kits)
+		callback(kits, failed)
 	end)
 end
 
@@ -135,7 +135,7 @@ local function drawHistory(card, player)
 	-- shows the player it was asked for.
 	card:SetAttribute('KitHistoryUser', player.UserId)
 	rowText(newRow(card), '…')
-	fetchHistory(player, function(kits)
+	fetchHistory(player, function(kits, failed)
 		if not (card.Parent and KitDisplay.Enabled) then return end
 		if card:GetAttribute('KitHistoryUser') ~= player.UserId then return end
 		if card:FindFirstChild('KitHistory') then card.KitHistory:Destroy() end
@@ -143,7 +143,9 @@ local function drawHistory(card, player)
 		local row = newRow(card)
 		local shown = math.min(#kits, HistoryCount and HistoryCount.Value or 10)
 		if shown == 0 then
-			rowText(row, 'No history')
+			-- No answer is not the same as no matches: unavailable only once the lookup
+			-- has failed four times over half a minute.
+			rowText(row, failed and 'History unavailable' or 'No history')
 			return
 		end
 		local leftAligned = RowPosition and RowPosition.Value == 'Bottom Left'

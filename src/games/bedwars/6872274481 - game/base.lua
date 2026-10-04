@@ -745,30 +745,52 @@ do
 		return result
 	end
 
+	-- The matches out of an answer, and whether there was an answer at all: a server that
+	-- replied with nothing is a player with no history, one that never replied is not.
 	local function listFrom(data)
-		if type(data) == 'table' and type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
-			return data.matchHistory
+		if type(data) ~= 'table' then return nil, false end
+		if type(data.matchHistory) == 'table' and #data.matchHistory > 0 then
+			return data.matchHistory, true
 		end
+		return nil, true
 	end
 
 	local function request(player)
+		local answered = false
 		for _, query in {player.Name, tostring(player.UserId)} do
-			local list = listFrom(within(TIMEOUT, function()
+			local list, replied = listFrom(within(TIMEOUT, function()
 				local ok, value = bedwars.MatchHistoryController:requestMatchHistory(query):await()
 				return ok and value or nil
 			end))
-			if list then return list end
+			if list then return list, true end
+			answered = answered or replied
 		end
-		return listFrom(within(TIMEOUT, function()
+		local list, replied = listFrom(within(TIMEOUT, function()
 			return bedwars.Client:Get('RequestProfileData'):CallServer(player)
 		end))
+		return list, answered or replied
 	end
+
+	--[[
+		A lookup that failed is not kept as an empty history.
+
+		Every card at the start of a match asks at once, and any of those that timed out or
+		was turned away used to be stored as "no matches" for the rest of the session. Now a
+		failure is tried again RETRIES more times, RETRY_GAP apart (half a minute in all),
+		with whoever asked still waiting; only when the last of those fails is it given up
+		on, for good, and reported as unavailable rather than as empty.
+	]]
+	local RETRIES, RETRY_GAP = 3, 10
 
 	function matchHistory.fetch(player, callback)
 		local userId = player.UserId
 		local cached = matchHistory.cache[userId]
 		if type(cached) == 'table' then
-			callback(cached)
+			if cached.failed then
+				callback({}, true)
+			else
+				callback(cached, false)
+			end
 			return
 		end
 		matchHistory.waiting[userId] = matchHistory.waiting[userId] or {}
@@ -776,18 +798,33 @@ do
 		if cached == 'pending' then return end
 		matchHistory.cache[userId] = 'pending'
 
+		local function finish(list, failed)
+			matchHistory.cache[userId] = failed and {failed = true} or list
+			for _, waiting in matchHistory.waiting[userId] or {} do
+				task.spawn(pcall, waiting, list, failed)
+			end
+			matchHistory.waiting[userId] = nil
+		end
+
+		local function attempt(try)
+			local found, answered = request(player)
+			if found or answered then
+				local list = table.clone(found or {})
+				table.sort(list, function(a, b)
+					return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
+				end)
+				finish(list, false)
+			elseif try <= RETRIES and player.Parent then
+				task.delay(RETRY_GAP, attempt, try + 1)
+			else
+				finish({}, true)
+			end
+		end
+
 		matchHistory.queued += 1
 		task.delay((matchHistory.queued - 1) * 0.15, function()
 			matchHistory.queued = math.max(matchHistory.queued - 1, 0)
-			local list = table.clone(request(player) or {})
-			table.sort(list, function(a, b)
-				return (tonumber(a.matchStartTime) or 0) > (tonumber(b.matchStartTime) or 0)
-			end)
-			matchHistory.cache[userId] = list
-			for _, waiting in matchHistory.waiting[userId] or {} do
-				task.spawn(pcall, waiting, list)
-			end
-			matchHistory.waiting[userId] = nil
+			attempt(1)
 		end)
 	end
 
