@@ -109,6 +109,11 @@ local function refreshAll()
 end
 
 function refreshAdornee(v)
+	-- Called from the chest's own ChildAdded and Amount signals, which run on game threads
+	-- without the identity to touch Vain's UI ("cannot access Instance").
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	local chest = v.Adornee:FindFirstChild('ChestFolderValue')
 	chest = chest and chest.Value or nil
 	if not chest then
@@ -240,8 +245,15 @@ function refreshAdornee(v)
 end
 
 local function Added(v)
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	local chest = v:WaitForChild('ChestFolderValue', 3)
 	if not (chest and StorageESP.Enabled) then return end
+	-- The wait can resume on a thread without it again.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	if hiddenAsOwn(v) then return end
 	chest = chest.Value
 	local billboard = Instance.new('BillboardGui')
