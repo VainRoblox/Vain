@@ -6,3 +6,9 @@ loadstring.lua
 
 # Place dumps: hundreds of megabytes, and only ever local research material.
 *.rbxlx
+
+# AI training: the venv is hundreds of megabytes of PyTorch, and recordings and
+# checkpoints are regenerated rather than shared through the repo.
+tools/ai/.venv/
+tools/ai/data/
+tools/ai/*.pt
