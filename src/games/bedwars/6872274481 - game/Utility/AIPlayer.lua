@@ -73,6 +73,9 @@ local thinking = false
 	Once a second rather than every decision: the point is to be readable, and ten lines a
 	second of a policy doing the same thing is not.
 ]]
+local desired = {direction = Vector3.zero, jump = false, yaw = 0, pitch = 0}
+local controls, controlled = nil, false
+
 local DEBUG_URL = 'http://127.0.0.1:8750/debug'
 local post = (syn and syn.request) or (http and http.request) or http_request or request
 local lastDebug, lastError = 0, nil
@@ -114,9 +117,6 @@ local function say(text)
 	end
 end
 
-local desired = {direction = Vector3.zero, jump = false, yaw = 0, pitch = 0}
-local controls, controlled = nil, false
-
 local function playerControls()
 	if controls then
 		return controls
@@ -136,7 +136,11 @@ local function takeControl(take)
 	end
 	local module = playerControls()
 	if not module then
-		return say('Cannot reach the control module, movement will fight your keys')
+		-- Not fatal, and not worth stopping for: Heartbeat runs after the control script's
+		-- own update, so a Move applied there is the last word on the frame regardless.
+		-- This only matters for fighting your hands, not for moving at all.
+		controlled = false
+		return
 	end
 	controlled = take
 	pcall(function()
@@ -525,7 +529,10 @@ AIPlayer = vain.Categories.Utility:CreateModule({
 
 				if entitylib.isAlive and not thinking then
 					thinking = true
-					local ok, err = pcall(function()
+					-- xpcall with a traceback: "cannot access Instance" says what went wrong
+					-- and nothing about where, and there are a dozen instance touches in
+					-- here.
+					local ok, err = xpcall(function()
 						local root = entitylib.character.RootPart
 						local humanoid = entitylib.character.Humanoid
 						if not humanoid then return end
@@ -547,7 +554,7 @@ AIPlayer = vain.Categories.Utility:CreateModule({
 							speed = root.AssemblyLinearVelocity.Magnitude,
 							moving = desired.direction.Magnitude > 0.1
 						})
-					end)
+					end, debug.traceback)
 					if not ok then
 						-- A character replaced mid decision is the usual cause, and the
 						-- history it was reading belongs to a body that no longer exists.
@@ -555,6 +562,10 @@ AIPlayer = vain.Categories.Utility:CreateModule({
 						-- comes to do nothing for a reason nobody can see.
 						lastError = tostring(err)
 						history, actions = {}, {}
+					else
+						-- Cleared on success, otherwise one failure echoes once a second
+						-- forever and every later line looks like a fresh fault.
+						lastError = nil
 					end
 					thinking = false
 				else
