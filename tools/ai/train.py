@@ -349,6 +349,8 @@ def main() -> int:
     parser.add_argument("--batch", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--width", type=int, default=256)
+    parser.add_argument("--combat", action="store_true",
+                        help="train only on frames with a visible enemy")
     parser.add_argument("--out", type=Path, default=Path(__file__).parent / "model.pt")
     args = parser.parse_args()
 
@@ -359,13 +361,34 @@ def main() -> int:
 
     vocab = {name: i for i, (name, _) in enumerate(held_counts.most_common(HELD_SLOTS - 1))}
     x, y = featurise(rows, vocab)
+
+    # Taken before stacking. In the stacked array this column belongs to the OLDEST frame
+    # of the five, so reading it from there asks whether an enemy was visible half a second
+    # ago - which is what every "with an enemy visible" figure quoted so far was measuring.
+    visible_now = x[:, NUMERIC.index("enemy_visible")] != 0
+
     x = stack_history(rows, x, action_features(rows))
 
+    #[[ Combat only, selected after the history is built and never before.
+    #
+    # Filtering the rows themselves would splice frames seconds apart into one actor's
+    # history and call them consecutive. The features are built over everything, and only
+    # which rows are learned from is narrowed - so the past each example carries is still
+    # the real past.
+    #
+    # The reason to do it at all: 55% of rows have no enemy within range, so a policy
+    # trained on everything spends most of its capacity on standing about, and then stands
+    # about in game.
     # Held out in time order, not at random: neighbouring frames are near-duplicates and a
     # random split would score the model on rows it has effectively already seen.
     split = int(len(x) * 0.8)
-    x_train, x_val = x[:split], x[split:]
-    print(f"{len(rows)} rows | {len(x_train)} train, {len(x_val)} validation (chronological)")
+    keep = visible_now if args.combat else np.ones(len(x), dtype=bool)
+    train_idx = np.where(keep[:split])[0]
+    val_idx = np.where(keep[split:])[0] + split
+
+    x_train, x_val = x[train_idx], x[val_idx]
+    print(f"{len(rows)} rows | {len(x_train)} train, {len(x_val)} validation (chronological)"
+          + (" | combat frames only" if args.combat else ""))
     print(f"held vocabulary: {', '.join(list(vocab)[:8])}{'...' if len(vocab) > 8 else ''}")
 
     mean = x_train.mean(axis=0)
@@ -378,7 +401,7 @@ def main() -> int:
     model = Policy(x.shape[1], width=args.width).to(device)
     optimiser = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
 
-    tensors = {k: torch.tensor(v[:split], device=device) for k, v in y.items()}
+    tensors = {k: torch.tensor(v[train_idx], device=device) for k, v in y.items()}
     xt = torch.tensor(x_train, device=device)
     val_x = torch.tensor(x_val, device=device)
 
@@ -445,30 +468,30 @@ def main() -> int:
     turn_true = direction(truth_look[:, 0]) if False else None
 
     print("\nvalidation, against the trivial predictor each head has to beat:")
-    truth_move = y["move"][split:]
-    truth_look = y["look"][split:]
-    report("move", move, truth_move, np.tile(y["move"][:split].mean(axis=0), (len(truth_move), 1)), "regression")
-    report("look", look, truth_look, np.tile(y["look"][:split].mean(axis=0), (len(truth_look), 1)), "regression")
-    report("jump", jump, y["jump"][split:], np.zeros(len(jump)), "binary")
+    truth_move = y["move"][val_idx]
+    truth_look = y["look"][val_idx]
+    report("move", move, truth_move, np.tile(y["move"][train_idx].mean(axis=0), (len(truth_move), 1)), "regression")
+    report("look", look, truth_look, np.tile(y["look"][train_idx].mean(axis=0), (len(truth_look), 1)), "regression")
+    report("jump", jump, y["jump"][val_idx], np.zeros(len(jump)), "binary")
 
     turn_true = direction(truth_look[:, 0])
     agree = float(np.mean(turn_pred == turn_true))
     common = float(max(np.mean(turn_true == v) for v in (-1.0, 0.0, 1.0)))
     print(f"  turn dir acc {agree:9.3f} | always the common case {common:9.3f} | {(agree - common) * 100:+5.1f}pp")
 
-    val_mask = y["attack_mask"][split:] > 0
+    val_mask = y["attack_mask"][val_idx] > 0
     if val_mask.sum() > 50:
-        report("attack", attack[val_mask], y["attack"][split:][val_mask], np.zeros(int(val_mask.sum())), "binary")
+        report("attack", attack[val_mask], y["attack"][val_idx][val_mask], np.zeros(int(val_mask.sum())), "binary")
     else:
         print(f"  attack   only {int(val_mask.sum())} labelled rows held out - record more of your own play")
 
     # Combat is the subtask being cloned, and a score averaged over a walk across the map
     # hides whether any of it was learned.
-    fighting = (y["move"][split:] is not None) & (x[split:, NUMERIC.index("enemy_visible")] != 0)
+    fighting = visible_now[val_idx]
     if fighting.sum() > 50:
         print(f"\nwith an enemy visible ({int(fighting.sum())} rows):")
-        report("move", move[fighting], truth_move[fighting], np.tile(y["move"][:split].mean(axis=0), (int(fighting.sum()), 1)), "regression")
-        report("look", look[fighting], truth_look[fighting], np.tile(y["look"][:split].mean(axis=0), (int(fighting.sum()), 1)), "regression")
+        report("move", move[fighting], truth_move[fighting], np.tile(y["move"][train_idx].mean(axis=0), (int(fighting.sum()), 1)), "regression")
+        report("look", look[fighting], truth_look[fighting], np.tile(y["look"][train_idx].mean(axis=0), (int(fighting.sum()), 1)), "regression")
 
     torch.save(
         {

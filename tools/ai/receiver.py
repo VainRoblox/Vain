@@ -28,6 +28,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
+# Kept here so a stream that starts mid session still produces a readable file.
+HEADER = ("t,dt,actor,is_self,health,max_health,grounded,speed,vel_y,pitch,enemy,ex,ey,ez,"
+          "edist,ehealth,evisible,eclosing,held,forward,right,dyaw,dpitch,jump,attack,sprint")
+
+
 class Writer:
     """Appends samples to one file per session, and keeps counts for the console."""
 
@@ -124,6 +129,28 @@ class Handler(BaseHTTPRequestHandler):
                     log.write("\n".join(lines) + "\n")
             except OSError:
                 pass
+            return self._reply(200)
+
+        if self.path == "/rows":
+            #[[ Raw CSV from the in-game module, appended as it arrives.
+            #
+            # The module writes to the executor's own folder, which is not somewhere another
+            # machine can read - every recording so far has been moved by hand. Streaming it
+            # here puts it where training can pick it up without anyone copying anything.
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8", "replace")
+            path = self.writer.directory / "stream.txt"
+            try:
+                fresh = not path.exists()
+                with path.open("a", encoding="utf-8") as handle:
+                    if fresh and not body.startswith("t,dt,"):
+                        handle.write(HEADER + "\n")
+                    handle.write(body if body.endswith("\n") else body + "\n")
+                lines = body.count("\n")
+                self.writer.counts["stream"] += lines
+                print(f"[recv] +{lines} rows streamed ({self.writer.counts['stream']} total)")
+            except OSError as exc:
+                print(f"[recv] could not append: {exc}")
             return self._reply(200)
 
         if self.path != "/ingest":

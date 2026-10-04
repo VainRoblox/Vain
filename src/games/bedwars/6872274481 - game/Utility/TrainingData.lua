@@ -29,6 +29,7 @@ local Rate
 local Others
 local Range
 local SaveEvery
+local Stream
 local Notify
 local writing = false
 local flushing = false
@@ -138,6 +139,34 @@ end
 	buffer is taken first so that sampling can carry on filling a fresh one while this
 	works through the old.
 ]]
+--[[
+	Optionally sends the same rows to a receiver on this machine.
+
+	The file this writes lives in the executor's own folder, which nothing else can read -
+	every recording so far has been carried across by hand. Streaming puts the rows
+	somewhere a training script can pick them up as they arrive, which is the difference
+	between training on what you played last week and training on what you played a minute
+	ago. Off by default: it is only useful if you are running the receiver.
+]]
+local STREAM_URL = 'http://127.0.0.1:8750/rows'
+local post = (syn and syn.request) or (http and http.request) or http_request or request
+
+local function send(block)
+	if not Stream or not Stream.Enabled or not post then
+		return
+	end
+	task.spawn(function()
+		pcall(function()
+			return post({
+				Url = STREAM_URL,
+				Method = 'POST',
+				Headers = {['Content-Type'] = 'text/csv'},
+				Body = table.concat(block, '\n')..'\n'
+			})
+		end)
+	end)
+end
+
 local function flush()
 	if flushing or #buffer == 0 then
 		return
@@ -146,6 +175,7 @@ local function flush()
 	local block = buffer
 	buffer = {}
 	flushing = true
+	send(block)
 
 	task.spawn(function()
 		for start = 1, #block, CHUNK do
@@ -457,6 +487,10 @@ SaveEvery = TrainingData:CreateSlider({
 	Suffix = function(val)
 		return val == 1 and 'minute' or 'minutes'
 	end
+})
+Stream = TrainingData:CreateToggle({
+	Name = 'Stream',
+	Tooltip = 'Also sends rows to a receiver on this machine'
 })
 Notify = TrainingData:CreateToggle({
 	Name = 'Notify',

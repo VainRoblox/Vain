@@ -32,6 +32,7 @@ local DoAim
 local DoJump
 local DoAttack
 local AimSpeed
+local OnlyCombat
 local TakeKeys
 local Rate
 local Debug
@@ -579,13 +580,31 @@ AIPlayer = vain.Categories.Utility:CreateModule({
 						local state, hasEnemy = stateVector(root, humanoid)
 						local decision = think(buildInput(state))
 
+						--[[
+							Driving only when there is something to drive at.
+
+							The policy sits around 0.04 whenever nothing is happening, which
+							is not a fault - most of what it learned from was people walking
+							about - but it does mean handing it the character full time buys
+							a twitch instead of a player. Holding it to fights is where its
+							numbers are actually good: move is two thirds better than the
+							average there, against a fifth of that out of combat.
+						]]
 						local controlling = Mode.Value == 'Control'
+							and (not OnlyCombat.Enabled or hasEnemy)
 						-- Only when explicitly asked for. The policy sits near zero when
 						-- nothing is happening, so taking the keyboard by default leaves
 						-- you unable to move while it declines to move you.
 						takeControl(controlling and DoMove.Enabled and TakeKeys.Enabled)
 						if controlling then
 							apply(decision)
+						else
+							-- Cleared rather than left standing, so the last thing it wanted
+							-- is not still being applied every frame after it stopped
+							-- deciding.
+							desired.direction = Vector3.zero
+							desired.jump = false
+							desired.yaw, desired.pitch = 0, 0
 						end
 						remember(decision, controlling)
 						pcall(drawUI, decision, hasEnemy)
@@ -657,6 +676,11 @@ DoJump = AIPlayer:CreateToggle({
 DoAttack = AIPlayer:CreateToggle({
 	Name = 'Attack',
 	Tooltip = 'Lets it swing\nWeakest of the four outputs'
+})
+OnlyCombat = AIPlayer:CreateToggle({
+	Name = 'Only In Combat',
+	Tooltip = 'Only drives while an enemy is visible',
+	Default = true
 })
 TakeKeys = AIPlayer:CreateToggle({
 	Name = 'Take Keyboard',
