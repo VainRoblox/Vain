@@ -6191,6 +6191,9 @@ kitRun(function()
     local Gradual
     local Rate
     local old
+    -- Biggest momentum gain the game has handed out this session, learned so the boost
+    -- has something to scale on passes where it grants none.
+    local peak = 0
 
     InfiniteKrystal = vain.Categories.Kit:CreateModule({
     	Name = 'Infinite Krystal',
@@ -6202,6 +6205,7 @@ kitRun(function()
     				otherwise store the replacement as the original, and switching off
     				would leave the hook installed with no way back to the real function.
     			]]
+    			peak = 0
     			old = old or bedwars.GlacialSkaterController.updateMomentum
     			bedwars.GlacialSkaterController.updateMomentum = function(self, ...)
     				if not (Gradual and Gradual.Enabled) then
@@ -6227,8 +6231,27 @@ kitRun(function()
     				local after = tonumber(self.momentum) or 0
     				local gained = after - before
 
-    				if gained > 0 then
-    					self.momentum = before + gained * (Rate.Value / 100)
+    				--[[
+    					The largest natural gain seen so far, used as the step on passes
+    					where the game awards nothing.
+
+    					Scaling the gain alone does nothing on a pass with no gain, and
+    					the controller does not necessarily award momentum on every call -
+    					so without this the slider would read as doing nothing at all for
+    					some of its range. Learned rather than guessed, because the right
+    					step is whatever this kit actually grants and that is not a number
+    					worth hardcoding.
+    				]]
+    				if gained > peak then
+    					peak = gained
+    				end
+
+    				local extra = (Rate.Value / 100) - 1
+    				if extra > 0 then
+    					local step = gained > 0 and gained or peak
+    					if step > 0 then
+    						self.momentum = after + (step * extra)
+    					end
     				end
 
     				return result
