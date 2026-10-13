@@ -78,8 +78,9 @@ Killaura = vain.Categories.Combat:CreateModule({
 				end
 
 				-- Widen the game's Detect so the swing reaches who is around, not only
-				-- ahead, and cap it at the chosen number of targets.
-				tribes.setSwingDetect(Angle.Value, Max.Value)
+				-- ahead: the chosen cone, cap, and a reach floor matching the range the
+				-- module looks for targets at, so a swing lands as far as it will swing.
+				tribes.setSwingDetect(Angle.Value, Max.Value, Range.Value)
 
 				if not holding then
 					holding = true

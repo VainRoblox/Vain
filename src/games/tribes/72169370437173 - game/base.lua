@@ -82,7 +82,7 @@ end
 	changes neither the arc nor the cap, so an idle hook is a plain passthrough rather than
 	something to tear back out and race over.
 ]]
-local detect = {reach = 0, arc = nil, minTargets = nil}
+local detect = {reach = 0, minRange = nil, arc = nil, minTargets = nil}
 local detectHooked = false
 
 local function hookDetect()
@@ -94,6 +94,9 @@ local function hookDetect()
 	local real = c.Melee.Detect
 	c.Melee.Detect = function(self, range, arc, maxTargets)
 		range = (range or 8) + detect.reach
+		-- Killaura sets a floor so a swing reaches as far as the module is set to find
+		-- targets, not only the weapon's own reach.
+		if detect.minRange and detect.minRange > range then range = detect.minRange end
 		if detect.arc then arc = detect.arc end
 		if detect.minTargets then maxTargets = math.max(maxTargets or 1, detect.minTargets) end
 		return real(self, range, arc, maxTargets)
@@ -150,10 +153,49 @@ entitylib.targetCheck = function(entity)
 	return true
 end
 
+--[[
+	The Controller's live weapon state, reached through its own dispatch closure.
+
+	u5 - the table holding the equipped handler, character and humanoid - is a local the
+	Controller never exposes, so Auto Block reads it from the upvalues of Dispatch, which
+	closes over it. It is picked out by the fields it carries at all times (baseSpeed,
+	shotId, killStreak), so a build that reorders upvalues still finds the right table rather
+	than guessing by position. Everything that reads it tolerates nil, because the hook is
+	only there to make Auto Block safe - never to block it working at all.
+]]
+local function handlerState()
+	local c = resolveCombat()
+	if not (c.Controller and type(c.Controller.Dispatch) == 'function' and debug and debug.getupvalues) then
+		return nil
+	end
+	local ok, ups = pcall(debug.getupvalues, c.Controller.Dispatch)
+	if not ok or type(ups) ~= 'table' then
+		return nil
+	end
+	for _, v in pairs(ups) do
+		if type(v) == 'table' and v.baseSpeed ~= nil and v.shotId ~= nil and v.killStreak ~= nil then
+			return v
+		end
+	end
+	return nil
+end
+
 vain.Libraries.tribes = {
 	prediction = prediction,
 	resolveCombat = resolveCombat,
 	isTeammate = isTeammate,
+	handlerState = handlerState,
+
+	-- Whether the equipped weapon can block at all. Secondary on a weapon that cannot is a
+	-- heavy or a lunge, so Auto Block checks this before it ever presses it.
+	canBlock = function()
+		local s = handlerState()
+		return s ~= nil and s.handler ~= nil and s.handler.tuning ~= nil and s.handler.tuning.block ~= nil
+	end,
+	isBlocking = function()
+		local s = handlerState()
+		return s ~= nil and s.handler ~= nil and s.handler.blocking == true
+	end,
 
 	-- Reach and Killaura reach the shared Detect hook through these rather than touching the
 	-- game's modules themselves, so neither has to know the other exists.
@@ -162,14 +204,16 @@ vain.Libraries.tribes = {
 		hookDetect()
 		detect.reach = extra or 0
 	end,
-	setSwingDetect = function(arc, minTargets)
+	setSwingDetect = function(arc, minTargets, minRange)
 		hookDetect()
 		detect.arc = arc
 		detect.minTargets = minTargets
+		detect.minRange = minRange
 	end,
 	clearSwingDetect = function()
 		detect.arc = nil
 		detect.minTargets = nil
+		detect.minRange = nil
 	end,
 
 	--[[
