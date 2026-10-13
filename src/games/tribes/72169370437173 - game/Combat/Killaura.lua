@@ -22,6 +22,7 @@ local Range
 local Angle
 local Max
 local Mouse
+local MeleeOnly
 local tribes = vain.Libraries.tribes
 
 -- The handler we set holding on, kept so it can be released exactly once.
@@ -35,15 +36,21 @@ local function release()
 	tribes.clearSwingDetect()
 end
 
--- The live melee handler, or nil when a non-melee weapon (or nothing) is equipped. A melee
--- handler is the one with a Detect and a Swing; ranged handlers have neither.
-local function meleeHandler()
+-- The live handler to drive, or nil when there is nothing to swing with. A melee handler is
+-- the one with a Detect and a Swing; ranged handlers have neither. With Melee Only on, only
+-- a melee weapon counts, so the aura never drives a bow or a sling; with it off, whatever is
+-- equipped is driven.
+local function activeHandler()
 	local state = tribes.handlerState()
 	local handler = state and state.handler
-	if handler and type(handler.Detect) == 'function' and type(handler.Swing) == 'function' then
-		return handler
+	if not handler then
+		return nil
 	end
-	return nil
+	if MeleeOnly.Enabled then
+		local melee = type(handler.Detect) == 'function' and type(handler.Swing) == 'function'
+		return melee and handler or nil
+	end
+	return handler
 end
 
 -- Whether any enemy the module may hit is within range. entitylib has already dropped
@@ -75,7 +82,7 @@ Killaura = vain.Categories.Combat:CreateModule({
 					return
 				end
 
-				local handler = meleeHandler()
+				local handler = activeHandler()
 				if not handler or not enemyInRange() then
 					release()
 					return
@@ -129,4 +136,9 @@ Max = Killaura:CreateSlider({
 Mouse = Killaura:CreateToggle({
 	Name = 'Require Mouse',
 	Tooltip = 'Only swings while you hold left click'
+})
+MeleeOnly = Killaura:CreateToggle({
+	Name = 'Melee Only',
+	Tooltip = 'Only swings when a melee weapon is held',
+	Default = true
 })
