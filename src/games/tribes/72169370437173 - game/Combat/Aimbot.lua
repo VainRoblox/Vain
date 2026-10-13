@@ -78,12 +78,27 @@ Aimbot = vain.Categories.Combat:CreateModule({
 		if callback then
 			current = nil
 
+			-- The FOV circle follows the cursor; cheap, so it stays on the normal step.
 			Aimbot:Clean(runService.RenderStepped:Connect(function()
 				if CircleObject then
 					CircleObject.Position = inputService:GetMouseLocation()
 					CircleObject.Radius = FOV.Value
 				end
+			end))
 
+			--[[
+				The aim is written after the game has placed its camera, not before.
+
+				Tribes reads your aim as its camera's position and look direction - GetAimRay
+				returns Ray.new(camera.CFrame.Position, camera.CFrame.LookVector) - and its own
+				camera controller rewrites that CFrame every frame at the Camera render step.
+				A plain RenderStepped write lands before that and is overwritten the same
+				frame, so the aim never took. Binding one priority after the camera means our
+				look at the target is the last word, and because it keeps the camera's own
+				position it stays on exactly the ray the game will swing and shoot down.
+			]]
+			local bind = 'VainTribesAimbot'
+			runService:BindToRenderStep(bind, Enum.RenderPriority.Camera.Value + 1, function(dt)
 				if not entitylib.isAlive then
 					current = nil
 					return
@@ -95,9 +110,8 @@ Aimbot = vain.Categories.Combat:CreateModule({
 				end
 
 				-- Sticky keeps the current target until it dies, leaves range or leaves
-				-- the cone, rather than re-picking every frame. Without it the aim
-				-- snaps between two enemies standing near each other and lands on
-                -- neither.
+				-- the cone, rather than re-picking every frame. Without it the aim snaps
+				-- between two enemies standing near each other and lands on neither.
 				if Sticky.Enabled and current and current.Targetable and current.Character and current.Character.Parent then
 					local part = partOf(current)
 					local dist = part and screenDistance(part.Position)
@@ -116,16 +130,20 @@ Aimbot = vain.Categories.Combat:CreateModule({
 
 				targetinfo.Targets[current] = tick() + 1
 
+				-- From the camera's own position, so the result is the ray the game reads.
 				local goal = CFrame.new(gameCamera.CFrame.Position, part.Position)
 				if Smoothing.Value <= 0 then
 					gameCamera.CFrame = goal
 				else
-					-- Framerate independent, so the feel does not change with FPS. A
-					-- plain per-frame lerp moves twice as fast at 120 as at 60.
-					local alpha = 1 - math.exp(-(1 / math.max(Smoothing.Value, 0.001)) * runService.RenderStepped:Wait())
+					-- Framerate independent off the real frame time, so the feel does not
+					-- change with FPS. A plain per-frame lerp moves twice as fast at 120.
+					local alpha = 1 - math.exp(-(1 / math.max(Smoothing.Value, 0.001)) * dt)
 					gameCamera.CFrame = gameCamera.CFrame:Lerp(goal, math.clamp(alpha, 0, 1))
 				end
-			end))
+			end)
+			Aimbot:Clean(function()
+				pcall(function() runService:UnbindFromRenderStep(bind) end)
+			end)
 		else
 			current = nil
 		end
