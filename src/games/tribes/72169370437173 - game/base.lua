@@ -218,11 +218,23 @@ vain.Libraries.tribes = {
 	end
 }
 
--- Said once, because silently aiming at teammates is worse than being told the game's check
--- could not be reached.
+--[[
+	Found once, at load, not lazily in a hot path.
+
+	The combat folder is copied into PlayerScripts a moment after you join, and requiring its
+	modules can yield while they wait for their own children - neither of which belongs in a
+	Heartbeat or a targetCheck that runs every frame. So the search is done here, retried
+	until it lands, and everything after reads the cached result instantly. If it never
+	lands, Killaura and Reach have nothing to drive, and that is said plainly rather than
+	leaving them looking broken.
+]]
 task.spawn(function()
-	task.wait(12)
-	if not select(2, isTeammate(lplr.Character)) and not resolveCombat().Util then
-		notif('Vain', 'Tribes: could not reach the game\'s team check, so teammates are not being filtered.', 15, 'alert')
+	for _ = 1, 60 do
+		if resolveCombat().Controller then
+			hookDetect()
+			return
+		end
+		task.wait(1)
 	end
+	notif('Vain', 'Tribes: combat system not found - Killaura and Reach will not work. Rejoin if this persists.', 15, 'alert')
 end)

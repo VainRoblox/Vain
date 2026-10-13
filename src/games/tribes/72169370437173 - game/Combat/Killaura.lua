@@ -56,6 +56,9 @@ Killaura = vain.Categories.Combat:CreateModule({
 	Function = function(callback)
 		if callback then
 			tribes.hookDetect()
+			if not tribes.resolveCombat().Controller then
+				notif('Killaura', 'Combat system not found yet - try again in a match', 6, 'alert')
+			end
 
 			Killaura:Clean(runService.Heartbeat:Connect(function()
 				local controller = tribes.resolveCombat().Controller

@@ -78,27 +78,27 @@ Aimbot = vain.Categories.Combat:CreateModule({
 		if callback then
 			current = nil
 
-			-- The FOV circle follows the cursor; cheap, so it stays on the normal step.
-			Aimbot:Clean(runService.RenderStepped:Connect(function()
+			--[[
+				RenderStepped, not BindToRenderStep.
+
+				The aim has to be the last word on the camera each frame, and RenderStepped is
+				the last render event before the frame draws - it fires after the game's own
+				camera has placed itself, so writing the look here is what the game then reads.
+				BindToRenderStep would do the same by priority, but executor threads are not
+				always allowed to call it, and a capability error there switched the whole
+				module off - which is the aimbot that "did not work".
+
+				The game reads aim as its camera's position and look direction (GetAimRay
+				returns Ray.new(camera.CFrame.Position, camera.CFrame.LookVector)), so keeping
+				the camera's own position and only turning it to the target lands on exactly
+				the ray a swing or shot travels down.
+			]]
+			Aimbot:Clean(runService.RenderStepped:Connect(function(dt)
 				if CircleObject then
 					CircleObject.Position = inputService:GetMouseLocation()
 					CircleObject.Radius = FOV.Value
 				end
-			end))
 
-			--[[
-				The aim is written after the game has placed its camera, not before.
-
-				Tribes reads your aim as its camera's position and look direction - GetAimRay
-				returns Ray.new(camera.CFrame.Position, camera.CFrame.LookVector) - and its own
-				camera controller rewrites that CFrame every frame at the Camera render step.
-				A plain RenderStepped write lands before that and is overwritten the same
-				frame, so the aim never took. Binding one priority after the camera means our
-				look at the target is the last word, and because it keeps the camera's own
-				position it stays on exactly the ray the game will swing and shoot down.
-			]]
-			local bind = 'VainTribesAimbot'
-			runService:BindToRenderStep(bind, Enum.RenderPriority.Camera.Value + 1, function(dt)
 				if not entitylib.isAlive then
 					current = nil
 					return
@@ -140,10 +140,7 @@ Aimbot = vain.Categories.Combat:CreateModule({
 					local alpha = 1 - math.exp(-(1 / math.max(Smoothing.Value, 0.001)) * dt)
 					gameCamera.CFrame = gameCamera.CFrame:Lerp(goal, math.clamp(alpha, 0, 1))
 				end
-			end)
-			Aimbot:Clean(function()
-				pcall(function() runService:UnbindFromRenderStep(bind) end)
-			end)
+			end))
 		else
 			current = nil
 		end
