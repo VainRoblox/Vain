@@ -1,20 +1,17 @@
 --[[
 	Hitbox.
 
-	Grows the hit part on enemy bodies so shots are easier to land. It helps the ranged
-	weapons - bow, gun, thrown - because those hit-test against the body a projectile passes
-	through, so a bigger body is a bigger thing to hit. Melee does not gain from it: a melee
-	swing picks targets by distance, not by overlap, so Reach is what widens melee - this is
-	its ranged counterpart.
+	Grows the hit part on enemy bodies and draws it as a box, so you can see exactly where it
+	reaches. It helps the ranged weapons - bow, gun, thrown - which hit-test against the body
+	a projectile passes through, so a bigger body is a bigger thing to hit. Melee does not
+	gain from it: a swing picks targets by distance, not overlap, so Reach is what widens
+	melee - this is its ranged counterpart.
 
-	Only the root part is grown, never the head. The root is invisible, so the hit area gets
-	bigger without a giant head filling your screen - that was the head part, which is drawn,
-	being resized. Show Hitbox then makes the grown root faintly visible when you want to see
-	where it reaches, at a transparency you set.
-
-	Only enemies are touched, through the same Targetable check the rest of the client uses,
-	and every part is put back to its own size and transparency the moment the module goes
-	off or the body leaves range.
+	The root part is the one grown, never the head, so there is no giant head on screen - that
+	was the head, which is drawn, being resized. The box itself is a separate adornment drawn
+	on top, at the transparency you set, so it shows up reliably whatever the part behind it
+	is doing, and it is torn down the instant the body dies, leaves range or the module goes
+	off - as is the part's real size.
 ]]
 local Hitbox
 local Targets
@@ -22,24 +19,31 @@ local Size
 local Show
 local Visibility
 
--- part -> its real size and transparency, so both are restored exactly. Keyed by the part
--- so a respawned body with a fresh root is grown on its own terms.
+-- part -> its real size, so it is restored to the stud. part -> adornment lives alongside.
 local original = {}
+local boxes = {}
 
-local function restore(part)
-	local saved = original[part]
-	if part and saved then
-		pcall(function()
-			part.Size = saved.size
-			part.Transparency = saved.transparency
-		end)
+local folder = Instance.new('Folder')
+folder.Name = 'VainHitbox'
+folder.Parent = vain.gui
+
+local function drop(part)
+	if original[part] then
+		pcall(function() part.Size = original[part] end)
 		original[part] = nil
+	end
+	if boxes[part] then
+		pcall(function() boxes[part]:Destroy() end)
+		boxes[part] = nil
 	end
 end
 
-local function restoreAll()
+local function dropAll()
 	for part in original do
-		restore(part)
+		drop(part)
+	end
+	for part in boxes do
+		drop(part)
 	end
 end
 
@@ -49,39 +53,53 @@ Hitbox = vain.Categories.Blatant:CreateModule({
 		if callback then
 			Hitbox:Clean(runService.Heartbeat:Connect(function()
 				local wanted = {}
+				local size = Size.Value
 
 				for _, entity in entitylib.List do
 					local allow = entity.Targetable
 						and (entity.Player and Targets.Players.Enabled or (entity.NPC and Targets.NPCs.Enabled))
-					-- The root only: it is the invisible part shots hit, so growing it does
-					-- not put a block on screen unless Show Hitbox asks for one.
 					local part = allow and entity.RootPart
 					if not part then continue end
 
 					wanted[part] = true
 					if not original[part] then
-						original[part] = {size = part.Size, transparency = part.Transparency}
+						original[part] = part.Size
 					end
-
-					local size = Size.Value
 					part.Size = Vector3.new(size, size, size)
-					-- Shown faintly when asked, invisible otherwise - the root's own
-					-- transparency is kept for when the module goes off.
-					part.Transparency = Show.Enabled and (1 - Visibility.Value) or original[part].transparency
+
+					-- The visible box: a separate adornment so it shows reliably, on top,
+					-- at the transparency chosen, without touching how the part itself draws.
+					if Show.Enabled then
+						local box = boxes[part]
+						if not box then
+							box = Instance.new('BoxHandleAdornment')
+							box.Adornee = part
+							box.AlwaysOnTop = true
+							box.ZIndex = 0
+							box.Parent = folder
+							boxes[part] = box
+						end
+						box.Size = Vector3.new(size, size, size)
+						box.Color3 = Color3.fromRGB(255, 80, 80)
+						box.Transparency = 1 - Visibility.Value
+					elseif boxes[part] then
+						pcall(function() boxes[part]:Destroy() end)
+						boxes[part] = nil
+					end
 				end
 
-				-- Anything grown last pass that is no longer a wanted enemy root - died,
-				-- left range, changed team - is put back at once.
+				-- Anything touched last pass that is no longer a wanted enemy root is put
+				-- back and its box removed at once.
 				for part in original do
 					if not wanted[part] then
-						restore(part)
+						drop(part)
 					end
 				end
 			end))
 
-			Hitbox:Clean(restoreAll)
+			Hitbox:Clean(dropAll)
 		else
-			restoreAll()
+			dropAll()
 		end
 	end,
 	Tooltip = 'Grows enemy hitboxes so ranged shots land easier\nUse Reach for melee'
@@ -102,20 +120,19 @@ Size = Hitbox:CreateSlider({
 })
 Show = Hitbox:CreateToggle({
 	Name = 'Show Hitbox',
-	Tooltip = 'Draws the grown hit part so you can see it',
+	Tooltip = 'Draws the hitbox so you can see it',
 	Function = function(callback)
 		if Visibility and Visibility.Object then
 			Visibility.Object.Visible = callback
 		end
-		-- Hidden again straight away when turned off, without waiting for the next pass.
 		if not callback then
-			for part, saved in original do
-				pcall(function()
-					part.Transparency = saved.transparency
-				end)
+			for part in boxes do
+				pcall(function() boxes[part]:Destroy() end)
+				boxes[part] = nil
 			end
 		end
-	end
+	end,
+	Default = true
 })
 Visibility = Hitbox:CreateSlider({
 	Name = 'Visibility',
@@ -124,6 +141,5 @@ Visibility = Hitbox:CreateSlider({
 	Max = 1,
 	Default = 0.5,
 	Decimal = 100,
-	Darker = true,
-	Visible = false
+	Darker = true
 })
