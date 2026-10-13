@@ -60,6 +60,13 @@ local function resolveCombat()
 					pcall(function() combat.Util = require(parent.Util) end)
 					pcall(function() combat.Melee = require(handlers.Melee) end)
 					pcall(function() combat.Controller = require(parent.Controller) end)
+					-- Shared.Combat holds ShotSpeed/DrawnShot, which the projectile aimbot
+					-- needs to know how fast each weapon's shot leaves. FindFirstChild so this
+					-- never yields in a hot path.
+					local sharedFolder = replicatedStorage:FindFirstChild('Shared')
+					if sharedFolder and sharedFolder:FindFirstChild('Combat') then
+						pcall(function() combat.Combat = require(sharedFolder.Combat) end)
+					end
 					if combat.Controller then
 						return combat
 					end
