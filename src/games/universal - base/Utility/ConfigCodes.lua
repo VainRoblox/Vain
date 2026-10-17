@@ -144,16 +144,25 @@ local function importCode(code, profileName)
 	end
 
 	local name = profileName ~= '' and profileName or vain.Profile
-	writefile(profilePath(name), httpService:JSONEncode(target))
 	if profileName ~= '' then
+		-- A profile of its own: register it and persist the list first, so the Load below -
+		-- which reloads the profile list from disk - keeps it instead of dropping it. Saving
+		-- here writes the list and the profile you are currently on, never the new file.
 		local exists = false
 		for _, profile in vain.Profiles do
 			if profile.Name == profileName then exists = true end
 		end
 		if not exists then table.insert(vain.Profiles, {Name = profileName, Bind = {}}) end
-		vain:Save(profileName)
+		vain:Save()
 	end
-	vain:Load(true)
+	-- The imported data is written after that Save, so nothing writes the current state back
+	-- over it.
+	writefile(profilePath(name), httpService:JSONEncode(target))
+	-- Loaded by name, so the import actually takes. The old code loaded without a name - so
+	-- it reloaded whichever profile was already on, not the one just imported - and for a new
+	-- profile it had also Saved the current state over the imported file first. Between the
+	-- two, nothing the code carried ever reached the screen.
+	vain:Load(true, name)
 	return true
 end
 
@@ -260,5 +269,6 @@ ModuleName = host:CreateTextBox({
 })
 IncludeBinds = host:CreateToggle({
 	Name = 'Include Binds',
-	Tooltip = 'Sends your keybinds along too'
+	Tooltip = 'Sends your keybinds along too',
+	Default = true
 })
