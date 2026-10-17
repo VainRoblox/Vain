@@ -790,6 +790,7 @@ kitRun(function()
     local HiveESP
     local ShowAmount
     local ShowOwn
+    local Glow
     local Background
     local Color = {}
     local Reference = {}
@@ -1057,6 +1058,9 @@ kitRun(function()
         if entry then
             Reference[hive] = nil
             entry.Billboard:Destroy()
+            if entry.Highlight then
+                entry.Highlight:Destroy()
+            end
         end
     end
 
@@ -1070,6 +1074,25 @@ kitRun(function()
 
         local part = partOf(hive)
         if not part then return end
+
+        --[[
+            A highlight on the hive itself, through walls, in its team colour.
+
+            The plate alone is a small patch of text that blends into a busy base - the one
+            thing people actually said they could not find. A filled outline over the whole
+            block is seen across the map and tells you whose it is at a glance, which is what
+            an ESP is for; the count stays on the plate for when you are close enough to read
+            it.
+        ]]
+        local highlight = Instance.new('Highlight')
+        highlight.Adornee = part
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.FillColor = hiveColor(hive)
+        highlight.OutlineColor = hiveColor(hive)
+        highlight.FillTransparency = 0.6
+        highlight.OutlineTransparency = 0
+        highlight.Enabled = Glow == nil or on(Glow)
+        highlight.Parent = Folder
 
         local billboard = Instance.new('BillboardGui')
         billboard.Name = 'beehive'
@@ -1130,13 +1153,18 @@ kitRun(function()
                 parts[#parts + 1] = '<font size="10">' .. ((owner and owner.Name) or '?') .. '</font>'
             end
 
+            local tint = hiveColor(hive)
             label.Text = table.concat(parts, ' ')
-            label.TextColor3 = hiveColor(hive)
+            label.TextColor3 = tint
             billboard.Enabled = #parts > 0
+
+            highlight.FillColor = tint
+            highlight.OutlineColor = tint
+            highlight.Enabled = Glow == nil or on(Glow)
         end
         refresh()
 
-        Reference[hive] = {Billboard = billboard, Frame = frame, Blur = blur, Refresh = refresh}
+        Reference[hive] = {Billboard = billboard, Frame = frame, Blur = blur, Highlight = highlight, Refresh = refresh}
         Beekeeper:Clean(hive:GetAttributeChangedSignal('Level'):Connect(refresh))
     end
 
@@ -1277,6 +1305,7 @@ kitRun(function()
         Function = function(callback)
             if ShowAmount and ShowAmount.Object then ShowAmount.Object.Visible = callback end
             if ShowOwn and ShowOwn.Object then ShowOwn.Object.Visible = callback end
+            if Glow and Glow.Object then Glow.Object.Visible = callback end
             if Background and Background.Object then Background.Object.Visible = callback end
             if Color and Color.Object then Color.Object.Visible = callback and Background.Enabled end
             if Beekeeper.Enabled then
@@ -1303,6 +1332,19 @@ kitRun(function()
             end
         end,
         Darker = true
+    })
+    Glow = Beekeeper:CreateToggle({
+        Name = 'Highlight',
+        Tooltip = 'Outlines each hive through walls in its team colour',
+        Default = true,
+        Darker = true,
+        Function = function(callback)
+            for _, entry in Reference do
+                if entry.Highlight then
+                    entry.Highlight.Enabled = callback
+                end
+            end
+        end
     })
     Background = Beekeeper:CreateToggle({
         Name = 'Background',
