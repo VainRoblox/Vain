@@ -266,22 +266,13 @@ function refreshAdornee(v)
 	end
 end
 
-local function Added(v)
+local function build(v)
 	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
-	local chestValue = v:WaitForChild('ChestFolderValue', 3)
-	if not (chestValue and StorageESP.Enabled) then return end
-	if hiddenAsOwn(v) then return end
-	-- Build on a fresh task thread. A thread resumed from WaitForChild cannot always be given
-	-- the capability to make instances even with setthreadidentity re-applied, which threw
-	-- "lacking capability Plugin" on a chest drawn after the wait; a task thread elevates it.
-	task.spawn(function()
-	if vain.ThreadFix then
-		setthreadidentity(8)
-	end
-	local chest = chestValue.Value
-	if not chest then return end
+	local value = v:FindFirstChild('ChestFolderValue')
+	local chest = value and value.Value
+	if not (chest and StorageESP.Enabled) or Reference[v] or hiddenAsOwn(v) then return end
 	local billboard = Instance.new('BillboardGui')
 	billboard.Parent = Folder
 	billboard.Name = 'chest'
@@ -331,7 +322,28 @@ local function Added(v)
 		queue(billboard)
 	end))
 	queue(billboard)
+end
+
+local function Added(v)
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
+	if not StorageESP.Enabled then return end
+	-- WaitForChild is avoided on purpose: the thread it resumes on loses the capability
+	-- to make instances and cannot be given it back, which threw "lacking capability
+	-- Plugin". Build now if the value folder is already there - still on an elevatable
+	-- thread - or from a plain ChildAdded callback (which keeps it) when it lands later.
+	if v:FindFirstChild('ChestFolderValue') then
+		build(v)
+		return
+	end
+	local conn
+	conn = v.ChildAdded:Connect(function(child)
+		if child.Name ~= 'ChestFolderValue' then return end
+		conn:Disconnect()
+		build(v)
 	end)
+	task.delay(3, function() if conn.Connected then conn:Disconnect() end end)
 end
 
 StorageESP = vain.Categories.Render:CreateModule({

@@ -389,7 +389,9 @@ local function clearStatues()
 end
 
 local function updateStatues()
-	local show = on(MinerStatues)
+	-- Only while you are actually the Miner kit - the statues are its own thing, and are no
+	-- use to read when you cannot dig them.
+	local show = on(MinerStatues) and store.equippedKit == 'miner'
 	for statue, highlight in StatueRefs do
 		if not statue.Parent then
 			removeStatue(statue)
@@ -510,7 +512,7 @@ HealthRange = KitESP:CreateTwoSlider({
 HealthRange.Object.Visible = EldertreeHealth.Enabled
 MinerStatues = KitESP:CreateToggle({
 	Name = 'Miner Statues',
-	Tooltip = 'Highlights Miner statues through walls, your team\'s and the enemy\'s',
+	Tooltip = 'While you are the Miner kit, highlights statues through walls - your team\'s red, the enemy\'s green',
 	Default = true,
 	Function = function(callback)
 		if OwnStatueColor and OwnStatueColor.Object then OwnStatueColor.Object.Visible = callback end

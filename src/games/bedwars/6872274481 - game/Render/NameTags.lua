@@ -471,6 +471,10 @@ end
 	name without the two crowding each other. Rebuilt whole for the same reason the effect
 	strip is: there are only ever a handful and they change rarely.
 ]]
+local function textHeight()
+	return math.floor(14 * Scale.Value) + 3
+end
+
 local function drawEnchants(nametag, ent)
 	local row = nametag:FindFirstChild('Row')
 	local container = row and row:FindFirstChild('Enchants')
@@ -614,9 +618,6 @@ local function newPiece(row, name, order)
 	return label
 end
 
-local function textHeight()
-	return math.floor(14 * Scale.Value) + 3
-end
 
 local function hexOf(colour)
 	return string.format('%02X%02X%02X',
