@@ -5,6 +5,7 @@ local Background
 local Color
 local EldertreeHealth
 local HealthRange
+local MinerStatues, OwnStatueColor, EnemyStatueColor
 local Reference = {}
 local Folder = Instance.new('Folder')
 Folder.Parent = vain.gui
@@ -12,6 +13,10 @@ Folder.Parent = vain.gui
 local HealthTags, seenTags = {}, {}
 local HealthFolder = Instance.new('Folder')
 HealthFolder.Parent = vain.gui
+-- Miner statues are independent of your own kit, so they get their own folder too.
+local StatueRefs = {}
+local StatueFolder = Instance.new('Folder')
+StatueFolder.Parent = vain.gui
 
 -- Settings are created after CreateModule returns, so they can still be nil while this
 -- file is executing - and the module can be switched on inside that window when the GUI
@@ -320,6 +325,86 @@ local function updateHealthTags()
 	end
 end
 
+--[[
+	Miner statues.
+
+	A Miner kill petrifies the victim into a statue of their character, tagged 'petrified-player'
+	and carrying the victim's Team. Unlike the kit collectibles above, these are worth seeing
+	whatever kit you are on, so they are tracked on their own and left alone when your kit
+	changes. Each gets a filled highlight through walls: your own team's red, an enemy's green,
+	so a decoy you must not waste time on reads apart from one worth digging at a glance.
+]]
+local function statueTeam(statue)
+	local team = statue:GetAttribute('Team')
+	if team == nil then
+		local part = statue.PrimaryPart or statue:FindFirstChildWhichIsA('BasePart', true)
+		if part then team = part:GetAttribute('Team') end
+	end
+	return team ~= nil and tostring(team) or nil
+end
+
+local function statueIsOwn(statue)
+	local mine = lplr:GetAttribute('Team')
+	mine = mine ~= nil and tostring(mine) or nil
+	return mine ~= nil and statueTeam(statue) == mine
+end
+
+local function sliderColor(slider, fallback)
+	if not slider then return fallback end
+	return Color3.fromHSV(slider.Hue or 0, slider.Sat or 0, slider.Value or 1)
+end
+
+local function addStatue(statue)
+	if StatueRefs[statue] or not statue:IsA('Model') then return end
+	local highlight = Instance.new('Highlight')
+	highlight.Name = 'MinerStatue'
+	highlight.Adornee = statue
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.OutlineTransparency = 0
+	highlight.Enabled = false
+	highlight.Parent = StatueFolder
+	StatueRefs[statue] = highlight
+end
+
+local function removeStatue(statue)
+	local highlight = StatueRefs[statue]
+	if highlight then
+		highlight:Destroy()
+		StatueRefs[statue] = nil
+	end
+end
+
+local function setupStatues()
+	for _, statue in collectionService:GetTagged('petrified-player') do addStatue(statue) end
+	KitESP:Clean(collectionService:GetInstanceAddedSignal('petrified-player'):Connect(addStatue))
+	KitESP:Clean(collectionService:GetInstanceRemovedSignal('petrified-player'):Connect(removeStatue))
+end
+
+local function clearStatues()
+	for statue in StatueRefs do removeStatue(statue) end
+	StatueFolder:ClearAllChildren()
+	table.clear(StatueRefs)
+end
+
+local function updateStatues()
+	local show = on(MinerStatues)
+	for statue, highlight in StatueRefs do
+		if not statue.Parent then
+			removeStatue(statue)
+		else
+			highlight.Enabled = show
+			if show then
+				local own = statueIsOwn(statue)
+				local slider = own and OwnStatueColor or EnemyStatueColor
+				local colour = sliderColor(slider, own and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(60, 255, 60))
+				highlight.FillColor = colour
+				highlight.OutlineColor = colour
+				highlight.FillTransparency = 1 - (slider and slider.Opacity or 0.5)
+			end
+		end
+	end
+end
+
 KitESP = vain.Categories.Render:CreateModule({
 	Name = 'KitESP',
 	Function = function(callback)
@@ -331,7 +416,11 @@ KitESP = vain.Categories.Render:CreateModule({
 			TracerConn = runService.RenderStepped:Connect(function()
 				updateTracers()
 				updateHealthTags()
+				updateStatues()
 			end)
+
+			-- Statues are tracked for the whole time the module is on, independent of your kit.
+			setupStatues()
 
 			--[[
 				Polled rather than driven off a signal.
@@ -378,6 +467,7 @@ KitESP = vain.Categories.Render:CreateModule({
 			end
 			clearTracers()
 			clearHealthTags()
+			clearStatues()
 		end
 	end,
 	Tooltip = 'ESP for the objects your equipped kit collects'
@@ -416,6 +506,33 @@ HealthRange = KitESP:CreateTwoSlider({
 	Visible = false
 })
 HealthRange.Object.Visible = EldertreeHealth.Enabled
+MinerStatues = KitESP:CreateToggle({
+	Name = 'Miner Statues',
+	Tooltip = 'Highlights Miner statues through walls, your team\'s and the enemy\'s',
+	Default = true,
+	Function = function(callback)
+		if OwnStatueColor and OwnStatueColor.Object then OwnStatueColor.Object.Visible = callback end
+		if EnemyStatueColor and EnemyStatueColor.Object then EnemyStatueColor.Object.Visible = callback end
+	end
+})
+OwnStatueColor = KitESP:CreateColorSlider({
+	Name = 'Own Statue Color',
+	Tooltip = 'Colour of your own team\'s statues',
+	DefaultHue = 0,
+	DefaultSat = 0.85,
+	DefaultValue = 1,
+	DefaultOpacity = 0.5,
+	Darker = true
+})
+EnemyStatueColor = KitESP:CreateColorSlider({
+	Name = 'Enemy Statue Color',
+	Tooltip = 'Colour of enemy statues',
+	DefaultHue = 0.333,
+	DefaultSat = 0.85,
+	DefaultValue = 1,
+	DefaultOpacity = 0.5,
+	Darker = true
+})
 Background = KitESP:CreateToggle({
 	Name = 'Background',
 	Tooltip = 'Draws a background behind the icon',
