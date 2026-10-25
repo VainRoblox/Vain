@@ -514,6 +514,64 @@ local function barrelPoint(cannon)
 end
 
 --[[
+	The TNT launch, learned from a real shot rather than trusted to the measured constants
+	above, so it re-fits itself if the game changes the numbers (which is how they go wrong -
+	the form is right, the values drift on updates).
+
+	When a TNT projectile appears right at a cannon's barrel, its true starting velocity is
+	split, against that cannon's aim, into the speed along the aim and the vertical lift that
+	the prediction rebuilds it from - exactly the shape cannonPaths uses - so the learned pair
+	reproduces that shot and, since the launch is the same for every cannon, all the others
+	too. The first few are printed so the numbers can also just be read off.
+]]
+local tntSpeed, tntLift, tntGravity
+local tntLogged = 0
+
+local function tntPart(inst)
+	if inst:IsA('BasePart') then return inst end
+	if inst:IsA('Model') then return inst.PrimaryPart or inst:FindFirstChildWhichIsA('BasePart') end
+end
+
+local function learnTnt(inst)
+	local name = inst.Name:lower()
+	if name ~= 'tnt' and name ~= 'siege_tnt' then return end
+	-- A frame late, so the server has set the launch velocity on the part.
+	task.defer(function()
+		local root = tntPart(inst)
+		if not (root and root.Parent) then return end
+		local v = root.AssemblyLinearVelocity
+		if v.Magnitude < 2 then return end
+		-- The cannon it came out of: the one whose barrel it spawned on. Kept tight so a TNT
+		-- thrown by hand near a cannon cannot be mistaken for a cannon shot.
+		local cannon, gap
+		for block in cannonBlocks do
+			if block.Parent then
+				local d = (root.Position - barrelPoint(block)).Magnitude
+				if not gap or d < gap then cannon, gap = block, d end
+			end
+		end
+		if not cannon or gap > 8 then return end
+		local look = cannon:GetAttribute('LookVector')
+		if typeof(look) ~= 'Vector3' or look.Magnitude == 0 then return end
+		-- v = look.Unit * speed + (0, lift, 0). Solve speed off the horizontal part (which the
+		-- lift does not touch), then lift off what is left vertically, so it holds whether the
+		-- aim is level or tilted.
+		local lu = look.Unit
+		local horizontalFraction = (lu * Vector3.new(1, 0, 1)).Magnitude
+		local horizontalSpeed = (v * Vector3.new(1, 0, 1)).Magnitude
+		local speed = horizontalFraction > 0.001 and horizontalSpeed / horizontalFraction or v.Magnitude
+		tntSpeed = speed
+		tntLift = v.Y - lu.Y * speed
+		tntGravity = projectileGravity(root)
+		if tntLogged < 5 then
+			tntLogged += 1
+			print(string.format('[Vain] Trajectories TNT learned: speed %.2f, lift %.2f, gravity %.2f (constants were %.2f / %.2f / %.2f) | spawned %.1f studs from barrel',
+				speed, tntLift, tntGravity, TNT_SPEED, TNT_LIFT, workspace.Gravity, gap))
+		end
+	end)
+end
+
+--[[
 	Once you are actually flying out of a cannon, the arc follows you instead: worked out
 	from where you are and how fast you are going each frame, the way a pearl's path is,
 	until you are back on the ground. The cannon you left stops drawing its own arc meanwhile,
@@ -595,8 +653,9 @@ local function cannonPaths()
 			local start, velocity, gravity
 			if tnt then
 				start = barrelPoint(cannon)
-				velocity = look.Unit * TNT_SPEED + Vector3.new(0, TNT_LIFT, 0)
-				gravity = workspace.Gravity
+				-- Learned from a real shot once one has been seen, the measured constants until then.
+				velocity = look.Unit * (tntSpeed or TNT_SPEED) + Vector3.new(0, tntLift or TNT_LIFT, 0)
+				gravity = tntGravity or workspace.Gravity
 			else
 				local up = Vector3.new(0, jumpSpeed(), 0)
 				if cannon == mine then
@@ -676,6 +735,8 @@ Trajectories = vain.Categories.Render:CreateModule({
 		if callback then
 			for _, child in workspace:GetChildren() do track(child) end
 			Trajectories:Clean(workspace.ChildAdded:Connect(track))
+			-- Watch for fired TNT so the cannon prediction can learn the real launch off it.
+			Trajectories:Clean(workspace.ChildAdded:Connect(learnTnt))
 			for _, block in collectionService:GetTagged('block') do watchBlock(block) end
 			Trajectories:Clean(collectionService:GetInstanceAddedSignal('block'):Connect(watchBlock))
 			Trajectories:Clean(runService.RenderStepped:Connect(function()

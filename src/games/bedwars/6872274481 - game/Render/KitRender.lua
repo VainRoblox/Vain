@@ -208,7 +208,14 @@ end
 	rather than one guessed name. If none match but a profile did come back, it prints the
 	profile's keys once, so the real field can be named and added.
 ]]
-local levelCache, levelWaiting, levelProbed = {}, {}, false
+local levelCache, levelWaiting, levelProbed, attrsProbed = {}, {}, false, false
+-- Profile requests go through one worker that spaces them out, because a draft opens ~10
+-- cards at once and firing that many RequestProfileData calls in the same frame gets the
+-- burst throttled server-side. Before, a throttled call was pcall'd to nil and cached as
+-- false forever, so every card that lost the race stayed blank for the whole match - which
+-- read as "only players in a party show a level". Now a miss is retried a few times and only
+-- the genuine no-level case is remembered.
+local levelQueue, levelWorking = {}, false
 
 local function levelOf(profile)
 	if type(profile) ~= 'table' then return nil end
@@ -222,37 +229,167 @@ local function levelOf(profile)
 	return nil
 end
 
+--[[
+	The level the way the tab leaderboard already has it, with no request to the server.
+
+	The board shows every player's level the moment you open it, so the number is already on
+	the client - the point the profile request was missing. It reads two ways, in order of
+	cost: a plain attribute on the player if the game keeps one there, then the leaderboard UI
+	itself. A row reads "[level] [clan] name"; the level is the first all-digit bracket (a clan
+	tag is letters), whether the row is one rich-text label or a few labels side by side, so
+	this finds the row by the player's name and takes that first bracketed number from it.
+]]
+local function bracketedLevel(text)
+	for digits in text:gmatch('%[(%d+)%]') do
+		return tonumber(digits)
+	end
+end
+
+local tablistRoot
+
+local function rowLevel(label)
+	-- The number can sit on the name label itself or on a sibling in the same row, so check
+	-- the label, then climb a step or two and scan the little subtree the row lives in.
+	local own = bracketedLevel(label.Text)
+	if own then return own end
+	local scope = label.Parent
+	for _ = 1, 2 do
+		if not scope then break end
+		for _, d in scope:GetDescendants() do
+			if d:IsA('TextLabel') then
+				local got = bracketedLevel(d.Text)
+				if got then return got end
+			end
+		end
+		scope = scope.Parent
+	end
+end
+
+local function levelFromLeaderboard(player)
+	local name, display = player.Name, player.DisplayName
+	local roots = tablistRoot and tablistRoot.Parent and {tablistRoot} or lplr.PlayerGui:GetChildren()
+	for _, root in roots do
+		for _, d in root:GetDescendants() do
+			if d:IsA('TextLabel') then
+				local t = d.Text
+				if t:find(name, 1, true) or (display ~= '' and display ~= name and t:find(display, 1, true)) then
+					local lvl = rowLevel(d)
+					if lvl then
+						tablistRoot = root
+						return lvl
+					end
+				end
+			end
+		end
+	end
+end
+
+-- The level without waiting on the server: an attribute, then a leaderstats-style value on
+-- the player, then the leaderboard UI. All three read what is already on the client, so they
+-- cover every player on the board - unlike the profile request, which the server only answers
+-- in full for your own party.
+local function instantLevel(player)
+	for _, key in {'Level', 'PlayerLevel', 'AccountLevel', 'BedwarsLevel', 'SeasonLevel'} do
+		local v = player:GetAttribute(key)
+		if type(v) == 'number' and v > 0 then return math.floor(v) end
+	end
+	local stats = player:FindFirstChild('leaderstats')
+	for _, name in {'Level', 'level', 'Levels'} do
+		local value = stats and stats:FindFirstChild(name) or player:FindFirstChild(name)
+		if value and value:IsA('ValueBase') and type(value.Value) == 'number' and value.Value > 0 then
+			return math.floor(value.Value)
+		end
+	end
+	local ok, lvl = pcall(levelFromLeaderboard, player)
+	if ok and lvl then return lvl end
+end
+
+local function deliverLevel(userId, level)
+	for _, waiting in levelWaiting[userId] or {} do
+		task.spawn(pcall, waiting, level)
+	end
+	levelWaiting[userId] = nil
+end
+
+-- One request at a time, spaced out, each retried a few times before it counts as a miss.
+local function runLevelQueue()
+	if levelWorking then return end
+	levelWorking = true
+	task.spawn(function()
+		while #levelQueue > 0 do
+			local userId = table.remove(levelQueue, 1)
+			local player = playersService:GetPlayerByUserId(userId)
+			local level
+			if player then
+				-- Re-check the client-side sources on every pass: the tab leaderboard often
+				-- finishes populating a moment after a draft opens, so a card queued while it
+				-- was still empty fills in here once the board is up, without a request.
+				for attempt = 1, 5 do
+					level = instantLevel(player)
+					if level then break end
+					-- Only the profile request as a last resort, and only for our own party
+					-- (the server will not hand over anyone else's), so it is never the thing
+					-- the rest of the board waits on.
+					local ok, profile = pcall(function()
+						return bedwars.Client:Get('RequestProfileData'):CallServer(player)
+					end)
+					level = ok and levelOf(profile) or nil
+					if level then break end
+					if ok and type(profile) == 'table' and not levelProbed then
+						levelProbed = true
+						local keys = {}
+						for key in profile do keys[#keys + 1] = tostring(key) end
+						print('[Vain] KitRender: player level not found; profile keys: ' .. table.concat(keys, ', '))
+					end
+					task.wait(0.4 * attempt)
+				end
+			end
+			if player and not level and not attrsProbed then
+				-- Nothing on the player and nothing on the board for them: dump what the player
+				-- does carry, once, so the real level source can be named if this ever misses.
+				attrsProbed = true
+				local attrs, kids = {}, {}
+				for name in player:GetAttributes() do attrs[#attrs + 1] = name end
+				for _, child in player:GetChildren() do kids[#kids + 1] = child.Name end
+				print('[Vain] KitRender: no level for ' .. player.Name
+					.. '; attributes: ' .. table.concat(attrs, ', ')
+					.. '; children: ' .. table.concat(kids, ', '))
+			end
+			levelCache[userId] = level or false
+			deliverLevel(userId, level)
+			-- Gap between players so the next card's request does not land in the same frame.
+			task.wait(0.12)
+		end
+		levelWorking = false
+	end)
+end
+
 local function fetchLevel(player, callback)
 	local userId = player.UserId
+
+	-- The leaderboard almost always has it already, so try that first every time - it is
+	-- cheap once the board is found, needs no request, and covers everyone on it. Checked
+	-- ahead of a cached miss so a card drawn before the board was ready still fills in later.
+	local quick = instantLevel(player)
+	if quick then
+		levelCache[userId] = quick
+		callback(quick)
+		return
+	end
+
 	local cached = levelCache[userId]
 	if cached ~= nil and cached ~= 'pending' then
 		callback(cached ~= false and cached or nil)
 		return
 	end
+	-- Only fall back to the profile request when the board has nothing for them (not on it,
+	-- or opened too early), and spread those out so the burst is not throttled.
 	levelWaiting[userId] = levelWaiting[userId] or {}
 	table.insert(levelWaiting[userId], callback)
 	if cached == 'pending' then return end
 	levelCache[userId] = 'pending'
-
-	task.spawn(function()
-		local ok, profile = pcall(function()
-			return bedwars.Client:Get('RequestProfileData'):CallServer(player)
-		end)
-		local level = ok and levelOf(profile) or nil
-
-		if ok and not level and type(profile) == 'table' and not levelProbed then
-			levelProbed = true
-			local keys = {}
-			for key in profile do keys[#keys + 1] = tostring(key) end
-			print('[Vain] KitRender: player level not found; profile keys: ' .. table.concat(keys, ', '))
-		end
-
-		levelCache[userId] = level or false
-		for _, waiting in levelWaiting[userId] or {} do
-			task.spawn(pcall, waiting, level)
-		end
-		levelWaiting[userId] = nil
-	end)
+	table.insert(levelQueue, userId)
+	runLevelQueue()
 end
 
 -- A small level badge in the top-left of a player's card, so their Bedwars level reads at a
@@ -274,19 +411,29 @@ local function drawLevel(card, player)
 		local existing = card:FindFirstChild('KitLevel')
 		if existing then existing:Destroy() end
 
+		-- Sits just right of the party badge - a 0.16-height square at offset (6, 6) - rather
+		-- than on top of it, and kept compact so it is a small pill beside the party number
+		-- rather than a slab across the corner.
+		local badge = 0.16 * math.max(card.AbsoluteSize.Y, 32)
 		local label = Instance.new('TextLabel')
 		label.Name = 'KitLevel'
-		label.Position = UDim2.fromScale(0.03, 0.04)
-		label.Size = UDim2.fromScale(0.26, 0.15)
+		label.Position = UDim2.fromOffset(10 + badge, 6)
+		label.Size = UDim2.fromOffset(badge * 2.1, badge)
 		label.BackgroundColor3 = Color3.new(0, 0, 0)
 		label.BackgroundTransparency = 0.4
-		label.Text = ' ' .. level .. ' '
-		label.TextColor3 = Color3.fromRGB(255, 215, 90)
+		label.Text = tostring(level)
+		label.TextColor3 = Color3.new(1, 1, 1)
 		label.TextScaled = true
 		label.TextXAlignment = Enum.TextXAlignment.Center
 		label.Font = Enum.Font.GothamBold
-		label.ZIndex = 11
+		label.ZIndex = 21
 		label.Parent = card
+		local pad = Instance.new('UIPadding')
+		pad.PaddingLeft = UDim.new(0, 4)
+		pad.PaddingRight = UDim.new(0, 4)
+		pad.PaddingTop = UDim.new(0, 2)
+		pad.PaddingBottom = UDim.new(0, 2)
+		pad.Parent = label
 		Instance.new('UICorner', label).CornerRadius = UDim.new(0.25, 0)
 		KitDisplay:Clean(label)
 	end)

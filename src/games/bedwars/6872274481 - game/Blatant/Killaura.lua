@@ -30,6 +30,10 @@ run(function()
 	local Limit
 	local LegitAura
 	local HitDelay
+	local IgnoreMilo
+	-- player -> true while they are disguised as a block by the Milo kit. Filled from the
+	-- game's own mimic broadcasts (see the tracker below), so it covers everyone, not just us.
+	local disguisedMilos = {}
 	local Particles, Boxes = {}, {}
 	-- entity -> tick() at which it may be attacked again
 	local AttackTimes = {}
@@ -138,6 +142,25 @@ run(function()
 
 		return sword, meta
 	end
+
+	-- Who is hiding as a block right now. The Milo kit mimics a block with MIMIC_BLOCK; the
+	-- server answers ValidatedMimicBlock (block type set = now a block, nil = dropped it) and
+	-- announces MimicBlockRevealed when a disguise breaks. Both are broadcast with the player
+	-- they are about - the same events the Milo module reads for itself - so this tracks every
+	-- player's state regardless of whether Killaura was on when they disguised. Connected once
+	-- at load and left running; the table is tiny and self-cleaning on leave.
+	local function trackMimic(name, disguisedFromData)
+		local ok, remote = pcall(function() return bedwars.Client:Get(name) end)
+		if ok and remote then
+			remote:Connect(function(data)
+				if type(data) ~= 'table' or not data.player then return end
+				disguisedMilos[data.player] = disguisedFromData(data) or nil
+			end)
+		end
+	end
+	trackMimic('ValidatedMimicBlock', function(data) return data.blockType ~= nil end)
+	trackMimic('MimicBlockRevealed', function() return false end)
+	playersService.PlayerRemoving:Connect(function(plr) disguisedMilos[plr] = nil end)
 
 	Killaura = vain.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
@@ -277,6 +300,11 @@ run(function()
 									-- Entities can be torn down between selection and use (NPCs
 									-- despawning), so re-check rather than indexing blind.
 									if not v.Character or not v.Character.Parent then continue end
+
+									-- A Milo hiding as a block keeps a real, hittable hitbox, so
+									-- Killaura would otherwise lock onto a "block" and give them
+									-- away. Skip anyone the mimic tracker has down as disguised.
+									if IgnoreMilo.Enabled and v.Player and disguisedMilos[v.Player] then continue end
 
 									-- entitylib caches RootPart once when the entity is created and
 									-- never refreshes it - the code that would is commented out in
@@ -587,6 +615,7 @@ run(function()
 	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Tooltip = 'Only acts while you hold left click'})
 	Swing = Killaura:CreateToggle({Name = 'No Swing', Tooltip = 'Attacks without playing the swing animation'})
 	GUI = Killaura:CreateToggle({Name = 'GUI check', Tooltip = 'Stops acting while a game menu is open'})
+	IgnoreMilo = Killaura:CreateToggle({Name = 'Ignore disguised Milos', Tooltip = 'Skips Milo players while they are a block'})
 	Killaura:CreateToggle({
 		Name = 'Show target',
 		Tooltip = 'Draws a box around the target you are attacking',

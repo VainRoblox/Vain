@@ -1969,6 +1969,10 @@ run(function()
 	-- nil global in the next.
 	bedwars.sameTeam = sameTeam
 	bedwars.attackable = attackable
+	-- The shield a character is carrying, summed from its Shield* attributes. entity.Health
+	-- folds this in (base + shield), so a module wanting to show the two apart - the nametag
+	-- splitting health from shield - reads it back out through here.
+	bedwars.getShieldAttribute = getShieldAttribute
 
 	-- The game dropped SoundManager for AudioManager:playAudio(sound, config), so
 	-- bedwars.SoundManager resolved to nil and every module that plays a sound threw on

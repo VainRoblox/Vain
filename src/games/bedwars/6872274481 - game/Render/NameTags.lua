@@ -114,6 +114,41 @@ local function toRoman(n)
 	return out
 end
 
+--[[
+	Sheila's seahorse count. It is a running stack total, not a tier, and we want the stack
+	amount rather than the kit's level - and since both the level and the stacks ride on the
+	player as attributes and the exact names are not written down anywhere here, this picks the
+	one that is clearly the stack: an attribute that names a seahorse (or Sheila) and a stack /
+	count / charge. If a Sheila attribute is around but none matched, it prints the player's
+	attribute names once so the real one can be named outright.
+]]
+local seahorseProbed = false
+local function seahorseStacks(ent)
+	if not ent.Player then return nil end
+	local found, hint = nil, false
+	for _, holder in {ent.Player, ent.Character} do
+		if holder then
+			for name, value in holder:GetAttributes() do
+				local lower = name:lower()
+				if lower:find('seahorse') or lower:find('sheila') then
+					hint = true
+					if not found and type(value) == 'number' and value > 0
+						and (lower:find('stack') or lower:find('count') or lower:find('charge')) then
+						found = math.floor(value)
+					end
+				end
+			end
+		end
+	end
+	if not found and hint and not seahorseProbed then
+		seahorseProbed = true
+		local keys = {}
+		for name in ent.Player:GetAttributes() do keys[#keys + 1] = name end
+		print('[Vain] NameTags: Sheila seahorse stacks not matched; player attributes: ' .. table.concat(keys, ', '))
+	end
+	return found
+end
+
 -- rich lets the Normal renderer, whose label reads font tags, colour the Roman stats purple;
 -- the Drawing renderer passes it false and gets the plain numeral, since its text is one
 -- colour and cannot tint a single part.
@@ -133,6 +168,12 @@ local function kitStatsOf(ent, rich)
 				parts[#parts + 1] = stat[2] .. ' ' .. math.floor(value)
 			end
 		end
+	end
+	-- Sheila's seahorse stacks, shown as a bare number. In the Normal renderer the kit-stat
+	-- label is gold by default, so an untagged number reads yellow/golden on its own.
+	local stacks = seahorseStacks(ent)
+	if stacks then
+		parts[#parts + 1] = tostring(stacks)
 	end
 	return table.concat(parts, ' · ')
 end
@@ -577,6 +618,29 @@ local function textHeight()
 	return math.floor(14 * Scale.Value) + 3
 end
 
+local function hexOf(colour)
+	return string.format('%02X%02X%02X',
+		math.floor(colour.R * 255 + 0.5), math.floor(colour.G * 255 + 0.5), math.floor(colour.B * 255 + 0.5))
+end
+
+-- Bedwars folds a player's shield into their health - entity.Health is base + shield - so the
+-- raw number reads too high. This hands back the two apart: the real health, and the shield on
+-- top of it, so the tag can show "<health>(+<shield>)".
+local function healthParts(ent)
+	local shield = 0
+	if ent.Character and bedwars.getShieldAttribute then
+		local ok, s = pcall(bedwars.getShieldAttribute, ent.Character)
+		if ok and type(s) == 'number' then shield = math.max(math.round(s), 0) end
+	end
+	local total = math.max(math.round(ent.Health or 0), 0)
+	return math.max(total - shield, 0), shield
+end
+
+-- The colour health reads in at a given fraction of its max, the way it always has.
+local function healthColour(ratio)
+	return Color3.fromHSV(math.clamp(ratio, 0, 1) / 2.5, 0.89, 0.75)
+end
+
 local Added = {
 	Normal = function(ent)
 		if not Targets.Players.Enabled and ent.Player then return end
@@ -636,7 +700,11 @@ local Added = {
 		rankicon.LayoutOrder = 5
 		rankicon.Visible = false
 		rankicon.Parent = row
-		newPiece(row, 'KitStat', 6)
+		-- The kit stat leads the row, on the very left inside the frame, with a black outline
+		-- so the numeral reads cleanly against whatever is behind the tag.
+		local kitStat = newPiece(row, 'KitStat', 0)
+		kitStat.TextStrokeColor3 = Color3.new()
+		kitStat.TextStrokeTransparency = 0
 
 		--[[
 			The equipment as one centred row, laid out by a UIListLayout. Each icon used to
@@ -710,7 +778,10 @@ local Added = {
 		end
 
 		if Health.Enabled then
-			Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
+			-- Split the shield back out of the health here too; this mode is one flat colour,
+			-- so the shield only gets the "(+N)" shape, not its own white.
+			local hp, shield = healthParts(ent)
+			Strings[ent] = Strings[ent]..' '..hp..(shield > 0 and '(+'..shield..')' or '')
 		end
 
 		Strings[ent] = appendStatus(ent, Strings[ent], false)
@@ -783,8 +854,18 @@ local Updated = {
 
 		row.HealthLabel.Visible = Health.Enabled
 		if Health.Enabled then
-			row.HealthLabel.Text = tostring(math.round(ent.Health))
-			row.HealthLabel.TextColor3 = Color3.fromHSV(math.clamp(ent.Health / math.max(ent.MaxHealth, 1), 0, 1) / 2.5, 0.89, 0.75)
+			local hp, shield = healthParts(ent)
+			local col = healthColour(hp / math.max(ent.MaxHealth, 1))
+			if shield > 0 then
+				-- Health in its usual colour, the shield after it as a white (+N) so it reads
+				-- as extra on top rather than part of the health.
+				row.HealthLabel.Text = string.format('<font color="#%s">%d</font><font color="#FFFFFF">(+%d)</font>',
+					hexOf(col), hp, shield)
+				row.HealthLabel.TextColor3 = Color3.new(1, 1, 1)
+			else
+				row.HealthLabel.Text = tostring(hp)
+				row.HealthLabel.TextColor3 = col
+			end
 		end
 
 		local kitText = kitStatsOf(ent, true)
@@ -837,7 +918,8 @@ local Updated = {
 			end
 
 			if Health.Enabled then
-				Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
+				local hp, shield = healthParts(ent)
+				Strings[ent] = Strings[ent]..' '..hp..(shield > 0 and '(+'..shield..')' or '')
 			end
 
 			Strings[ent] = appendStatus(ent, Strings[ent], false)
