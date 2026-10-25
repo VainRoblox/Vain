@@ -9,7 +9,7 @@
 	map, through walls.
 ]]
 local BeehiveESP
-local ThroughWalls, FillOpacity, ShowCount, ShowOwner, ShowDistance, ShowOwn
+local ThroughWalls, FillOpacity, ShowCount, ShowOwner, ShowDistance, ShowOwn, ShowTeammates
 local Icon, Background, BackgroundColor, Outline, FontOption, Range, Scale
 
 local Folder = Instance.new('Folder')
@@ -74,6 +74,18 @@ end
 local function ownerName(hive)
 	local placer = playersService:GetPlayerByUserId(hive:GetAttribute('PlacedByUserId') or 0)
 	return placer and placer.Name or nil
+end
+
+-- Whether a hive should be drawn, by whose side it is on: your own behind Show Own, a
+-- teammate's behind Show Teammates, and an enemy's (or one whose side cannot be worked out)
+-- always, since that is what the ESP is for.
+local function shouldShow(hive)
+	if ownHive(hive) then return on(ShowOwn) end
+	local team, mine = hiveTeam(hive), lplr:GetAttribute('Team')
+	if team ~= nil and mine ~= nil and tostring(team) == tostring(mine) then
+		return on(ShowTeammates)
+	end
+	return true
 end
 
 local function newText(parent, order, strokeless)
@@ -156,7 +168,12 @@ local function add(hive)
 
 	local count = newText(card, 2)
 	local owner = newText(card, 3)
-	local distance = newText(card, 4, true)
+	local distance = newText(card, 4)
+	-- A solid dark outline on every label, so the text holds up over a light background or a
+	-- busy world, not just the dark card - the readability the plate was missing.
+	count.TextStrokeTransparency = 0.25
+	owner.TextStrokeTransparency = 0.4
+	distance.TextStrokeTransparency = 0.5
 
 	hives[hive] = {
 		Highlight = highlight,
@@ -183,7 +200,7 @@ end
 
 local function refresh(hive, entry, here)
 	local part = entry.Adornee
-	if ownHive(hive) and not on(ShowOwn) then
+	if not shouldShow(hive) then
 		entry.Billboard.Enabled = false
 		entry.Highlight.Enabled = false
 		return
@@ -322,6 +339,11 @@ ShowOwn = BeehiveESP:CreateToggle({
 	Tooltip = 'Includes hives you placed yourself',
 	Default = true
 })
+ShowTeammates = BeehiveESP:CreateToggle({
+	Name = 'Show Teammates',
+	Tooltip = 'Includes hives your teammates placed',
+	Default = true
+})
 Icon = BeehiveESP:CreateToggle({
 	Name = 'Icon',
 	Tooltip = 'Shows the hive\'s item icon on the card',
@@ -337,7 +359,12 @@ Background = BeehiveESP:CreateToggle({
 })
 BackgroundColor = BeehiveESP:CreateColorSlider({
 	Name = 'Background Color',
-	Tooltip = 'Colour of the card background',
+	Tooltip = 'Colour and opacity of the card background',
+	-- Near-black, the same dark card the rest of Vain's ESP uses, so the team-coloured count
+	-- and the white text read against it instead of washing out on a light background.
+	DefaultHue = 0,
+	DefaultSat = 0,
+	DefaultValue = 0.08,
 	DefaultOpacity = 0.55,
 	Darker = true
 })
