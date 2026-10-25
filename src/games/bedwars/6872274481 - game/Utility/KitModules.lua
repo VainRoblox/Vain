@@ -787,15 +787,6 @@ kitRun(function()
     local DepositDelay
     local BeeLimit
     local Legit
-    local HiveESP
-    local ShowAmount
-    local ShowOwn
-    local Glow
-    local Background
-    local Color = {}
-    local Reference = {}
-    local Folder = Instance.new('Folder')
-    Folder.Parent = vain.gui
 
     -- Settings are created after CreateModule returns, so they can still be nil while
     -- this file is executing - and the module can be switched on inside that window when
@@ -875,63 +866,6 @@ kitRun(function()
         return hive:GetAttribute('PlacedByUserId') == lplr.UserId
     end
 
-    --[[
-        The colour of the team a hive belongs to.
-
-        The queue's own team list carries it, as a plain integer rather than a Color3, and
-        is keyed by an id that arrives as a string - so the list is walked and compared as
-        numbers rather than indexed directly. White when the team cannot be worked out,
-        which reads as no answer rather than as a wrong one.
-    ]]
-    --[[
-        Which team a hive belongs to.
-
-        Read off the block itself first. A hive cannot be broken by its own team, and that
-        is recorded on it as a Team<N>NoBreak attribute, so the block states its own side
-        without anyone having to still be in the server. Whoever placed it is the fallback,
-        for the case where the attribute is absent.
-    ]]
-    local function hiveTeam(hive)
-        local found
-        for name in hive:GetAttributes() do
-            local id = tonumber(name:match('^Team(%d+)NoBreak$'))
-            if id and (not found or id < found) then
-                found = id
-            end
-        end
-        if found then return found end
-
-        local placer = playersService:GetPlayerByUserId(hive:GetAttribute('PlacedByUserId') or 0)
-        return placer and placer:GetAttribute('Team')
-    end
-
-    --[[
-        The colour of the team a hive belongs to.
-
-        Taken from the owner's own TeamColor, which is what the rest of Vain colours by -
-        so a hive reads the same as the nametags above the players who own it. The queue's
-        team list was the wrong source: its ids and a player's team are not numbered from
-        the same end, so a blue team came out orange.
-
-        Anyone still in the server on that team will do when whoever placed it has left.
-    ]]
-    local function hiveColor(hive)
-        local placer = playersService:GetPlayerByUserId(hive:GetAttribute('PlacedByUserId') or 0)
-        if placer and tostring(placer.TeamColor) ~= 'White' then
-            return placer.TeamColor.Color
-        end
-
-        local team = hiveTeam(hive)
-        if team then
-            for _, plr in playersService:GetPlayers() do
-                if plr:GetAttribute('Team') == team and tostring(plr.TeamColor) ~= 'White' then
-                    return plr.TeamColor.Color
-                end
-            end
-        end
-
-        return Color3.new(1, 1, 1)
-    end
 
     --[[
         Catching, one bee at a time.
@@ -1053,132 +987,11 @@ kitRun(function()
         end
     end
 
-    local function removeHive(hive)
-        local entry = Reference[hive]
-        if entry then
-            Reference[hive] = nil
-            entry.Billboard:Destroy()
-            if entry.Highlight then
-                entry.Highlight:Destroy()
-            end
-        end
-    end
-
-    -- How many bees a hive is holding, shown on it. The level is the count, and it is the
-    -- one thing here worth reading at a glance - a full hive takes nothing more.
-    local function addHive(hive)
-        if Reference[hive] then return end
-
-        local own = ownHive(hive)
-        if own and not on(ShowOwn) then return end
-
-        local part = partOf(hive)
-        if not part then return end
-
-        --[[
-            A highlight on the hive itself, through walls, in its team colour.
-
-            The plate alone is a small patch of text that blends into a busy base - the one
-            thing people actually said they could not find. A filled outline over the whole
-            block is seen across the map and tells you whose it is at a glance, which is what
-            an ESP is for; the count stays on the plate for when you are close enough to read
-            it.
-        ]]
-        local highlight = Instance.new('Highlight')
-        highlight.Adornee = part
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.FillColor = hiveColor(hive)
-        highlight.OutlineColor = hiveColor(hive)
-        highlight.FillTransparency = 0.6
-        highlight.OutlineTransparency = 0
-        highlight.Enabled = Glow == nil or on(Glow)
-        highlight.Parent = Folder
-
-        local billboard = Instance.new('BillboardGui')
-        billboard.Name = 'beehive'
-        billboard.Adornee = part
-        billboard.StudsOffsetWorldSpace = Vector3.new(0, math.clamp(part.Size.Y * 0.5, 0.5, 4), 0)
-        billboard.Size = UDim2.fromOffset(64, 34)
-        billboard.AlwaysOnTop = true
-        billboard.ClipsDescendants = false
-        billboard.Parent = Folder
-
-        local blur = addBlur(billboard)
-        blur.Visible = on(Background)
-
-        local frame = Instance.new('Frame')
-        frame.Size = UDim2.fromScale(1, 1)
-        frame.BackgroundColor3 = Color3.fromHSV(Color.Hue or 0, Color.Sat or 0, Color.Value or 0)
-        frame.BackgroundTransparency = 1 - (on(Background) and (Color.Opacity or 0.5) or 0)
-        frame.BorderSizePixel = 0
-        frame.Parent = billboard
-
-        local corner = Instance.new('UICorner')
-        corner.CornerRadius = UDim.new(0, 4)
-        corner.Parent = frame
-
-        --[[
-            A fixed size rather than a scaled one.
-
-            TextScaled sizes the text to fill the box, so a single digit was blown up to a
-            different size than two and drawn well outside the plate - which is why a count
-            under ten looked like it was not there at all.
-        ]]
-        local label = Instance.new('TextLabel')
-        label.Name = 'Level'
-        label.Size = UDim2.fromScale(1, 1)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = hiveColor(hive)
-        label.TextStrokeTransparency = 0.4
-        label.TextSize = 20
-        label.FontFace = uipallet.FontSemiBold
-        label.RichText = true
-        label.Parent = frame
-
-        --[[
-            Redrawn from whatever the hive says right now.
-
-            Driven from the loop as well as from the level changing, because a hive that
-            was already standing when the module came on never fires that signal and its
-            count would sit at whatever it happened to be when the plate was first drawn.
-        ]]
-        local function refresh()
-            local parts = {}
-
-            if on(ShowAmount) then
-                parts[#parts + 1] = tostring(hive:GetAttribute('Level') or 0)
-            end
-            if not own then
-                local owner = playersService:GetPlayerByUserId(hive:GetAttribute('PlacedByUserId') or 0)
-                parts[#parts + 1] = '<font size="10">' .. ((owner and owner.Name) or '?') .. '</font>'
-            end
-
-            local tint = hiveColor(hive)
-            label.Text = table.concat(parts, ' ')
-            label.TextColor3 = tint
-            billboard.Enabled = #parts > 0
-
-            highlight.FillColor = tint
-            highlight.OutlineColor = tint
-            highlight.Enabled = Glow == nil or on(Glow)
-        end
-        refresh()
-
-        Reference[hive] = {Billboard = billboard, Frame = frame, Blur = blur, Highlight = highlight, Refresh = refresh}
-        Beekeeper:Clean(hive:GetAttributeChangedSignal('Level'):Connect(refresh))
-    end
 
     Beekeeper = vain.Categories.Kit:CreateModule({
         Name = 'Beekeeper',
         Function = function(callback)
             if callback then
-                if on(HiveESP) then
-                    for _, hive in collectionService:GetTagged('beehive') do
-                        addHive(hive)
-                    end
-                    Beekeeper:Clean(collectionService:GetInstanceAddedSignal('beehive'):Connect(addHive))
-                    Beekeeper:Clean(collectionService:GetInstanceRemovedSignal('beehive'):Connect(removeHive))
-                end
 
                 -- One loop for both, so a slow deposit cannot leave bees uncollected and
                 -- the two never fight over what is in your hand at the same moment.
@@ -1190,22 +1003,9 @@ kitRun(function()
                         if on(Deposit) then
                             pcall(deposit)
                         end
-                        for hive, entry in Reference do
-                            if hive.Parent then
-                                entry.Refresh()
-                            else
-                                removeHive(hive)
-                            end
-                        end
                         task.wait(0.1)
                     end
                 end)
-            else
-                for hive in Reference do
-                    removeHive(hive)
-                end
-                Folder:ClearAllChildren()
-                table.clear(Reference)
             end
         end,
         Tooltip = 'Catches bees and feeds them to your hives'
@@ -1297,81 +1097,6 @@ kitRun(function()
         Max = 25,
         Default = 10,
         Suffix = 'bees',
-        Darker = true
-    })
-    HiveESP = Beekeeper:CreateToggle({
-        Name = 'Beehive ESP',
-        Tooltip = 'Shows how many bees each hive is holding',
-        Function = function(callback)
-            if ShowAmount and ShowAmount.Object then ShowAmount.Object.Visible = callback end
-            if ShowOwn and ShowOwn.Object then ShowOwn.Object.Visible = callback end
-            if Glow and Glow.Object then Glow.Object.Visible = callback end
-            if Background and Background.Object then Background.Object.Visible = callback end
-            if Color and Color.Object then Color.Object.Visible = callback and Background.Enabled end
-            if Beekeeper.Enabled then
-                Beekeeper:Toggle()
-                Beekeeper:Toggle()
-            end
-        end,
-        Default = true
-    })
-    ShowAmount = Beekeeper:CreateToggle({
-        Name = 'Show Amount',
-        Tooltip = 'Shows how many bees the hive is holding',
-        Darker = true,
-        Default = true
-    })
-    ShowOwn = Beekeeper:CreateToggle({
-        Name = 'Show Own',
-        Tooltip = 'Includes hives you placed yourself',
-        Default = true,
-        Function = function()
-            if Beekeeper.Enabled then
-                Beekeeper:Toggle()
-                Beekeeper:Toggle()
-            end
-        end,
-        Darker = true
-    })
-    Glow = Beekeeper:CreateToggle({
-        Name = 'Highlight',
-        Tooltip = 'Outlines each hive through walls in its team colour',
-        Default = true,
-        Darker = true,
-        Function = function(callback)
-            for _, entry in Reference do
-                if entry.Highlight then
-                    entry.Highlight.Enabled = callback
-                end
-            end
-        end
-    })
-    Background = Beekeeper:CreateToggle({
-        Name = 'Background',
-        Tooltip = 'Draws a background behind the count',
-        Function = function(callback)
-            if Color.Object then Color.Object.Visible = callback end
-            for _, entry in Reference do
-                entry.Frame.BackgroundTransparency = 1 - (callback and (Color.Opacity or 0.5) or 0)
-                entry.Blur.Visible = callback
-            end
-        end,
-        Darker = true,
-        Default = true
-    })
-    Color = Beekeeper:CreateColorSlider({
-        Name = 'Background Color',
-        Tooltip = 'Color of the background',
-        -- Left out on purpose: the slider reads this as `DefaultValue or 1`, and zero is
-        -- truthy in Lua, so passing 0 pinned the brightness at zero and the background
-        -- came out black whatever colour was picked.
-        DefaultOpacity = 0.5,
-        Function = function(hue, sat, val, opacity)
-            for _, entry in Reference do
-                entry.Frame.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
-                entry.Frame.BackgroundTransparency = 1 - opacity
-            end
-        end,
         Darker = true
     })
 end)
