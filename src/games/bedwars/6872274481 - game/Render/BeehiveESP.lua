@@ -16,6 +16,10 @@ local Folder = Instance.new('Folder')
 Folder.Name = 'BeehiveESP'
 Folder.Parent = vain.gui
 local hives = {}
+-- hive -> true, waiting for its card. A tag signal's thread cannot be given the capability to
+-- make instances, so add() only queues and update() (on the RenderStepped loop, whose thread
+-- can) builds it.
+local pending = {}
 
 local function on(setting)
 	return setting ~= nil and setting.Enabled
@@ -106,9 +110,7 @@ end
 	rounded plate over it carrying an icon, the bee count, the owner and the distance. update()
 	only sets what changes.
 ]]
-local function add(hive)
-	-- A tag signal can run this on a thread without the capability to make instances.
-	if vain.ThreadFix then setthreadidentity(8) end
+local function create(hive)
 	if hives[hive] then return end
 	local part = partOf(hive)
 	if not part then return end
@@ -189,7 +191,14 @@ local function add(hive)
 	}
 end
 
+-- Only queues; the card is built in update() where instances can be made.
+local function add(hive)
+	if hives[hive] or pending[hive] then return end
+	pending[hive] = true
+end
+
 local function remove(hive)
+	pending[hive] = nil
 	local entry = hives[hive]
 	if entry then
 		hives[hive] = nil
@@ -267,6 +276,14 @@ local function refresh(hive, entry, here)
 end
 
 local function update()
+	-- Build queued hives here, on this thread, which can make instances.
+	if next(pending) then
+		for hive in pending do
+			pending[hive] = nil
+			if hive.Parent then create(hive) end
+		end
+	end
+
 	local here = entitylib.isAlive and entitylib.character.RootPart.Position or nil
 	for hive, entry in hives do
 		if not (hive.Parent and entry.Adornee.Parent) then
@@ -300,6 +317,7 @@ BeehiveESP = vain.Categories.Render:CreateModule({
 		else
 			for hive in hives do remove(hive) end
 			table.clear(hives)
+			table.clear(pending)
 		end
 	end
 })

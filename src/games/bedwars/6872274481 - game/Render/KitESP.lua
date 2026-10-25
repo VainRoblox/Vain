@@ -354,21 +354,17 @@ local function sliderColor(slider, fallback)
 	return Color3.fromHSV(slider.Hue or 0, slider.Sat or 0, slider.Value or 1)
 end
 
+-- statue -> true, waiting for its highlight. Only queues here: a tag signal's thread cannot
+-- be given the capability to make instances, so the highlight is created from updateStatues,
+-- which runs on the RenderStepped loop connected on Vain's thread, where it can.
+local pendingStatues = {}
 local function addStatue(statue)
-	-- A tag signal can run this on a thread that may not create instances.
-	if vain.ThreadFix then setthreadidentity(8) end
-	if StatueRefs[statue] or not statue:IsA('Model') then return end
-	local highlight = Instance.new('Highlight')
-	highlight.Name = 'MinerStatue'
-	highlight.Adornee = statue
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.OutlineTransparency = 0
-	highlight.Enabled = false
-	highlight.Parent = StatueFolder
-	StatueRefs[statue] = highlight
+	if StatueRefs[statue] or pendingStatues[statue] or not statue:IsA('Model') then return end
+	pendingStatues[statue] = true
 end
 
 local function removeStatue(statue)
+	pendingStatues[statue] = nil
 	local highlight = StatueRefs[statue]
 	if highlight then
 		highlight:Destroy()
@@ -386,12 +382,30 @@ local function clearStatues()
 	for statue in StatueRefs do removeStatue(statue) end
 	StatueFolder:ClearAllChildren()
 	table.clear(StatueRefs)
+	table.clear(pendingStatues)
 end
 
 local function updateStatues()
 	-- Only while you are actually the Miner kit - the statues are its own thing, and are no
 	-- use to read when you cannot dig them.
 	local show = on(MinerStatues) and store.equippedKit == 'miner'
+
+	-- Give any queued statue its highlight here, where the thread can make instances.
+	if next(pendingStatues) then
+		for statue in pendingStatues do
+			pendingStatues[statue] = nil
+			if statue.Parent and not StatueRefs[statue] then
+				local highlight = Instance.new('Highlight')
+				highlight.Name = 'MinerStatue'
+				highlight.Adornee = statue
+				highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				highlight.OutlineTransparency = 0
+				highlight.Enabled = false
+				highlight.Parent = StatueFolder
+				StatueRefs[statue] = highlight
+			end
+		end
+	end
 	for statue, highlight in StatueRefs do
 		if not statue.Parent then
 			removeStatue(statue)

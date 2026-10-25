@@ -16,6 +16,9 @@ local Folder = Instance.new('Folder')
 Folder.Name = 'TrapESP'
 Folder.Parent = vain.gui
 local traps = {}
+-- trap -> its info (or true), waiting for its card. Built from update() rather than the tag
+-- signal, whose thread cannot be given the capability to make instances.
+local pending = {}
 local connections = {}
 
 -- Tag -> the setting it belongs to and what it is called when the block's name says
@@ -84,7 +87,15 @@ local function armingText(trap)
 	return nil, true
 end
 
+-- Only queues. A game signal's thread cannot be given the capability to make instances, so
+-- the card is built in update(), which runs on the RenderStepped loop where it can.
+local function add(trap, info)
+	if traps[trap] or pending[trap] then return end
+	pending[trap] = info or true
+end
+
 local function remove(trap)
+	pending[trap] = nil
 	local entry = traps[trap]
 	if not entry then return end
 	entry.billboard:Destroy()
@@ -93,11 +104,7 @@ local function remove(trap)
 	traps[trap] = nil
 end
 
-local function add(trap, info)
-	-- Game events can call this on a thread that may not create instances.
-	if vain.ThreadFix then
-		setthreadidentity(8)
-	end
+local function create(trap, info)
 	if traps[trap] then return end
 	local part = partOf(trap)
 	if not part then return end
@@ -156,6 +163,14 @@ local function add(trap, info)
 end
 
 local function update()
+	-- Build queued traps here, on this thread, which can make instances.
+	if next(pending) then
+		for trap, info in pending do
+			pending[trap] = nil
+			if trap.Parent then create(trap, info ~= true and info or nil) end
+		end
+	end
+
 	local here = entitylib.isAlive and entitylib.character.RootPart.Position
 	for trap, entry in traps do
 		if not (trap.Parent and entry.part.Parent) then
@@ -232,6 +247,7 @@ TrapESP = vain.Categories.Render:CreateModule({
 			end))
 		else
 			for trap in traps do remove(trap) end
+			table.clear(pending)
 		end
 	end
 })

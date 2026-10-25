@@ -119,6 +119,10 @@ end
 	redraws a frame apart, and now coalesces into one.
 ]]
 local dirty = {}
+-- chest -> os.clock() when it was tagged. The billboard is made from the Heartbeat loop
+-- rather than here, because a game signal's thread cannot be given the capability to create
+-- instances and the loop's (connected on Vain's thread) can.
+local pendingBuild = {}
 
 local function queue(v)
 	dirty[v] = true
@@ -324,26 +328,12 @@ local function build(v)
 	queue(billboard)
 end
 
+-- Only queues the chest. A game signal (or a task thread, or a WaitForChild resume) cannot be
+-- given the capability to make instances, so the billboard is built from the Heartbeat loop,
+-- whose thread can. The loop waits there for ChestFolderValue to land rather than yielding.
 local function Added(v)
-	if vain.ThreadFix then
-		setthreadidentity(8)
-	end
-	if not StorageESP.Enabled then return end
-	-- WaitForChild is avoided on purpose: the thread it resumes on loses the capability
-	-- to make instances and cannot be given it back, which threw "lacking capability
-	-- Plugin". Build now if the value folder is already there - still on an elevatable
-	-- thread - or from a plain ChildAdded callback (which keeps it) when it lands later.
-	if v:FindFirstChild('ChestFolderValue') then
-		build(v)
-		return
-	end
-	local conn
-	conn = v.ChildAdded:Connect(function(child)
-		if child.Name ~= 'ChestFolderValue' then return end
-		conn:Disconnect()
-		build(v)
-	end)
-	task.delay(3, function() if conn.Connected then conn:Disconnect() end end)
+	if not StorageESP.Enabled or Reference[v] then return end
+	pendingBuild[v] = os.clock()
 end
 
 StorageESP = vain.Categories.Render:CreateModule({
@@ -355,6 +345,20 @@ StorageESP = vain.Categories.Render:CreateModule({
 			-- inherits the identity of the thread that made the connection, and this one is
 			-- made on Vain's.
 			StorageESP:Clean(runService.Heartbeat:Connect(function()
+				-- Build queued chests here, on this thread (connected on Vain's), which keeps
+				-- the capability to make instances. Each waits for ChestFolderValue to appear,
+				-- and is given up on after a few seconds if it never does.
+				if next(pendingBuild) then
+					for v, since in pendingBuild do
+						if not v.Parent or os.clock() - since > 3 then
+							pendingBuild[v] = nil
+						elseif v:FindFirstChild('ChestFolderValue') then
+							pendingBuild[v] = nil
+							pcall(build, v)
+						end
+					end
+				end
+
 				if not next(dirty) then return end
 
 				local todo = dirty
@@ -370,12 +374,13 @@ StorageESP = vain.Categories.Render:CreateModule({
 
 			StorageESP:Clean(collectionService:GetInstanceAddedSignal('chest'):Connect(Added))
 			for _, v in collectionService:GetTagged('chest') do
-				task.spawn(Added, v)
+				Added(v)
 			end
 		else
 			table.clear(Reference)
 			table.clear(alerted)
 			table.clear(dirty)
+			table.clear(pendingBuild)
 			Folder:ClearAllChildren()
 		end
 	end,
