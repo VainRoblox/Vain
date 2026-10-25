@@ -567,6 +567,9 @@ local function learnTnt(inst)
 	if name ~= 'tnt' and name ~= 'siege_tnt' then return end
 	-- A frame late, so the server has set the launch velocity on the part.
 	task.defer(function()
+		-- A deferred thread may not carry the Plugin capability; take it before reading
+		-- game parts so this calibration can never throw "lacking capability Plugin".
+		if vain.ThreadFix then pcall(setthreadidentity, 8) end
 		local root = tntPart(inst)
 		if not (root and root.Parent) then return end
 		local v = root.AssemblyLinearVelocity

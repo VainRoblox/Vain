@@ -408,6 +408,14 @@ local function drawLevel(card, player)
 		if not (card.Parent and KitDisplay.Enabled) then return end
 		if card:GetAttribute('KitLevelUser') ~= player.UserId then return end
 		if not level then return end
+
+		-- The level can resolve instantly off the leaderboard, in which case this callback
+		-- runs right here on whichever thread drew the card - a draft-UI connection that may
+		-- not hold the Plugin capability - rather than on a request thread the way the kit
+		-- history row always does. Creating and parenting the badge into the game's GUI from
+		-- a thread without it throws "lacking capability Plugin", so take the identity first.
+		if vain.ThreadFix then setthreadidentity(8) end
+
 		local existing = card:FindFirstChild('KitLevel')
 		if existing then existing:Destroy() end
 
