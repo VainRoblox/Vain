@@ -355,6 +355,8 @@ local function sliderColor(slider, fallback)
 end
 
 local function addStatue(statue)
+	-- A tag signal can run this on a thread that may not create instances.
+	if vain.ThreadFix then setthreadidentity(8) end
 	if StatueRefs[statue] or not statue:IsA('Model') then return end
 	local highlight = Instance.new('Highlight')
 	highlight.Name = 'MinerStatue'

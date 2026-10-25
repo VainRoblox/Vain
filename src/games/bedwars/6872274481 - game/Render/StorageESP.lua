@@ -270,14 +270,18 @@ local function Added(v)
 	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
-	local chest = v:WaitForChild('ChestFolderValue', 3)
-	if not (chest and StorageESP.Enabled) then return end
-	-- The wait can resume on a thread without it again.
+	local chestValue = v:WaitForChild('ChestFolderValue', 3)
+	if not (chestValue and StorageESP.Enabled) then return end
+	if hiddenAsOwn(v) then return end
+	-- Build on a fresh task thread. A thread resumed from WaitForChild cannot always be given
+	-- the capability to make instances even with setthreadidentity re-applied, which threw
+	-- "lacking capability Plugin" on a chest drawn after the wait; a task thread elevates it.
+	task.spawn(function()
 	if vain.ThreadFix then
 		setthreadidentity(8)
 	end
-	if hiddenAsOwn(v) then return end
-	chest = chest.Value
+	local chest = chestValue.Value
+	if not chest then return end
 	local billboard = Instance.new('BillboardGui')
 	billboard.Parent = Folder
 	billboard.Name = 'chest'
@@ -327,6 +331,7 @@ local function Added(v)
 		queue(billboard)
 	end))
 	queue(billboard)
+	end)
 end
 
 StorageESP = vain.Categories.Render:CreateModule({

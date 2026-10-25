@@ -5,6 +5,10 @@ Folder.Parent = vain.gui
 
 local function Added(bed)
 	if not BedESP.Enabled then return end
+	-- Tag signals can run this on a thread that may not create instances; raised first.
+	if vain.ThreadFix then
+		setthreadidentity(8)
+	end
 	local BedFolder = Instance.new('Folder')
 	BedFolder.Parent = Folder
 	Reference[bed] = BedFolder

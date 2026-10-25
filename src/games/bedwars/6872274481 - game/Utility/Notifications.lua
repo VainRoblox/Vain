@@ -100,13 +100,13 @@ local function sweep(announce)
 			if wantCross and hasCrossbow(plr) then
 				crossbowFired, wantCross = true, false
 				if announce then
-					notif('Notifications', plr.Name .. ' got the first Crossbow', 6, 'alert')
+					notif('Notifications', plr.DisplayName .. ' got the first Crossbow', 6, 'alert')
 				end
 			end
 			if wantDiamond and hasDiamondArmor(plr) then
 				diamondFired, wantDiamond = true, false
 				if announce then
-					notif('Notifications', plr.Name .. ' got the first Diamond Armor', 6, 'alert')
+					notif('Notifications', plr.DisplayName .. ' got the first Diamond Armor', 6, 'alert')
 				end
 			end
 			if not (wantCross or wantDiamond) then break end
